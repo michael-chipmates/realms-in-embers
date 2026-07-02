@@ -73,6 +73,15 @@ export function heroesOf(state: GameState, pid: PlayerId) {
   return Object.values(state.heroes).filter((h) => h.owner === pid && h.status !== 'dead');
 }
 
+/** Where a hero actually stands (their army's province when attached). */
+export function heroProvince(state: GameState, hero: { armyId: number | null; province: number }): number {
+  if (hero.armyId !== null) {
+    const army = state.armies[hero.armyId];
+    if (army) return army.province;
+  }
+  return hero.province;
+}
+
 export function makeUnits(type: UnitTypeId, count: number, vet: 0 | 1 | 2 = 0): UnitInstance[] {
   const def = UNITS[type];
   return Array.from({ length: count }, () => ({ type, hits: def.hits, vet }));
@@ -140,6 +149,22 @@ export function marchDistance(state: GameState, from: number, to: number): numbe
 
 export function alivePlayers(state: GameState): Player[] {
   return state.players.filter((p) => p.alive);
+}
+
+/** Register a new artifact instance and place it in a player's vault. */
+export function grantArtifactTo(state: GameState, pid: PlayerId, defId: string): number {
+  const id = state.nextArtifactId++;
+  state.artifacts[id] = { id, defId, foundTurn: state.turn, history: [] };
+  if (pid >= 0) {
+    state.players[pid].vault.push(id);
+    state.artifacts[id].history.push(lordName(state, pid));
+  }
+  return id;
+}
+
+/** Artifact def-ids already existing anywhere in this world (no duplicates). */
+export function artifactDefIdsInPlay(state: GameState): Set<string> {
+  return new Set(Object.values(state.artifacts).map((a) => a.defId));
 }
 
 /** Total army strength points for ranking/threat (cheap, not battle math). */

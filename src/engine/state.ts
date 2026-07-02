@@ -6,6 +6,8 @@ import { LORDS, LORD_BY_ID } from './content/lords';
 import { makePersonName, makeTroubleName } from './content/names';
 import { createHero, HERO_CLASSES } from './heroes';
 import { makeUnits, newArmy } from './helpers';
+import { refreshRiteOffers } from './magic';
+import { refreshQuestOffers } from './quests';
 import { generateMap, pickSeats } from './mapgen';
 import { say } from './narrator';
 import { Rng, rngStateFrom } from './rng';
@@ -218,6 +220,12 @@ export function initGame(settings: GameSettings): GameState {
       const seat = state.provinces[player.seatProvince];
       player.seen = [seat.id, ...seat.neighbors];
     }
+  }
+
+  // -- first workings and undertakings on every board
+  for (const player of state.players) {
+    refreshRiteOffers(state, rng, player.id);
+    refreshQuestOffers(state, rng, player.id);
   }
 
   // -- opening entry

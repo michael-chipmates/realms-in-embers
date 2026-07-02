@@ -8,6 +8,15 @@
 import { applyAction, moveTargets } from './actions';
 import { previewBattle } from './combat';
 import { attitudeOf } from './diplo';
+import { aiResolveEvents } from './events';
+import { heroDerived } from './heroFx';
+import { SKILLS } from './content/skills';
+import { ARTIFACTS, type ArtifactFx } from './content/artifacts';
+import { SPELLS } from './content/spells';
+import { QUESTS } from './content/quests';
+import { spellCostFor } from './magic';
+import { sagaAvailable } from './quests';
+import { Rng } from './rng';
 import { buildingCostFor, incomeReport, unitCostFor } from './economy';
 import { BUILD_ORDER, BUILDINGS } from './content/world';
 import { RECRUITABLE, UNITS } from './content/units';
@@ -43,12 +52,17 @@ export function aiTakeTurn(state: GameState): Effect[] {
   const persona = lordOf(player).personality;
   const nerve = attackNerve(state, pid); // odds threshold, personality+difficulty
 
+  respondToEvents(state, pid, dispatch);
   respondToProposals(state, pid, dispatch);
+  chooseSkills(state, pid, dispatch);
+  equipArtifacts(state, pid, dispatch);
   setTaxPolicy(state, pid, dispatch);
   hireFromCourt(state, pid, dispatch);
   buildSomething(state, pid, dispatch);
   buildSomething(state, pid, dispatch); // second project if rich
   recruitTroops(state, pid, dispatch);
+  runMagic(state, pid, dispatch);
+  runQuests(state, pid, dispatch);
   marshalHeroes(state, pid, dispatch);
   consolidateArmies(state, pid, dispatch);
   moveArmies(state, pid, nerve, dispatch);
@@ -274,13 +288,219 @@ function marshalHeroes(state: GameState, pid: PlayerId, dispatch: (a: Action) =>
     .filter((a) => a.heroIds.length < 3)
     .sort((a, b) => roughArmyPower(b) - roughArmyPower(a));
   for (const hero of heroes) {
-    const target = armies.find((a) => a.heroIds.length === 0) ?? armies[0];
-    if (!target) break;
-    // leaders lead from the strongest banner; reachable via own territory
+    const target = armies.find((a) => a.heroIds.length === 0);
+    if (!target) break; // spare heroes stay at court for quests
     if (state.provinces[target.province].owner === pid || hero.province === target.province) {
-      dispatch({ t: 'attachHero', heroId: hero.id, armyId: target.id });
+      if (dispatch({ t: 'attachHero', heroId: hero.id, armyId: target.id })) {
+        target.heroIds.length; // freshly read next loop
+      }
     }
   }
+}
+
+// ------------------------------------------------- events, skills, gear
+
+function respondToEvents(state: GameState, pid: PlayerId, dispatch: (a: Action) => boolean): void {
+  const rng = new Rng(state.rng).fork(`ai-events-${pid}-${state.turn}`);
+  aiResolveEvents(state, rng, pid, (eventId, idx) => {
+    dispatch({ t: 'eventChoice', eventId, choiceIdx: idx });
+  });
+}
+
+function scoreFx(state: GameState, pid: PlayerId, cls: string, fx: ArtifactFx): number {
+  const persona = lordOf(state.players[pid]).personality;
+  const statW: Record<string, { might: number; lore: number; guile: number; leadership: number }> = {
+    champion: { might: 3, lore: 0.3, guile: 0.8, leadership: 2.2 },
+    magus: { might: 0.5, lore: 3, guile: 1, leadership: 1 },
+    warden: { might: 1.5, lore: 0.8, guile: 2.2, leadership: 1.8 },
+    shade: { might: 1.2, lore: 0.8, guile: 3, leadership: 0.4 },
+  };
+  const w = statW[cls] ?? statW.champion;
+  let score = 0;
+  score += (fx.might ?? 0) * w.might + (fx.lore ?? 0) * w.lore + (fx.guile ?? 0) * w.guile + (fx.leadership ?? 0) * w.leadership;
+  score += (fx.deathSave ?? 0) * 14;
+  score += (fx.armyPowerPct ?? 0) * 1.6;
+  score += (fx.questAdd ?? 0) * (cls === 'warden' || cls === 'shade' ? 2 : 1);
+  score += ((fx.xpMult ?? 1) - 1) * 8;
+  score += (fx.spellDiscountPct ?? 0) * 0.2 * (1 + persona.mysticism);
+  score += (fx.orderAura ?? 0) * 1.5 + (fx.dreadAura ?? 0) * 1.2;
+  score += (fx.emberlight ?? 0) * (1 + persona.mysticism * 2);
+  return score;
+}
+
+function chooseSkills(state: GameState, pid: PlayerId, dispatch: (a: Action) => boolean): void {
+  for (const hero of heroesOf(state, pid)) {
+    if (hero.levelChoices.length === 0) continue;
+    let best = hero.levelChoices[0];
+    let bestScore = -Infinity;
+    for (const id of hero.levelChoices) {
+      const skill = SKILLS[id];
+      if (!skill) continue;
+      const score = scoreFx(state, pid, hero.cls, skill.fx);
+      if (score > bestScore) {
+        bestScore = score;
+        best = id;
+      }
+    }
+    dispatch({ t: 'chooseSkill', heroId: hero.id, skill: best });
+  }
+}
+
+function equipArtifacts(state: GameState, pid: PlayerId, dispatch: (a: Action) => boolean): void {
+  const player = state.players[pid];
+  if (player.vault.length === 0) return;
+  const heroes = heroesOf(state, pid)
+    .filter((h) => h.status !== 'questing')
+    .sort((a, b) => b.level - a.level);
+  for (const hero of heroes) {
+    for (const slot of ['weapon', 'armor', 'trinket'] as const) {
+      const currentId = hero.artifacts[slot];
+      const currentScore = currentId !== null
+        ? scoreFx(state, pid, hero.cls, ARTIFACTS[state.artifacts[currentId]?.defId ?? '']?.fx ?? {})
+        : 0;
+      let bestId: number | null = null;
+      let bestScore = currentScore;
+      for (const artId of player.vault) {
+        const inst = state.artifacts[artId];
+        const def = inst ? ARTIFACTS[inst.defId] : undefined;
+        if (!def || def.slot !== slot) continue;
+        const score = scoreFx(state, pid, hero.cls, def.fx);
+        if (score > bestScore + 0.5) {
+          bestScore = score;
+          bestId = artId;
+        }
+      }
+      if (bestId !== null) {
+        dispatch({ t: 'equip', heroId: hero.id, artifactId: bestId, slot });
+      }
+    }
+  }
+}
+
+// ---------------------------------------------------- quests & the saga
+
+function runQuests(state: GameState, pid: PlayerId, dispatch: (a: Action) => boolean): void {
+  const player = state.players[pid];
+  const persona = lordOf(player).personality;
+  const spare = () => heroesOf(state, pid).filter((h) => h.status === 'ready' && h.armyId === null);
+
+  // the Saga first: it is a victory path, and it waits for no one
+  const saga = sagaAvailable(state, pid);
+  if (saga) {
+    const wantSaga = persona.mysticism > 0.45 || player.sagaChapter > 0 || state.turn > 16;
+    if (wantSaga) {
+      const candidates = heroesOf(state, pid).filter(
+        (h) => h.status === 'ready' && h.level >= (saga.def.minLevel ?? 1),
+      );
+      if (candidates.length > 0) {
+        const hero = candidates.reduce((a, b) =>
+          heroDerived(state, b)[saga.def.stat] > heroDerived(state, a)[saga.def.stat] ? b : a,
+        );
+        // chapter 5 needs the Emberheart equipped on the quester
+        if (saga.def.saga === 5) {
+          const heartInst = Object.values(state.artifacts).find((a) => a.defId === 'emberheart');
+          if (heartInst && player.vault.includes(heartInst.id)) {
+            dispatch({ t: 'equip', heroId: hero.id, artifactId: heartInst.id, slot: 'trinket' });
+          }
+        }
+        const venue = saga.venues.find((v) => state.provinces[v].owner === pid) ?? saga.venues[0];
+        if (dispatch({ t: 'startQuest', heroId: hero.id, questDefId: saga.def.id, province: venue })) {
+          return; // one great undertaking per season
+        }
+      }
+    }
+  }
+
+  for (const hero of spare()) {
+    const offers = state.questOffers[pid] ?? [];
+    let best: { defId: string; province: number; score: number } | null = null;
+    for (const offer of offers) {
+      const def = QUESTS[offer.defId];
+      if (!def) continue;
+      if (def.minLevel && hero.level < def.minLevel) continue;
+      if (def.tier === 3 && hero.level < 4) continue;
+      const d = heroDerived(state, hero);
+      const margin = d[def.stat] + hero.level * 0.5 + d.questAdd - def.dc + 4.5; // + expected die
+      if (margin < 0.5) continue;
+      const score = margin + def.tier * 1.5;
+      if (!best || score > best.score) best = { defId: offer.defId, province: offer.province, score };
+    }
+    if (best) {
+      dispatch({ t: 'startQuest', heroId: hero.id, questDefId: best.defId, province: best.province });
+    }
+  }
+}
+
+// ------------------------------------------------------------ emberlight
+
+function runMagic(state: GameState, pid: PlayerId, dispatch: (a: Action) => boolean): void {
+  const player = state.players[pid];
+  const persona = lordOf(player).personality;
+
+  // learn: keep a rite going
+  if (!player.rite && player.riteOffers.length > 0) {
+    const pick = player.riteOffers.reduce((a, b) => {
+      const wa = riteWeight(state, pid, a, persona.aggression);
+      const wb = riteWeight(state, pid, b, persona.aggression);
+      return wb > wa ? b : a;
+    });
+    dispatch({ t: 'startRite', spellId: pick });
+  }
+  // pledge: keep a casting reserve, feed the rest to the rite
+  if (player.rite) {
+    const reserve = 12;
+    const pledge = Math.min(player.emberlight - reserve, player.rite.cost - player.rite.paid);
+    if (pledge > 0) dispatch({ t: 'pledgeEmberlight', amount: pledge });
+  }
+
+  // cast: two workings a season at most
+  let casts = 0;
+  const cast = (a: Action): void => {
+    if (casts < 2 && dispatch(a)) casts++;
+  };
+  const knows = (id: (typeof player.spells)[number]) => player.spells.includes(id) &&
+    (player.spellCooldowns[id] ?? 0) === 0 && player.emberlight >= spellCostFor(state, pid, id);
+
+  const mine = provincesOf(state, pid);
+  if (knows('quenchling')) {
+    const angry = mine.find((p) => p.order < 30);
+    if (angry) cast({ t: 'castSpell', spell: 'quenchling', province: angry.id });
+  }
+  if (knows('blessHarvest')) {
+    const dull = mine.filter((p) => p.order < 60).sort((a, b) => b.prosperity - a.prosperity)[0];
+    if (dull) cast({ t: 'castSpell', spell: 'blessHarvest', province: dull.id });
+  }
+  const enemies = state.players.filter((o) => o.alive && o.id !== pid && atWar(state, pid, o.id));
+  if (enemies.length > 0) {
+    if (knows('wardOfEmbers')) {
+      const frontier = mine.find((p) => isFrontier(state, p) && !p.mods.some((m) => m.label === 'Ward of Embers'));
+      if (frontier) cast({ t: 'castSpell', spell: 'wardOfEmbers', province: frontier.id });
+    }
+    if (knows('sowDiscord')) {
+      const target = state.provinces
+        .filter((p) => p.owner >= 0 && enemies.some((e) => e.id === p.owner))
+        .sort((a, b) => b.prosperity - a.prosperity)[0];
+      if (target) cast({ t: 'castSpell', spell: 'sowDiscord', province: target.id });
+    }
+    if (knows('barrowCall')) {
+      const barrow = mine.find((p) => p.site === 'barrow');
+      if (barrow) cast({ t: 'castSpell', spell: 'barrowCall', province: barrow.id });
+    }
+  }
+  if (knows('emberTithe') && player.emberlight < 8 && player.gold > 400) {
+    cast({ t: 'castSpell', spell: 'emberTithe' });
+  }
+}
+
+function riteWeight(state: GameState, pid: PlayerId, id: (typeof SPELLS)[keyof typeof SPELLS]['id'], aggression: number): number {
+  const def = SPELLS[id];
+  const creed = creedOf(state.players[pid]);
+  let w = 2;
+  if (def.creedAffinity === creed) w += 2;
+  if (def.kind === 'battle') w += aggression * 2;
+  else w += (1 - aggression) * 1.5;
+  w -= def.riteCost / 40;
+  return w;
 }
 
 // ----------------------------------------------------------------- armies

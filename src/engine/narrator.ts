@@ -120,6 +120,38 @@ const BANKS = {
     ],
     true,
   ),
+  riteComplete: defineBank<{ lord: string; spell: string; kind: string }>(
+    'magic',
+    [
+      (c) => `${c.lord}'s court completed the Rite of ${c.spell} — ${c.kind}, paid for in Emberlight and singed sleeves. The realm's candle-flames leaned toward the spire for a night.`,
+      (c) => `After long seasons of pledged light, ${c.lord} commands ${c.spell}. The adepts celebrated in the traditional manner: quietly, with burn salve.`,
+      (c) => `Let the record show ${c.lord} has mastered ${c.spell}. Magic returns to the realm the way water returns to a cracked cistern — slowly, and finding every fault.`,
+    ],
+  ),
+  artifactFound: defineBank<{ lord: string; artifact: string; how: string }>(
+    'hero',
+    [
+      (c) => `${c.artifact} has come to ${c.lord}'s keeping, ${c.how}. Objects like this one have their own biographies; I merely add the current chapter.`,
+      (c) => `${c.lord} now holds ${c.artifact} — ${c.how}. The old things are waking up and choosing hands. I note which ones.`,
+      (c) => `Recovered: ${c.artifact}, ${c.how}. The vault-keeper of ${c.lord} has begun sleeping badly, which is the correct response.`,
+    ],
+  ),
+  sagaAdvance: defineBank<{ lord: string; hero: string; chapter: number; chapterName: string }>(
+    'ceremony',
+    [
+      (c) => `The Saga turns a page: ${c.hero}, in ${c.lord}'s name, has completed ${c.chapterName}. That is ${c.chapter} of the five workings of the Rekindling. The other claimants have begun to read over my shoulder.`,
+      (c) => `Mark this entry well — ${c.chapterName} is done, by ${c.hero}. The road to a rekindled throne runs five chapters; ${c.lord} stands at ${c.chapter}. Prophecy is just history impatient for its turn.`,
+    ],
+    true,
+  ),
+  sagaRitual: defineBank<{ lord: string; hero: string; seat: string }>(
+    'ceremony',
+    [
+      (c) => `THE THIRD FIRE IS LIT. From every watchtower in the realm the glow over ${c.seat} can be seen: ${c.hero} has begun the Rekindling in ${c.lord}'s hall. Three nights. Every sword in the realm now knows where it is needed — one way or the other.`,
+      (c) => `${c.lord} has begun the Rekindling at ${c.seat}, ${c.hero} keeping the fire. Three nights to a new age. I have waited forty years to write this paragraph; I find my hand is steady and the realm's is not.`,
+    ],
+    true,
+  ),
   warDeclared: defineBank<{ aggressor: string; target: string; oathbroken: boolean }>(
     'diplomacy',
     [

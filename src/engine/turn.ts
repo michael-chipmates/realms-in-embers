@@ -5,6 +5,9 @@
  */
 import { eliminatePlayer, resolveBattle } from './combat';
 import { decayDeeds } from './diplo';
+import { drawEvent } from './events';
+import { refreshRiteOffers } from './magic';
+import { refreshQuestOffers, tickQuests } from './quests';
 import { incomeReport, orderDrift, prosperityStep, leaderId } from './economy';
 import { makeCourtOffer, makeTroubleName } from './state';
 import { UNITS } from './content/units';
@@ -94,6 +97,37 @@ export function beginTurn(state: GameState, rng: Rng, effects: Effect[]): void {
   const heroCount = heroesOf(state, pid).length;
   if (player.courtOffers.length < 2 && heroCount < 5 && rng.chance(player.courtOffers.length === 0 ? 0.75 : 0.4)) {
     player.courtOffers.push(makeCourtOffer(rng, state.turn));
+  }
+
+  // quests return, the board refreshes, the realm answers back
+  tickQuests(state, rng, pid, effects);
+  refreshQuestOffers(state, rng, pid);
+  if (player.riteOffers.length === 0 && !player.rite) {
+    refreshRiteOffers(state, rng, pid);
+  }
+  drawEvent(state, rng, pid, effects);
+
+  // guild debts come due (from the counting-house event)
+  const dueFlag = Object.keys(player.flags).find((f) => f.startsWith('guildLoanDue:'));
+  if (dueFlag) {
+    const dueTurn = parseInt(dueFlag.split(':')[1], 10);
+    if (state.turn >= dueTurn) {
+      delete player.flags[dueFlag];
+      delete player.flags.guildLoanOut;
+      if (player.gold >= 240) {
+        player.gold -= 240;
+        scribe(state, {
+          kind: 'realm', about: pid,
+          text: `${lordName(state, pid)} repaid the Guild of Weights and Measures in full — 240 gold, counted twice. The clerk's smile flickered, which the treasury counts as a victory.`,
+        });
+      } else {
+        for (const p of provincesOf(state, pid)) p.order = clamp(p.order - 5, 0, 100);
+        scribe(state, {
+          kind: 'realm', about: pid,
+          text: `${lordName(state, pid)} defaulted on the Guild loan. No bailiffs came — only a realm-wide whisper about credit, which is worse. (−5 order everywhere)`,
+        });
+      }
+    }
   }
 
   // stale proposals wither

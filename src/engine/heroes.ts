@@ -3,6 +3,7 @@
  * Skill trees and quest resolution build on this in quests.ts / magic.ts.
  */
 import { makePersonName } from './content/names';
+import { SKILL_LEVELS, SKILLS_BY_CLASS } from './content/skills';
 import type { Rng } from './rng';
 import type { GameState, Hero, HeroClass, PlayerId } from './types';
 
@@ -130,6 +131,18 @@ export function grantXp(hero: Hero, rng: Rng, xp: number): number {
     hero.level++;
     autoLevel(hero, rng);
     gained++;
+    // milestone levels offer a choice of arts (3/5/7/9)
+    if (SKILL_LEVELS.includes(hero.level)) {
+      // an unclaimed earlier offer resolves to its first option — the road teaches
+      if (hero.levelChoices.length > 0) {
+        hero.skills.push(hero.levelChoices[0]);
+        hero.levelChoices = [];
+      }
+      const pool = SKILLS_BY_CLASS[hero.cls].filter((s) => !hero.skills.includes(s));
+      if (pool.length > 0) {
+        hero.levelChoices = rng.shuffle(pool).slice(0, Math.min(2, pool.length));
+      }
+    }
   }
   return gained;
 }

@@ -6,7 +6,7 @@
  */
 import { applyAdvancedAction } from './advanced';
 import { previewBattle, captureProvince, eliminatePlayer, hostileTo, resolveBattle } from './combat';
-import { buildingCostFor, unitCostFor } from './economy';
+import { buildingCostFor, consumeWarStores, unitCostFor, warStoresLeft } from './economy';
 import { BUILDINGS } from './content/world';
 import { UNITS } from './content/units';
 import { createHero, HERO_CLASSES } from './heroes';
@@ -176,6 +176,7 @@ export function applyAction(state: GameState, action: Action): ActionResult {
       if (player.gold < cost) return fail(`Needs ${cost} gold.`);
       player.gold -= cost;
       p.recruitQueue = { unit: action.unit, turnsLeft: 1 };
+      if (warStoresLeft(player.flags) > 0) consumeWarStores(player.flags);
       log(state, action);
       return { ok: true, effects };
     }

@@ -7,7 +7,8 @@
 import { BUILDINGS, CREEDS, COASTAL_INCOME, TERRAIN } from './content/world';
 import { UNITS } from './content/units';
 import { HERO_CLASSES } from './heroes';
-import { armiesIn, armiesOf, clamp, creedOf, heroesOf, lordOf, provincesOf } from './helpers';
+import { heroDerived } from './heroFx';
+import { armiesIn, armiesOf, clamp, creedOf, heroesOf, heroProvince, lordOf, provincesOf } from './helpers';
 import type { GameState, IncomeReport, Player, PlayerId, Province, TaxLevel } from './types';
 
 export const TAX_FX: Record<TaxLevel, { mult: number; order: number; label: string }> = {
@@ -167,12 +168,18 @@ export function emberlightIncome(state: GameState, pid: PlayerId): Itemized {
     total += adepts;
   }
   let magi = 0;
+  let relics = 0;
   for (const hero of heroesOf(state, pid)) {
-    if (hero.cls === 'magus' && hero.status !== 'dead') magi += 2;
+    if (hero.cls === 'magus') magi += 2;
+    relics += heroDerived(state, hero).emberlight;
   }
   if (magi > 0) {
     lines.push({ label: 'Magus at court', amount: magi });
     total += magi;
+  }
+  if (relics > 0) {
+    lines.push({ label: 'Relics and hero-arts', amount: relics });
+    total += relics;
   }
   return { total, lines };
 }
@@ -207,6 +214,18 @@ export function orderDrift(state: GameState, p: Province): Itemized {
   const sinceCapture = state.turn - p.capturedTurn;
   if (p.capturedTurn > 0 && sinceCapture < 5) {
     lines.push({ label: `Recently conquered (${5 - sinceCapture} more ${5 - sinceCapture === 1 ? 'season' : 'seasons'})`, amount: -(6 - sinceCapture) });
+  }
+
+  if (p.site === 'shrine') {
+    lines.push({ label: 'Wayshrine pilgrims', amount: 1 });
+  }
+
+  // heroes standing here radiate calm — or dread
+  for (const hero of heroesOf(state, p.owner)) {
+    if (hero.status !== 'ready' || heroProvince(state, hero) !== p.id) continue;
+    const d = heroDerived(state, hero);
+    if (d.orderAura > 0) lines.push({ label: `${hero.name}'s presence`, amount: d.orderAura });
+    if (d.dreadAura < 0) lines.push({ label: `${hero.name}'s dark repute`, amount: d.dreadAura });
   }
 
   if (p.folk !== creedOf(owner)) {
@@ -297,7 +316,33 @@ export function unitCostFor(state: GameState, pid: PlayerId, unitType: keyof typ
     cost = Math.round(cost * 0.85);
     lines.push('Defiant hearts: −15%');
   }
+  const stores = warStoresLeft(player.flags);
+  if (stores > 0) {
+    cost = Math.round(cost * 0.8);
+    lines.push(`War-stores: −20% (${stores} left)`);
+  }
   return { cost, lines };
+}
+
+/** Remaining discounted musters from the war-stores event. */
+export function warStoresLeft(flags: Record<string, boolean>): number {
+  if (flags.warStoresCount3) return 3;
+  if (flags.warStoresCount2) return 2;
+  if (flags.warStoresCount1) return 1;
+  return 0;
+}
+
+export function consumeWarStores(flags: Record<string, boolean>): void {
+  if (flags.warStoresCount3) {
+    delete flags.warStoresCount3;
+    flags.warStoresCount2 = true;
+  } else if (flags.warStoresCount2) {
+    delete flags.warStoresCount2;
+    flags.warStoresCount1 = true;
+  } else if (flags.warStoresCount1) {
+    delete flags.warStoresCount1;
+    delete flags.warStores;
+  }
 }
 
 export function buildingCostFor(state: GameState, pid: PlayerId, buildingId: keyof typeof BUILDINGS): { cost: number; lines: string[] } {

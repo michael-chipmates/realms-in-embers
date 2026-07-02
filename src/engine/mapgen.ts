@@ -323,7 +323,7 @@ function tryGenerate(rng: Rng, cfg: MapSizeCfg): GeneratedMap | null {
 
   // -- special sites (embersites fuel magic; ruins/barrows anchor quests)
   const site: (SiteType | null)[] = new Array(cfg.provinces).fill(null);
-  const siteBudget = Math.max(4, Math.round(cfg.provinces * 0.4));
+  const siteBudget = Math.max(6, Math.round(cfg.provinces * 0.4));
   const wantEmber = Math.max(2, Math.round(cfg.provinces / 7));
   const siteAffinity: Record<SiteType, (t: Terrain, coastal: boolean) => number> = {
     embersite: (t) => (t === 'mountain' ? 3 : t === 'hills' ? 2 : 1),
@@ -335,8 +335,8 @@ function tryGenerate(rng: Rng, cfg: MapSizeCfg): GeneratedMap | null {
   };
   const shuffled = rng.shuffle(meta.map((m2) => m2.pi));
   let placed = 0;
-  // guaranteed minimums first
-  const mustHave: SiteType[] = ['embersite', 'embersite', 'ruin', 'barrow', 'shrine'];
+  // guaranteed minimums first (the Grand Saga needs ruin, embersite, barrow, forge)
+  const mustHave: SiteType[] = ['embersite', 'embersite', 'ruin', 'barrow', 'shrine', 'forge'];
   while (mustHave.length < wantEmber + 3) mustHave.push('embersite');
   for (const st of mustHave) {
     const cand = shuffled.filter((pi) => site[pi] === null);

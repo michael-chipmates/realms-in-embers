@@ -10,7 +10,10 @@
  * language label. The preview shows exactly what the battle will use.
  */
 import { UNITS, vetMult, type UnitDef, type UnitTrait } from './content/units';
+import { SPELLS } from './content/spells';
 import { TERRAIN } from './content/world';
+import { heroDerived } from './heroFx';
+import { pickBattleSpell } from './magic';
 import { LORD_BY_ID } from './content/lords';
 import { grantXp, woundHero } from './heroes';
 import { addDeed as heroDeed } from './heroes';
@@ -54,6 +57,8 @@ interface CHero {
   might: number;
   level: number;
   leadership: number;
+  deathSave: number;
+  xpMult: number;
 }
 
 interface Side {
@@ -67,6 +72,10 @@ interface Side {
   mult: number;
   lossHits: number;
   startHits: number;
+  /** casualty multiplier on this side (battle spells). */
+  lossMult: number;
+  /** enemy magic cancels this side's charge/ambush. */
+  calmed: boolean;
 }
 
 interface FightCtx {
@@ -107,8 +116,20 @@ function buildSide(
     a.heroIds
       .map((hid) => state.heroes[hid])
       .filter((hh): hh is Hero => !!hh && hh.status === 'ready')
-      .map((hh) => ({ id: hh.id, name: hh.name, epithet: hh.epithet, might: hh.might, level: hh.level, leadership: hh.leadership })),
+      .map((hh) => {
+        const d = heroDerived(state, hh);
+        return {
+          id: hh.id, name: hh.name, epithet: hh.epithet,
+          might: d.might, level: hh.level, leadership: d.leadership,
+          deathSave: d.deathSave, xpMult: d.xpMult,
+        };
+      }),
   );
+  // banner arts: skills/artifacts that lift the whole army
+  const arts = armies.flatMap((a) => a.heroIds)
+    .map((hid) => state.heroes[hid])
+    .filter((hh): hh is Hero => !!hh && hh.status === 'ready')
+    .reduce((sum, hh) => sum + heroDerived(state, hh).armyPowerPct, 0);
   const stance: Stance = player === NEUTRAL ? 'bold' : armies[0].stance;
   const mods: OddsModifier[] = [];
 
@@ -181,9 +202,13 @@ function buildSide(
     }
   }
 
+  if (arts > 0) {
+    mods.push({ label: 'Banner arts of the heroes', mult: 1 + arts / 100 });
+  }
+
   const mult = mods.reduce((m, x) => m * x.mult, 1);
   const startHits = units.reduce((n, u) => n + u.hits, 0);
-  return { player, role, units, heroes, stance, mods, mult, lossHits: 0, startHits };
+  return { player, role, units, heroes, stance, mods, mult, lossHits: 0, startHits, lossMult: 1, calmed: false };
 }
 
 function wallLabel(p: Province): string {
@@ -211,7 +236,7 @@ function unitContribution(u: CUnit, side: Side, round: number, ctx: FightCtx, en
   if (u.traits.includes('marshborn') && t === 'moor') mult *= 1.25;
   if (u.traits.includes('flying')) mult *= 1.1;
   if (u.traits.includes('ragged')) mult *= 0.9;
-  if (round === 1) {
+  if (round === 1 && !side.calmed) {
     const open = t === 'meadow' || t === 'hills';
     if (u.traits.includes('charge') && open && !enemyBraces) mult *= 1.2;
     if (u.traits.includes('ambush') && side.role === 'attacker') mult *= 1.25;
@@ -250,6 +275,7 @@ interface FightResult {
 }
 
 function dealDamage(rng: Rng, target: Side, rawHits: number): number {
+  rawHits *= target.lossMult;
   let toDeal = Math.floor(rawHits) + (rng.chance(rawHits % 1) ? 1 : 0);
   let dealt = 0;
   while (toDeal > 0) {
@@ -382,6 +408,50 @@ function addCreedGrudgeMod(state: GameState, side: Side, enemyPlayer: PlayerId):
   }
 }
 
+/** Battle magic: each side auto-weaves its strongest affordable spell. */
+function weaveSpells(
+  state: GameState,
+  aSide: Side,
+  dSide: Side,
+  aArmies: Army[],
+  dArmies: Army[],
+  spend: boolean,
+  notes?: BattleEventNote[],
+): void {
+  const pairs: [Side, Side, Army[]][] = [
+    [aSide, dSide, aArmies],
+    [dSide, aSide, dArmies],
+  ];
+  for (const [side, other, armies] of pairs) {
+    if (side.player < 0) continue;
+    const woven = pickBattleSpell(state, side.player, armies);
+    if (!woven) continue;
+    const def = SPELLS[woven.spell];
+    const fx = def.battle;
+    if (!fx) continue;
+    if (fx.powerMult && fx.powerMult !== 1) {
+      side.mods.push({ label: `${def.name} (−${woven.cost} Emberlight)`, mult: fx.powerMult });
+      side.mult *= fx.powerMult;
+    }
+    if (fx.enemyMult && fx.enemyMult !== 1) {
+      other.mods.push({ label: `${def.name} against them (−${woven.cost} Emberlight)`, mult: fx.enemyMult });
+      other.mult *= fx.enemyMult;
+      if (!fx.powerMult) side.mods.push({ label: `${def.name} (−${woven.cost} Emberlight) — weakens the foe`, mult: 1 });
+    }
+    if (fx.lossMult && fx.lossMult !== 1) {
+      side.lossMult *= fx.lossMult;
+      side.mods.push({ label: `${def.name} (−${woven.cost} Emberlight) — shields the ranks`, mult: 1 });
+    }
+    if (fx.calmGround) {
+      other.calmed = true;
+    }
+    if (spend) {
+      state.players[side.player].emberlight = Math.max(0, state.players[side.player].emberlight - woven.cost);
+      notes?.push({ kind: 'spell', text: `${def.name} was woven over the field by ${side.role === 'attacker' ? 'the attackers' : 'the defenders'}.` });
+    }
+  }
+}
+
 // ----------------------------------------------------------------- preview
 
 export function previewBattle(state: GameState, armyId: number, targetProvince: number, viaSea = false, runs = 240): BattlePreview | null {
@@ -405,6 +475,7 @@ export function previewBattle(state: GameState, armyId: number, targetProvince: 
     const dSide = buildSide(state, defenders, 'defender', ctx, attackerTerror, []);
     addCreedGrudgeMod(state, aSide, dSide.player);
     addCreedGrudgeMod(state, dSide, aSide.player);
+    weaveSpells(state, aSide, dSide, [army], defenders, false);
     if (!sample) {
       sample = {
         aMods: aSide.mods,
@@ -470,6 +541,8 @@ export function resolveBattle(
   const dSide = buildSide(state, defenders, 'defender', ctx, atkTerror, []);
   addCreedGrudgeMod(state, aSide, dSide.player);
   addCreedGrudgeMod(state, dSide, aSide.player);
+  const spellNotes: BattleEventNote[] = [];
+  weaveSpells(state, aSide, dSide, [army], defenders, true, spellNotes);
 
   const beforeUnitsA = summarizeUnits(aSide);
   const beforeUnitsD = summarizeUnits(dSide);
@@ -490,7 +563,7 @@ export function resolveBattle(
       let risk = (won ? 0.05 : 0.16) * (0.5 + cf);
       if (hero.cls === 'champion') risk += 0.02;
       if (rng.chance(clamp(risk, 0, 0.5))) {
-        if (rng.chance(0.35)) {
+        if (rng.chance(Math.max(0.05, 0.35 - ch.deathSave))) {
           heroDies(state, rng, hero, `in the battle for ${target.name}`, effects, heroNotes);
         } else {
           const turns = rng.intRange(2, 3);
@@ -515,7 +588,7 @@ export function resolveBattle(
     for (const ch of side.heroes) {
       const hero = state.heroes[ch.id];
       if (!hero || hero.status === 'dead') continue;
-      const gained = grantXp(hero, rng, (defeated * (won ? 1 : 0.45)) / share + (won ? 12 : 4));
+      const gained = grantXp(hero, rng, ((defeated * (won ? 1 : 0.45)) / share + (won ? 12 : 4)) * ch.xpMult);
       if (gained > 0) effects.push({ e: 'heroLevel', heroId: hero.id, level: hero.level });
     }
   };
@@ -582,7 +655,7 @@ export function resolveBattle(
     attacker: finishSummary(beforeUnitsA, aSide, state),
     defender: finishSummary(beforeUnitsD, dSide, state),
     rounds: result.rounds,
-    events: [...result.notes, ...heroNotes],
+    events: [...spellNotes, ...result.notes, ...heroNotes],
     winner: result.winner,
     captured,
     aMods: aSide.mods,
