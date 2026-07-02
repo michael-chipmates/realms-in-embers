@@ -33,6 +33,8 @@ export interface RenderOptions {
   targets?: Set<number>;
   showGrid?: boolean;
   colorblind?: boolean;
+  /** Army markers to draw (owner -1 = leaderless). */
+  armies?: { province: number; owner: number; strength: number; hasHero: boolean; kind?: string }[];
 }
 
 interface Loop {
@@ -264,7 +266,58 @@ export class MapRenderer {
         this.drawBanner(ctx, sx, sy - this.scale * 1.15, view.playerColors[p.seatOf]);
       }
     }
+
+    // --- army markers
+    if (opts.armies) {
+      const byProvince = new Map<number, typeof opts.armies>();
+      for (const marker of opts.armies) {
+        if (opts.unseen?.has(marker.province)) continue;
+        const list = byProvince.get(marker.province) ?? [];
+        list.push(marker);
+        byProvince.set(marker.province, list);
+      }
+      for (const [pid, markers] of byProvince) {
+        const p = view.provinces[pid];
+        const [cx, cy] = this.worldToScreen(p.cx + 0.5, p.cy + 0.5);
+        markers.forEach((marker, i) => {
+          const x = cx + (i - (markers.length - 1) / 2) * this.scale * 1.05;
+          const y = cy + this.scale * 1.5;
+          this.drawArmyMarker(ctx, x, y, marker);
+        });
+      }
+    }
     this.drawLabels(ctx, opts);
+  }
+
+  private drawArmyMarker(
+    ctx: CanvasRenderingContext2D,
+    x: number,
+    y: number,
+    marker: { owner: number; strength: number; hasHero: boolean; kind?: string },
+  ): void {
+    const view = this.view!;
+    const r = Math.max(7, this.scale * 0.52);
+    const color = marker.owner >= 0
+      ? view.playerColors?.[marker.owner] ?? '#888'
+      : marker.kind === 'rebels' ? '#7a5a20' : marker.kind === 'revenants' ? '#4a4a55' : '#5b4632';
+    ctx.save();
+    // shield disc
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, Math.PI * 2);
+    ctx.fillStyle = color;
+    ctx.fill();
+    ctx.lineWidth = marker.hasHero ? 2.5 : 1.5;
+    ctx.strokeStyle = marker.hasHero ? '#e6c14a' : 'rgba(20, 12, 4, 0.75)';
+    ctx.stroke();
+    // company count
+    ctx.fillStyle = '#f4ead2';
+    ctx.font = `700 ${Math.max(9, r)}px "Iowan Old Style", Palatino, Georgia, serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.shadowColor = 'rgba(0,0,0,0.6)';
+    ctx.shadowBlur = 2;
+    ctx.fillText(String(marker.strength), x, y + 0.5);
+    ctx.restore();
   }
 
   // ------------------------------------------------------------ internals
