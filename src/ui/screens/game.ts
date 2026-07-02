@@ -28,6 +28,7 @@ import { maybeOpenEventModal } from './eventModal';
 import { showHandoff } from './handoff';
 import { showGameEnd } from './gameEnd';
 import { presentCeremonies } from './ceremony';
+import { maybeShowOnboarding } from './onboarding';
 
 export interface Selection {
   provinceId: number | null;
@@ -95,6 +96,7 @@ export class GameScreen {
     } else if (this.current().kind === 'ai') {
       void this.runAiTurns();
     } else {
+      maybeShowOnboarding(this);
       maybeOpenEventModal(this);
     }
   }

@@ -8,6 +8,7 @@ import { UNITS } from './content/units';
 import { heroDerived } from './heroFx';
 import { armiesIn, clamp, heroesOf, lordOf, lordName, makeUnits, newArmy, provincesOf } from './helpers';
 import { say, scribe } from './narrator';
+import { teach } from './teachings';
 import type { Rng } from './rng';
 import type { Army, Effect, GameState, PlayerId, SpellId } from './types';
 import { creedAffinity } from './content/world';
@@ -70,6 +71,7 @@ export function completeRite(state: GameState, rng: Rng, pid: PlayerId, effects:
   player.rite = null;
   refreshRiteOffers(state, rng, pid);
   effects.push({ e: 'riteComplete', spell, by: pid });
+  teach(state, pid, 'firstSpellKnown');
   say(state, rng, 'riteComplete', {
     lord: lordName(state, pid),
     spell: SPELLS[spell].name,

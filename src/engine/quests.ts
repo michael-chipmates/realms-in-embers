@@ -12,6 +12,7 @@ import {
   artifactDefIdsInPlay, clamp, grantArtifactTo, heroProvince, heroesOf, lordName, lordOf, provincesOf,
 } from './helpers';
 import { say, scribe } from './narrator';
+import { teach } from './teachings';
 import type { Rng } from './rng';
 import type { ActiveQuest, Effect, GameState, Hero, PlayerId } from './types';
 
@@ -153,6 +154,7 @@ export function startQuest(
     endTurn: state.turn + def.duration,
   });
   state.questOffers[pid] = (state.questOffers[pid] ?? []).filter((o) => !(o.defId === defId && o.province === provinceId));
+  teach(state, pid, 'firstQuest');
 
   if (def.saga === 5) {
     say(state, rng, 'sagaRitual', {
@@ -259,7 +261,10 @@ function resolveQuest(state: GameState, rng: Rng, quest: ActiveQuest, effects: E
   // ---- xp always, weighted by outcome
   const xpMult = outcome === 'triumph' ? 1.3 : outcome === 'success' ? 1 : outcome === 'setback' ? 0.5 : 0.35;
   const gained = grantXp(hero, rng, def.rewards.xp * xpMult * derived.xpMult);
-  if (gained > 0) effects.push({ e: 'heroLevel', heroId: hero.id, level: hero.level });
+  if (gained > 0) {
+    effects.push({ e: 'heroLevel', heroId: hero.id, level: hero.level });
+    if (hero.levelChoices.length > 0) teach(state, hero.owner, 'firstHeroLevel');
+  }
 
   // ---- risks
   hero.questId = null;

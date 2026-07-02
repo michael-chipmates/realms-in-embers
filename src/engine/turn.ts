@@ -8,7 +8,8 @@ import { decayDeeds } from './diplo';
 import { drawEvent } from './events';
 import { refreshRiteOffers } from './magic';
 import { refreshQuestOffers, tickQuests } from './quests';
-import { incomeReport, orderDrift, prosperityStep, leaderId } from './economy';
+import { teach } from './teachings';
+import { incomeReport, isDefiant, orderDrift, prosperityStep, leaderId, strainOf } from './economy';
 import { makeCourtOffer, makeTroubleName } from './state';
 import { UNITS } from './content/units';
 import {
@@ -69,10 +70,13 @@ export function beginTurn(state: GameState, rng: Rng, effects: Effect[]): void {
 
   // unrest boils over
   for (const p of provincesOf(state, pid)) {
+    if (p.order < 40) teach(state, pid, 'firstLowOrder');
     if (p.order < 25 && rng.chance((25 - p.order) * 0.016)) {
       spawnRebellion(state, rng, p, effects);
     }
   }
+  if (strainOf(state, pid) !== 0) teach(state, pid, 'firstStrain');
+  if (isDefiant(state, pid)) teach(state, pid, 'firstDefiance');
 
   // heroes mend
   for (const hero of heroesOf(state, pid)) {
@@ -199,6 +203,7 @@ export function spawnRebellion(state: GameState, rng: Rng, p: Province, effects:
   p.order = clamp(p.order + 28, 0, 100); // the angriest have taken to the field
   const leader = makeTroubleName(rng);
   say(state, rng, 'rebellion', { lord: lordName(state, owner), province: p.name, leader }, { about: owner });
+  teach(state, owner, 'firstRebellion');
   effects.push({ e: 'rebellion', province: p.id });
   // a rising strikes at once if the province is garrisoned — steel decides
   const garrison = armiesIn(state, p.id).filter((a) => a.owner !== NEUTRAL);

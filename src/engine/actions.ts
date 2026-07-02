@@ -14,6 +14,7 @@ import {
   addDeed, armiesIn, atWar, getStance, lordName, lordOf, setStance,
 } from './helpers';
 import { say, scribe } from './narrator';
+import { teach } from './teachings';
 import { Rng } from './rng';
 import { beginTurn, endTurnAdvance } from './turn';
 import type {
@@ -424,6 +425,7 @@ function executeMove(state: GameState, rng: Rng, army: Army, target: MoveTarget,
   const from = army.province;
   const pid = army.owner;
   if (target.viaSea) {
+    teach(state, pid, 'firstSeaMove');
     army.seaMoved = true;
     const freeSail = pid >= 0 && lordOf(state.players[pid]).perk.fx.seaMoveFree;
     if (!freeSail) army.moved = true;
@@ -484,6 +486,8 @@ function diplomacyAction(
         target: lordName(state, target),
         oathbroken,
       }, { about: pid });
+      teach(state, pid, 'firstWar');
+      teach(state, target, 'firstWar');
       effects.push({ e: 'diplo', kind: 'war', from: pid, to: target });
       log(state, action);
       return { ok: true, effects };

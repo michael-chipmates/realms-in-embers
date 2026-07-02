@@ -10,6 +10,7 @@ import { refreshRiteOffers } from './magic';
 import { refreshQuestOffers } from './quests';
 import { generateMap, pickSeats } from './mapgen';
 import { say } from './narrator';
+import { teach } from './teachings';
 import { Rng, rngStateFrom } from './rng';
 import type {
   CourtOffer, Difficulty, GameSettings, GameState, HeroClass, Player, PlayerHandicap, PlayerSetup, UnitInstance,
@@ -226,6 +227,7 @@ export function initGame(settings: GameSettings): GameState {
   for (const player of state.players) {
     refreshRiteOffers(state, rng, player.id);
     refreshQuestOffers(state, rng, player.id);
+    if (player.spells.length > 0) teach(state, player.id, 'firstSpellKnown');
   }
 
   // -- opening entry

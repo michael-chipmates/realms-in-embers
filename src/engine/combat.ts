@@ -21,6 +21,7 @@ import {
   addDeed, armiesIn, atWar, clamp, creedOf, getStance, lordName, lordOf, removeArmy,
 } from './helpers';
 import { say } from './narrator';
+import { teach } from './teachings';
 import { Rng } from './rng';
 import type {
   Army, BattleEventNote, BattlePreview, BattleReport, BattleRound, Effect, GameState, Hero,
@@ -589,7 +590,10 @@ export function resolveBattle(
       const hero = state.heroes[ch.id];
       if (!hero || hero.status === 'dead') continue;
       const gained = grantXp(hero, rng, ((defeated * (won ? 1 : 0.45)) / share + (won ? 12 : 4)) * ch.xpMult);
-      if (gained > 0) effects.push({ e: 'heroLevel', heroId: hero.id, level: hero.level });
+      if (gained > 0) {
+        effects.push({ e: 'heroLevel', heroId: hero.id, level: hero.level });
+        if (hero.levelChoices.length > 0) teach(state, hero.owner, 'firstHeroLevel');
+      }
     }
   };
   xpFor(aSide, dSide, attackerWon);
@@ -679,6 +683,12 @@ export function resolveBattle(
       scale,
     }, { about: attackerWon ? aSide.player : dSide.player });
   }
+
+  // ---- the chronicler teaches on firsts
+  if (attackerWon && aSide.player >= 0) teach(state, aSide.player, 'firstBattleWon');
+  else if (!attackerWon && dSide.player >= 0) teach(state, dSide.player, 'firstBattleWon');
+  if (attackerWon && dSide.player >= 0) teach(state, dSide.player, 'firstBattleLost');
+  else if (!attackerWon && aSide.player >= 0) teach(state, aSide.player, 'firstBattleLost');
 
   // ---- diplomacy memory: fighting someone is remembered
   if (aSide.player >= 0 && dSide.player >= 0) {
@@ -863,6 +873,7 @@ export function captureProvince(
   }
 
   if (newOwner >= 0) {
+    teach(state, newOwner, 'firstCapture');
     if (previous === NEUTRAL) {
       say(state, rng, 'captureNeutral', { lord: lordName(state, newOwner), province: province.name }, { about: newOwner });
     } else if (province.seatOf === previous) {

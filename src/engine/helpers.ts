@@ -1,6 +1,7 @@
 /** Small shared utilities over GameState. Pure, no DOM, no side channels. */
 import { LORD_BY_ID, type LordDef } from './content/lords';
 import { UNITS } from './content/units';
+import { teach } from './teachings';
 import type {
   Army, Creed, DiploDeed, DiploStance, GameState, Player, PlayerId, Province, UnitInstance, UnitTypeId,
 } from './types';
@@ -158,6 +159,7 @@ export function grantArtifactTo(state: GameState, pid: PlayerId, defId: string):
   if (pid >= 0) {
     state.players[pid].vault.push(id);
     state.artifacts[id].history.push(lordName(state, pid));
+    teach(state, pid, 'firstArtifact');
   }
   return id;
 }

@@ -5,6 +5,7 @@
 import { EVENT_BY_ID, EVENTS, type EventCtx } from './content/events';
 import { lordOf } from './helpers';
 import { scribe } from './narrator';
+import { teach } from './teachings';
 import type { Rng } from './rng';
 import type { Effect, GameState, PlayerId } from './types';
 
@@ -39,6 +40,7 @@ export function drawEvent(state: GameState, rng: Rng, pid: PlayerId, effects: Ef
     turn: state.turn,
   };
   state.pendingEvents.push(instance);
+  teach(state, pid, 'firstEvent');
   effects.push({ e: 'eventFired', eventId: instance.id });
 }
 
