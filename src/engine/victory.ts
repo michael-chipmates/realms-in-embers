@@ -8,7 +8,7 @@ import { say } from './narrator';
 import type { Rng } from './rng';
 import type { Effect, GameState, PlayerId, VictoryPath } from './types';
 
-export const DOMINION_SHARE = 0.6;
+export const DOMINION_SHARE = 0.55;
 export const DOMINION_ROUNDS = 3;
 export const GOLDEN_GOLD = 1200;
 export const GOLDEN_ORDER = 65;

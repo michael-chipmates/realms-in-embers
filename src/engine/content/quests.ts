@@ -46,7 +46,7 @@ export interface QuestDef {
 
 export const TIER_NAMES = ['', 'Ember', 'Silver', 'Blood'] as const;
 /** Death risk on disaster, by tier. */
-export const TIER_DEATH_RISK = [0, 0.1, 0.22, 0.38] as const;
+export const TIER_DEATH_RISK = [0, 0.08, 0.18, 0.3] as const;
 
 export const QUESTS: Record<string, QuestDef> = {
   // ------------------------------------------------------------- tier 1

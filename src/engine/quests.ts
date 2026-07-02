@@ -191,11 +191,12 @@ function resolveQuest(state: GameState, rng: Rng, quest: ActiveQuest, effects: E
   const player = state.players[pid];
   const derived = heroDerived(state, hero);
 
-  let roll = derived[def.stat] + hero.level * 0.5 + derived.questAdd + rng.intRange(1, 8);
+  // 2d4 fortune: quests reward preparation over prayer
+  let roll = derived[def.stat] + hero.level * 0.5 + derived.questAdd + rng.intRange(1, 4) + rng.intRange(1, 4);
   if (def.stat === 'guile') roll += lordOf(player).perk.fx.questGuileAdd ?? 0;
   const margin = roll - def.dc;
   const outcome: 'triumph' | 'success' | 'setback' | 'disaster' =
-    margin >= 4 ? 'triumph' : margin >= 0 ? 'success' : margin >= -3 ? 'setback' : 'disaster';
+    margin >= 4 ? 'triumph' : margin >= 0 ? 'success' : margin >= -4 ? 'setback' : 'disaster';
   const won = outcome === 'triumph' || outcome === 'success';
 
   // ---- rewards

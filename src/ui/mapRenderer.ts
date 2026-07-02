@@ -138,6 +138,32 @@ export class MapRenderer {
       ctx.drawImage(this.parchment, 0, 0, w, hgt);
       ctx.globalAlpha = 1;
     }
+    // cartographer's wave strokes, anchored to world space
+    ctx.save();
+    ctx.strokeStyle = 'rgba(233, 240, 235, 0.10)';
+    ctx.lineWidth = Math.max(1, this.scale * 0.05);
+    const waveStep = this.scale * 2.6;
+    const startX = ((this.offX % waveStep) + waveStep) % waveStep - waveStep;
+    const startY = ((this.offY % (waveStep * 0.9)) + waveStep * 0.9) % (waveStep * 0.9) - waveStep * 0.9;
+    for (let y = startY, row = 0; y < hgt + waveStep; y += waveStep * 0.9, row++) {
+      for (let x = startX + (row % 2) * waveStep * 0.5; x < w + waveStep; x += waveStep) {
+        ctx.beginPath();
+        ctx.arc(x, y, this.scale * 0.45, Math.PI * 0.15, Math.PI * 0.85);
+        ctx.stroke();
+      }
+    }
+    ctx.restore();
+
+    // coastal shallows: a soft halo hugging the landmass
+    ctx.save();
+    this.pathLand(ctx);
+    ctx.strokeStyle = 'rgba(226, 231, 216, 0.28)';
+    ctx.lineWidth = this.scale * 0.9;
+    ctx.stroke();
+    ctx.strokeStyle = 'rgba(226, 231, 216, 0.16)';
+    ctx.lineWidth = this.scale * 1.8;
+    ctx.stroke();
+    ctx.restore();
 
     // --- landmass shadow then vellum base
     ctx.save();

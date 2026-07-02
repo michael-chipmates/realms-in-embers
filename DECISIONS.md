@@ -62,3 +62,41 @@ rendering — with zero dependencies. Grid is part of state (province index per 
 events, spells) deterministically. The battle screen *plays back* the report —
 framerate-independent, skippable, never input-locking. Odds preview runs ~300 Monte-Carlo
 resolutions on a forked RNG and itemizes every modifier in plain language.
+
+## D-008 · Battle magic auto-weaves; realm magic is deliberate
+Battle spells cast themselves when a side fields casters and can pay — but the
+odds preview names the spell and its Emberlight price for BOTH sides before any
+commitment. This keeps battles one decision (fight or don't) while making
+casters matter; realm spells stay slow, targeted, map-level decisions. Magic is
+everywhere without a second battle UI.
+
+## D-009 · The Saga is a public race
+The Legend path (five chapters ending in a three-night ritual every lord can
+see) is one chain shared by all players, first-come. It forces interaction:
+a saga leader is a target; the Rekindling announces itself realm-wide. AI lords
+run the race too — in simulation ~28% of games end in a Legend.
+
+## D-010 · Teaching is engine-side and deterministic
+Osperan's marginalia are chronicle entries written by the engine at first
+encounters (flags in state), not UI toasts — so they replay identically,
+save/load correctly, and read as part of the book. Veteran mode filters the
+kind rather than suppressing the writes.
+
+## D-011 · Pacing knobs are visible mechanics, not modifiers
+Anti-snowball is "Strain of rule" (−order per province at 34%/50% of the realm)
+and the fear line in every rival's attitude; catch-up is "Defiant hearts"
+(+order, −15% musters when at half the leader's size). Both appear as labeled
+lines in tooltips — the catch-up system is itself part of the readable game.
+
+## D-012 · Balance is sim-driven, and quests were the key lever
+The first playable AI reached 100% turn-limit endings. The fixes that moved it
+to 33% chronicle / 28% legend / 20% dominion / 15% conquest / 3% golden age
+(60-game sweep): quest fortune 2d4 instead of d8 with wider setback bands,
+gentler death risks, cheaper hero levels, AI ambition gates (saga at even odds,
+generic quests at +0.5 margin), winners refusing peace, endgame nerve, and
+dominion at 55% held 3 seasons.
+
+## D-013 · One dependency policy, held
+Shipped with zero runtime dependencies. Dev deps: vite, typescript, vitest,
+tsx, @types/node, playwright (screenshot-driven UI iteration — scripts/drive*.mjs
+replay real user flows headlessly and were how most UI bugs were caught).

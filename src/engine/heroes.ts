@@ -66,7 +66,7 @@ export const MAX_HERO_LEVEL = 10;
 
 /** XP needed to reach the NEXT level from `level`. */
 export function xpForLevel(level: number): number {
-  return 40 + level * 35;
+  return 35 + level * 28;
 }
 
 export function createHero(

@@ -88,6 +88,7 @@ function respondToProposals(state: GameState, pid: PlayerId, dispatch: (a: Actio
         const wearBoth = state.turn - (deedTurn(state, pid, proposal.from, 'declaredWar') ?? state.turn) > 6;
         const sweetened = proposal.gold >= 40;
         accept = losing || sweetened || (wearBoth && attitude > -25) || (attitude > 0 && !persona.pride);
+        if (myPower > theirPower * 1.25 && persona.aggression > 0.35) accept = false; // presses the advantage
         if (persona.pride > 0.8 && myPower > theirPower * 1.3) accept = false; // smells victory
         break;
       }
@@ -389,9 +390,12 @@ function runQuests(state: GameState, pid: PlayerId, dispatch: (a: Action) => boo
   if (saga) {
     const wantSaga = persona.mysticism > 0.45 || player.sagaChapter > 0 || state.turn > 16;
     if (wantSaga) {
-      const candidates = heroesOf(state, pid).filter(
-        (h) => h.status === 'ready' && h.level >= (saga.def.minLevel ?? 1),
-      );
+      const candidates = heroesOf(state, pid).filter((h) => {
+        if (h.status !== 'ready' || h.level < (saga.def.minLevel ?? 1)) return false;
+        const d = heroDerived(state, h);
+        // the Saga is a throne: worth chancing at even odds
+        return d[saga.def.stat] + h.level * 0.5 + d.questAdd + 5 - saga.def.dc >= 0;
+      });
       if (candidates.length > 0) {
         const hero = candidates.reduce((a, b) =>
           heroDerived(state, b)[saga.def.stat] > heroDerived(state, a)[saga.def.stat] ? b : a,
@@ -420,8 +424,8 @@ function runQuests(state: GameState, pid: PlayerId, dispatch: (a: Action) => boo
       if (def.minLevel && hero.level < def.minLevel) continue;
       if (def.tier === 3 && hero.level < 4) continue;
       const d = heroDerived(state, hero);
-      const margin = d[def.stat] + hero.level * 0.5 + d.questAdd - def.dc + 4.5; // + expected die
-      if (margin < 0.5) continue;
+      const margin = d[def.stat] + hero.level * 0.5 + d.questAdd - def.dc + 5; // + expected fortune
+      if (margin < 0.5) continue; // long odds are for ballads, not policy
       const score = margin + def.tier * 1.5;
       if (!best || score > best.score) best = { defId: offer.defId, province: offer.province, score };
     }
@@ -512,6 +516,7 @@ function attackNerve(state: GameState, pid: PlayerId): number {
   if (player.difficulty === 'warlord') threshold -= 0.05;
   if (player.difficulty === 'squire') threshold += 0.08;
   if (state.turn < 12) threshold -= 0.06; // the land-grab years
+  if (state.turn > 30) threshold -= 0.04; // the chronicle shortens; boldness pays
   return threshold;
 }
 
