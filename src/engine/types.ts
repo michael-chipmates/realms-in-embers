@@ -62,9 +62,21 @@ export interface Army {
   heroIds: number[];
   /** Movement spent this turn. */
   moved: boolean;
+  /** Sailed this turn (one sea hop per turn). */
+  seaMoved?: boolean;
   stance: Stance;
   /** Marks neutral lairs/rebel bands so the UI and AI can tell them apart. */
   kind?: 'rebels' | 'marauders' | 'revenants';
+}
+
+/** Temporary named modifier on a province (spells, events). Fully visible. */
+export interface ProvinceMod {
+  label: string;
+  order?: number;
+  income?: number;
+  /** Defender strength multiplier delta, e.g. +0.15. */
+  defense?: number;
+  turnsLeft: number;
 }
 
 export interface HeroArtifactSlots {
@@ -143,6 +155,8 @@ export interface Province {
   seatOf: PlayerId | null;
   /** Turn this province last changed hands (for "recently conquered" unrest). */
   capturedTurn: number;
+  /** Temporary visible modifiers (spells, events). */
+  mods: ProvinceMod[];
 }
 
 // -------------------------------------------------------------------- magic

@@ -89,7 +89,9 @@ export function initGame(settings: GameSettings): GameState {
   const rng = new Rng(rngState);
   const map = generateMap(rng, settings.mapSize);
 
-  const lordIds = resolveLords(rng, settings.players);
+  // Lords resolve on a separate stream: replays carry already-resolved ids,
+  // and the main stream must not depend on whether they were 'random'.
+  const lordIds = resolveLords(new Rng(`${seed}::lords`), settings.players);
   const seats = pickSeats(rng, map.provinces, settings.players.length);
 
   const state: GameState = {

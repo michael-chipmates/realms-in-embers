@@ -120,6 +120,42 @@ const BANKS = {
     ],
     true,
   ),
+  warDeclared: defineBank<{ aggressor: string; target: string; oathbroken: boolean }>(
+    'diplomacy',
+    [
+      (c) => c.oathbroken
+        ? `${c.aggressor} tore up the pact with ${c.target} and marched. Parchment burns easily; the smell of it lingers on a name for years.`
+        : `${c.aggressor} declared war upon ${c.target}. The heralds were paid double, as is customary for bad news delivered loudly.`,
+      (c) => c.oathbroken
+        ? `Let it be recorded plainly: ${c.aggressor} swore peace to ${c.target}, and lied. I keep a separate page for oathbreakers. It is among my fullest.`
+        : `War, then, between ${c.aggressor} and ${c.target}. Neither asked my opinion. Chroniclers are only consulted afterwards, like gravediggers.`,
+      (c) => c.oathbroken
+        ? `${c.aggressor} broke faith with ${c.target} — the seal snapped, the banners moved. Every lord in the realm quietly re-read their own treaties.`
+        : `${c.aggressor} sent ${c.target} a declaration written in the high style. Beneath the flourishes it said: what is yours will do nicely.`,
+    ],
+  ),
+  peaceMade: defineBank<{ a: string; b: string }>(
+    'diplomacy',
+    [
+      (c) => `${c.a} and ${c.b} made peace. The scribes wrote it fair, the lords sealed it warm, and everyone kept their boots by the door.`,
+      (c) => `Peace between ${c.a} and ${c.b} — signed, sanded, witnessed. Wars end the way fevers do: not cured, just tired.`,
+      (c) => `${c.a} and ${c.b} laid down the war. The border villages celebrated with the special joy of people who expect to do this again.`,
+    ],
+  ),
+  goldenWarning: defineBank<{ lord: string; rounds: number }>(
+    'realm',
+    [
+      (c) => `Mark this: ${c.lord}'s treasury groans and the realm under them hums with order. ${c.rounds} more such ${c.rounds === 1 ? 'season' : 'seasons'} and the war ends not with a sword but with a signature.`,
+      (c) => `${c.lord} governs like a merchant prince — coffers full, hearths quiet. Give them ${c.rounds} more ${c.rounds === 1 ? 'season' : 'seasons'} of it and the crown is bought, not won.`,
+    ],
+  ),
+  dominionWarning: defineBank<{ lord: string; rounds: number }>(
+    'realm',
+    [
+      (c) => `${c.lord} now holds the greater part of the realm. ${c.rounds} more ${c.rounds === 1 ? 'season' : 'seasons'} unbroken and the matter is settled — the rest of you may wish to discuss that. Urgently. Together.`,
+      (c) => `The map is turning one colour, and it is ${c.lord}'s. ${c.rounds} ${c.rounds === 1 ? 'season' : 'seasons'} remain before the realm simply... belongs to them.`,
+    ],
+  ),
   roundOmen: defineBank<{ turn: number }>(
     'turn',
     [

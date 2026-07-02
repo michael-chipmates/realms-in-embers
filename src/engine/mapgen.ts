@@ -426,6 +426,7 @@ function tryGenerate(rng: Rng, cfg: MapSizeCfg): GeneratedMap | null {
       recruitQueue: null,
       seatOf: null,
       capturedTurn: 0,
+      mods: [],
     };
   });
 
