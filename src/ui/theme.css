@@ -1,0 +1,289 @@
+/* ================================================================== *
+ *  REALMS IN EMBERS — war table at midnight
+ *  One room: dark wood, candlelight, an aged vellum map, wax and brass.
+ * ================================================================== */
+
+:root {
+  /* the room */
+  --wood-950: #0f0b07;
+  --wood-900: #16100a;
+  --wood-800: #201811;
+  --wood-700: #2c2117;
+  --wood-600: #3a2c1e;
+  /* the map */
+  --vellum: #d9c9a1;
+  --vellum-dark: #c7b489;
+  --vellum-deep: #b3a077;
+  /* inks */
+  --ink: #392e1e;
+  --ink-soft: #5c4c34;
+  --ink-faint: #7d6b4e;
+  /* metals & wax */
+  --gold: #c9a227;
+  --gold-bright: #e6c14a;
+  --gold-dim: #8a7020;
+  --wax-red: #8a2f26;
+  --ember: #e07830;
+  --ember-bright: #ffb35c;
+  /* feedback */
+  --danger: #b8432f;
+  --success: #6f8f4f;
+  --parchment-text: #ede2c8;
+
+  --serif: 'Iowan Old Style', 'Palatino Linotype', Palatino, 'Book Antiqua', Georgia, serif;
+  --small-caps: var(--serif);
+
+  --text-scale: 1;
+  font-size: calc(16px * var(--text-scale));
+
+  --shadow-deep: 0 8px 32px rgba(0, 0, 0, 0.55);
+  --shadow-soft: 0 2px 10px rgba(0, 0, 0, 0.4);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body {
+  height: 100%;
+  overflow: hidden;
+}
+
+body {
+  background: var(--wood-950);
+  color: var(--parchment-text);
+  font-family: var(--serif);
+  line-height: 1.45;
+  -webkit-font-smoothing: antialiased;
+}
+
+#app {
+  height: 100%;
+  height: 100dvh;
+}
+
+button {
+  font-family: inherit;
+  color: inherit;
+  cursor: pointer;
+  border: none;
+  background: none;
+  font-size: inherit;
+}
+
+input,
+select {
+  font-family: inherit;
+  font-size: inherit;
+}
+
+:focus-visible {
+  outline: 2px solid var(--gold-bright);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+/* ------------------------------------------------------------ the room */
+
+.room {
+  position: relative;
+  height: 100%;
+  background:
+    radial-gradient(ellipse 120% 90% at 50% -10%, rgba(224, 120, 48, 0.13), transparent 55%),
+    radial-gradient(ellipse 90% 70% at 50% 105%, rgba(224, 120, 48, 0.07), transparent 60%),
+    linear-gradient(175deg, var(--wood-900), var(--wood-950) 70%);
+  overflow: hidden;
+}
+
+.room::after {
+  /* candle vignette */
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(ellipse 75% 70% at 50% 42%, transparent 55%, rgba(5, 3, 1, 0.55) 100%);
+}
+
+/* wood grain suggestion */
+.room::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.14;
+  background:
+    repeating-linear-gradient(88deg, transparent 0 26px, rgba(0, 0, 0, 0.5) 26px 27px, transparent 27px 61px),
+    repeating-linear-gradient(92deg, transparent 0 43px, rgba(255, 220, 160, 0.05) 43px 44px, transparent 44px 97px);
+}
+
+/* ------------------------------------------------------------- headings */
+
+.title-display {
+  font-weight: 400;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--gold-bright);
+  text-shadow:
+    0 0 22px rgba(230, 193, 74, 0.25),
+    0 2px 0 rgba(0, 0, 0, 0.7);
+}
+
+.rule-flourish {
+  display: flex;
+  align-items: center;
+  gap: 0.8em;
+  color: var(--gold-dim);
+}
+
+.rule-flourish::before,
+.rule-flourish::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--gold-dim));
+}
+
+.rule-flourish::after {
+  background: linear-gradient(90deg, var(--gold-dim), transparent);
+}
+
+/* --------------------------------------------------------------- panels */
+
+.panel {
+  background: linear-gradient(170deg, var(--wood-700), var(--wood-800));
+  border: 1px solid rgba(201, 162, 39, 0.28);
+  border-radius: 6px;
+  box-shadow: var(--shadow-soft), inset 0 1px 0 rgba(255, 230, 170, 0.07);
+}
+
+.panel-title {
+  font-size: 0.72rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--gold);
+  padding: 0.55rem 0.9rem 0.35rem;
+  border-bottom: 1px solid rgba(201, 162, 39, 0.2);
+}
+
+/* --------------------------------------------------------------- inputs */
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.field > label {
+  font-size: 0.68rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--gold);
+  opacity: 0.9;
+}
+
+.input,
+select.input {
+  background: rgba(10, 7, 4, 0.6);
+  border: 1px solid rgba(201, 162, 39, 0.35);
+  border-radius: 4px;
+  color: var(--parchment-text);
+  padding: 0.45rem 0.6rem;
+  min-height: 44px;
+}
+
+.input:focus {
+  outline: none;
+  border-color: var(--gold-bright);
+  box-shadow: 0 0 0 1px var(--gold-bright);
+}
+
+/* -------------------------------------------------------------- buttons */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5em;
+  min-height: 44px;
+  padding: 0.5rem 1.2rem;
+  border-radius: 5px;
+  border: 1px solid rgba(201, 162, 39, 0.45);
+  background: linear-gradient(180deg, var(--wood-600), var(--wood-700));
+  color: var(--parchment-text);
+  letter-spacing: 0.06em;
+  transition: border-color 120ms, box-shadow 120ms, transform 60ms;
+}
+
+.btn:hover {
+  border-color: var(--gold-bright);
+  box-shadow: 0 0 14px rgba(201, 162, 39, 0.22);
+}
+
+.btn:active {
+  transform: translateY(1px);
+}
+
+.btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.btn-seal {
+  background: radial-gradient(circle at 35% 30%, #a84234, var(--wax-red) 60%, #5f1e18);
+  border: 1px solid #d9856f55;
+  color: #ffe9d8;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
+  font-weight: 700;
+  letter-spacing: 0.1em;
+}
+
+.btn-seal:hover {
+  box-shadow: 0 0 18px rgba(224, 120, 48, 0.4);
+  border-color: #ffb35c88;
+}
+
+.btn-quiet {
+  border-color: transparent;
+  background: transparent;
+  color: var(--gold);
+}
+
+.btn-quiet:hover {
+  border-color: rgba(201, 162, 39, 0.4);
+  box-shadow: none;
+}
+
+/* ------------------------------------------------------------ utilities */
+
+.muted {
+  color: #b7a888;
+}
+
+.small {
+  font-size: 0.82rem;
+}
+
+.italic {
+  font-style: italic;
+}
+
+/* reduced motion: kill all nonessential animation */
+@media (prefers-reduced-motion: reduce), (update: slow) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001s !important;
+    transition-duration: 0.001s !important;
+  }
+}
+
+body.reduced-motion *,
+body.reduced-motion *::before,
+body.reduced-motion *::after {
+  animation-duration: 0.001s !important;
+  transition-duration: 0.001s !important;
+}
