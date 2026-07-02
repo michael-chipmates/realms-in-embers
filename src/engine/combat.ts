@@ -384,7 +384,7 @@ function addCreedGrudgeMod(state: GameState, side: Side, enemyPlayer: PlayerId):
 
 // ----------------------------------------------------------------- preview
 
-export function previewBattle(state: GameState, armyId: number, targetProvince: number, viaSea = false): BattlePreview | null {
+export function previewBattle(state: GameState, armyId: number, targetProvince: number, viaSea = false, runs = 240): BattlePreview | null {
   const army = state.armies[armyId];
   if (!army) return null;
   const target = state.provinces[targetProvince];
@@ -392,7 +392,6 @@ export function previewBattle(state: GameState, armyId: number, targetProvince: 
   if (defenders.length === 0) return null;
 
   const rng = new Rng(state.rng).fork(`preview-${armyId}-${targetProvince}-${state.turn}`);
-  const runs = 240;
   let wins = 0;
   let aLossSum = 0;
   let dLossSum = 0;

@@ -1,0 +1,577 @@
+/**
+ * The rival lords. One brain, twelve temperaments: every weight below is
+ * scaled by the lord's published personality, so Vaelia genuinely hunts and
+ * Cormac genuinely waits. The AI sees no hidden information: it reads the
+ * same odds preview and the same attitude arithmetic the player reads,
+ * and difficulty changes only its purse (the visible handicap) and nerve.
+ */
+import { applyAction, moveTargets } from './actions';
+import { previewBattle } from './combat';
+import { attitudeOf } from './diplo';
+import { buildingCostFor, incomeReport, unitCostFor } from './economy';
+import { BUILD_ORDER, BUILDINGS } from './content/world';
+import { RECRUITABLE, UNITS } from './content/units';
+import {
+  armiesIn, armiesOf, atWar, creedOf, getStance, heroesOf, lordOf, provincesOf, roughArmyPower,
+} from './helpers';
+import { leaderId } from './economy';
+import type { Action, Army, Effect, GameState, PlayerId, Province, UnitTypeId } from './types';
+import { NEUTRAL } from './types';
+
+const MAX_ACTIONS_PER_TURN = 80;
+
+/** Play out the current AI player's whole turn. Ends with endTurn. */
+export function aiTakeTurn(state: GameState): Effect[] {
+  const pid = state.current;
+  const player = state.players[pid];
+  const effects: Effect[] = [];
+  let budget = MAX_ACTIONS_PER_TURN;
+
+  const dispatch = (action: Action): boolean => {
+    if (budget <= 0) return false;
+    budget--;
+    const result = applyAction(state, action);
+    effects.push(...result.effects);
+    return result.ok;
+  };
+
+  if (player.kind !== 'ai' || !player.alive || state.phase === 'ended') {
+    dispatch({ t: 'endTurn' });
+    return effects;
+  }
+
+  const persona = lordOf(player).personality;
+  const nerve = attackNerve(state, pid); // odds threshold, personality+difficulty
+
+  respondToProposals(state, pid, dispatch);
+  setTaxPolicy(state, pid, dispatch);
+  hireFromCourt(state, pid, dispatch);
+  buildSomething(state, pid, dispatch);
+  buildSomething(state, pid, dispatch); // second project if rich
+  recruitTroops(state, pid, dispatch);
+  marshalHeroes(state, pid, dispatch);
+  consolidateArmies(state, pid, dispatch);
+  moveArmies(state, pid, nerve, dispatch);
+  proactiveDiplomacy(state, pid, persona, dispatch);
+
+  dispatch({ t: 'endTurn' });
+  return effects;
+}
+
+// -------------------------------------------------------------- responses
+
+function respondToProposals(state: GameState, pid: PlayerId, dispatch: (a: Action) => boolean): void {
+  const mine = state.proposals.filter((p) => p.to === pid);
+  for (const proposal of mine) {
+    const attitude = attitudeOf(state, pid, proposal.from).total;
+    const myPower = totalPower(state, pid);
+    const theirPower = totalPower(state, proposal.from);
+    const persona = lordOf(state.players[pid]).personality;
+    let accept = false;
+    switch (proposal.kind) {
+      case 'peace': {
+        const losing = myPower < theirPower * 0.75;
+        const wearBoth = state.turn - (deedTurn(state, pid, proposal.from, 'declaredWar') ?? state.turn) > 6;
+        const sweetened = proposal.gold >= 40;
+        accept = losing || sweetened || (wearBoth && attitude > -25) || (attitude > 0 && !persona.pride);
+        if (persona.pride > 0.8 && myPower > theirPower * 1.3) accept = false; // smells victory
+        break;
+      }
+      case 'pact':
+        accept = attitude >= 8 && !(persona.aggression > 0.7 && theirPower < myPower * 0.7);
+        break;
+      case 'alliance':
+        accept = attitude >= 25;
+        break;
+      case 'demand': {
+        const afford = proposal.gold <= state.players[pid].gold * 0.4;
+        accept = theirPower > myPower * 1.5 && afford && persona.pride < 0.75;
+        break;
+      }
+      default:
+        accept = false;
+    }
+    dispatch({ t: 'respond', proposalId: proposal.id, accept });
+  }
+}
+
+function deedTurn(state: GameState, viewer: PlayerId, about: PlayerId, id: string): number | undefined {
+  const deeds = state.deeds[`${viewer}>${about}`] ?? [];
+  return deeds.find((d) => d.id === id)?.turn;
+}
+
+// -------------------------------------------------------------------- tax
+
+function setTaxPolicy(state: GameState, pid: PlayerId, dispatch: (a: Action) => boolean): void {
+  const player = state.players[pid];
+  const provinces = provincesOf(state, pid);
+  if (provinces.length === 0) return;
+  const avgOrder = provinces.reduce((s, p) => s + p.order, 0) / provinces.length;
+  const report = incomeReport(state, pid);
+  const persona = lordOf(player).personality;
+  let want: typeof player.tax = 'fair';
+  if (avgOrder < 42) want = 'light';
+  else if (report.net < 0 || (persona.greed > 0.7 && avgOrder > 62)) want = 'harsh';
+  else if (avgOrder > 75 && persona.greed > 0.4) want = 'harsh';
+  if (want !== player.tax) dispatch({ t: 'setTax', level: want });
+}
+
+// ------------------------------------------------------------------ court
+
+function hireFromCourt(state: GameState, pid: PlayerId, dispatch: (a: Action) => boolean): void {
+  const player = state.players[pid];
+  const persona = lordOf(player).personality;
+  const heroes = heroesOf(state, pid);
+  const wantHeroes = 2 + (persona.mysticism > 0.6 ? 1 : 0) + (state.turn > 15 ? 1 : 0);
+  if (heroes.length >= wantHeroes) return;
+  const report = incomeReport(state, pid);
+  let bestIdx = -1;
+  let bestScore = 0;
+  player.courtOffers.forEach((offer, idx) => {
+    if (offer.cost > player.gold - 120 || report.net < offer.level * 6) return;
+    let score = offer.might + offer.lore + offer.guile + offer.leadership + offer.level * 2;
+    if (offer.cls === 'magus') score *= 0.7 + persona.mysticism;
+    if (offer.cls === 'champion') score *= 0.7 + persona.aggression * 0.6;
+    if (offer.cls === 'shade') score *= 0.6 + (creedOf(player) === 'umbra' ? 0.6 : 0.15);
+    if (score > bestScore) {
+      bestScore = score;
+      bestIdx = idx;
+    }
+  });
+  if (bestIdx >= 0) dispatch({ t: 'hireHero', offerIdx: bestIdx });
+}
+
+// ------------------------------------------------------------------ build
+
+function buildSomething(state: GameState, pid: PlayerId, dispatch: (a: Action) => boolean): void {
+  const player = state.players[pid];
+  const report = incomeReport(state, pid);
+  const reserve = Math.max(80, (report.upkeep + report.wages) * 1.2);
+  if (player.gold < reserve + 70) return;
+  const persona = lordOf(player).personality;
+  const provinces = provincesOf(state, pid);
+  const hasBarracksSomewhere = provinces.some((p) => p.buildings.includes('barracks'));
+
+  let best: { province: Province; building: (typeof BUILD_ORDER)[number]; score: number } | null = null;
+  for (const p of provinces) {
+    if (p.buildQueue) continue;
+    for (const b of BUILD_ORDER) {
+      const def = BUILDINGS[b];
+      if (p.buildings.includes(b)) continue;
+      if (def.requires && !p.buildings.includes(def.requires)) continue;
+      if (def.terrain && !def.terrain.includes(p.terrain)) continue;
+      if (def.coastalOnly && !p.coastal) continue;
+      const { cost } = buildingCostFor(state, pid, b);
+      if (cost > player.gold - reserve) continue;
+
+      let score = 0;
+      if (def.incomeAdd) score += def.incomeAdd * 2.2 * (0.8 + persona.greed);
+      if (def.incomeMult) score += def.incomeMult * 55 * (0.8 + persona.greed);
+      if (b === 'temple') score += p.order < 45 ? 26 : p.order < 60 ? 10 : 2;
+      if (b === 'roads') score += provinces.length > 3 ? 8 : 3;
+      if (def.defense) {
+        const frontier = isFrontier(state, p);
+        score += frontier ? def.defense * 40 * (1.3 - persona.aggression) : 2;
+        if (p.seatOf === pid) score += 10;
+      }
+      if (b === 'barracks') score += hasBarracksSomewhere ? 4 : 24;
+      if (b === 'warcamp') score += report.net > 40 && state.turn > 8 ? 18 : 2;
+      if (b === 'mageTower') {
+        score += 6 + persona.mysticism * 18 + (p.site === 'embersite' ? 14 : 0);
+      }
+      if (b === 'harbor') score += 8;
+      score /= Math.sqrt(cost / 60);
+      if (!best || score > best.score) best = { province: p, building: b, score };
+    }
+  }
+  if (best && best.score > 6) {
+    dispatch({ t: 'build', province: best.province.id, building: best.building });
+  }
+}
+
+function isFrontier(state: GameState, p: Province): boolean {
+  return p.neighbors.some((n) => {
+    const np = state.provinces[n];
+    if (np.owner === p.owner) return false;
+    if (np.owner === NEUTRAL) return armiesIn(state, n).length > 0;
+    return atWar(state, p.owner, np.owner) || attitudeOf(state, p.owner, np.owner).total < -20;
+  });
+}
+
+// ---------------------------------------------------------------- recruit
+
+function recruitTroops(state: GameState, pid: PlayerId, dispatch: (a: Action) => boolean): void {
+  const player = state.players[pid];
+  const report = incomeReport(state, pid);
+  const persona = lordOf(player).personality;
+  const myPower = totalPower(state, pid);
+  const threat = strongestThreat(state, pid);
+  const myProvinces = provincesOf(state, pid);
+  // a realm with an open frontier keeps mustering; a threatened realm matches its threat
+  const frontierPull = myProvinces.reduce((n, p) => n + p.neighbors.filter((nb) => state.provinces[nb].owner !== pid).length, 0);
+  const wantPower = Math.max(
+    threat * (0.85 + persona.aggression * 0.45) + 8,
+    12 + myProvinces.length * 3 + Math.min(24, frontierPull * 2.5),
+  );
+  const difficulty = player.difficulty ?? 'knight';
+  const budgetMult = difficulty === 'warlord' ? 1.15 : difficulty === 'squire' ? 0.8 : 1;
+  if (myPower >= wantPower) return;
+  if (report.net < 8) return; // don't recruit into insolvency
+
+  let spendable = Math.max(0, (player.gold - Math.max(100, report.upkeep * 1.2)) * 0.7 * budgetMult);
+  const provinces = provincesOf(state, pid).filter((p) => !p.recruitQueue);
+  // prefer mustering at the frontier seat-side
+  provinces.sort((a, b) => Number(isFrontier(state, b)) - Number(isFrontier(state, a)));
+  for (const p of provinces) {
+    if (spendable < 30) break;
+    const options = RECRUITABLE.filter((id) => canRecruitHere(state, pid, p, id));
+    if (options.length === 0) continue;
+    const pick = bestUnitFor(state, pid, options, spendable);
+    if (!pick) continue;
+    const { cost } = unitCostFor(state, pid, pick);
+    if (dispatch({ t: 'recruit', province: p.id, unit: pick })) {
+      spendable -= cost;
+    }
+  }
+}
+
+function canRecruitHere(state: GameState, pid: PlayerId, p: Province, unit: UnitTypeId): boolean {
+  const def = UNITS[unit];
+  if (!def.recruit) return false;
+  const fx = lordOf(state.players[pid]).perk.fx;
+  if (def.recruit.building && !p.buildings.includes(def.recruit.building)) return false;
+  if (def.recruit.terrain && !def.recruit.terrain.includes(p.terrain)) {
+    if (!(unit === 'cragguard' && fx.cragguardInHills && p.terrain === 'hills')) return false;
+  }
+  if (def.recruit.creed && creedOf(state.players[pid]) !== def.recruit.creed) return false;
+  if (unit === 'revenants' && (!fx.revenantsAtBarrows || p.site !== 'barrow')) return false;
+  return true;
+}
+
+function bestUnitFor(state: GameState, pid: PlayerId, options: UnitTypeId[], spendable: number): UnitTypeId | null {
+  let best: UnitTypeId | null = null;
+  let bestValue = 0;
+  for (const id of options) {
+    const def = UNITS[id];
+    const { cost } = unitCostFor(state, pid, id);
+    if (cost > spendable || cost === 0) continue;
+    // combat value per coin, weighted toward higher tiers late
+    const value = ((def.atk + def.def) * def.hits) / cost * (1 + def.tier * 0.25 * Math.min(1, state.turn / 12));
+    if (value > bestValue) {
+      bestValue = value;
+      best = id;
+    }
+  }
+  return best;
+}
+
+// ----------------------------------------------------------------- heroes
+
+function marshalHeroes(state: GameState, pid: PlayerId, dispatch: (a: Action) => boolean): void {
+  const heroes = heroesOf(state, pid).filter((h) => h.status === 'ready' && h.armyId === null);
+  if (heroes.length === 0) return;
+  const armies = armiesOf(state, pid)
+    .filter((a) => a.heroIds.length < 3)
+    .sort((a, b) => roughArmyPower(b) - roughArmyPower(a));
+  for (const hero of heroes) {
+    const target = armies.find((a) => a.heroIds.length === 0) ?? armies[0];
+    if (!target) break;
+    // leaders lead from the strongest banner; reachable via own territory
+    if (state.provinces[target.province].owner === pid || hero.province === target.province) {
+      dispatch({ t: 'attachHero', heroId: hero.id, armyId: target.id });
+    }
+  }
+}
+
+// ----------------------------------------------------------------- armies
+
+function attackNerve(state: GameState, pid: PlayerId): number {
+  const player = state.players[pid];
+  const persona = lordOf(player).personality;
+  let threshold = 0.66 - persona.aggression * 0.18;
+  if (player.difficulty === 'warlord') threshold -= 0.05;
+  if (player.difficulty === 'squire') threshold += 0.08;
+  if (state.turn < 12) threshold -= 0.06; // the land-grab years
+  return threshold;
+}
+
+/** Same-province stacks merge; scattered dribs consolidate on the main banner. */
+function consolidateArmies(state: GameState, pid: PlayerId, dispatch: (a: Action) => boolean): void {
+  for (let guard = 0; guard < 12; guard++) {
+    const armies = armiesOf(state, pid);
+    let merged = false;
+    const byProvince = new Map<number, Army[]>();
+    for (const a of armies) {
+      const list = byProvince.get(a.province) ?? [];
+      list.push(a);
+      byProvince.set(a.province, list);
+    }
+    for (const list of byProvince.values()) {
+      if (list.length < 2) continue;
+      list.sort((a, b) => roughArmyPower(b) - roughArmyPower(a));
+      const [into, from] = [list[0], list[1]];
+      if (into.units.length + from.units.length <= 12 && into.heroIds.length + from.heroIds.length <= 3) {
+        if (dispatch({ t: 'mergeArmies', from: from.id, into: into.id })) {
+          merged = true;
+          break;
+        }
+      }
+    }
+    if (!merged) return;
+  }
+}
+
+function moveArmies(state: GameState, pid: PlayerId, nerve: number, dispatch: (a: Action) => boolean): void {
+  // consider strongest armies first; re-read the map after every move.
+  // NB: "holding" is tracked locally — state is only ever touched via actions.
+  const held = new Set<number>();
+  for (let guard = 0; guard < 24; guard++) {
+    const armies = armiesOf(state, pid)
+      .filter((a) => !a.moved && !held.has(a.id) && a.units.length > 0)
+      .sort((a, b) => roughArmyPower(b) - roughArmyPower(a));
+    if (armies.length === 0) return;
+    const army = armies[0];
+    if (!actWithArmy(state, pid, army, nerve, dispatch)) {
+      held.add(army.id); // stands guard this season
+    }
+  }
+}
+
+function actWithArmy(state: GameState, pid: PlayerId, army: Army, nerve: number, dispatch: (a: Action) => boolean): boolean {
+  const targets = moveTargets(state, army);
+  if (targets.length === 0) return false;
+  const persona = lordOf(state.players[pid]).personality;
+  const lead = leaderId(state);
+
+  // dribs and drabs rally to the main banner instead of dying alone
+  const strongest = armiesOf(state, pid).reduce((a, b) => (roughArmyPower(b) > roughArmyPower(a) ? b : a), army);
+  if (strongest.id !== army.id && roughArmyPower(army) < roughArmyPower(strongest) * 0.5 && army.units.length < 9) {
+    if (strongest.province !== army.province) {
+      const step = stepToward(state, army, strongest.province);
+      if (step !== null) {
+        const t = targets.find((t2) => t2.to === step && !t2.hostile);
+        if (t) return dispatch({ t: 'moveArmy', armyId: army.id, to: t.to, viaSea: t.viaSea });
+      }
+    }
+  }
+
+  // 1) fight: score hostile targets by preview odds x prize
+  let bestAttack: { to: number; viaSea: boolean; score: number } | null = null;
+  const myRough = roughArmyPower(army);
+  for (const t of targets.filter((t2) => t2.hostile)) {
+    // don't waste scrying on hopeless odds
+    const defRough = armiesIn(state, t.to)
+      .filter((a) => a.owner !== pid)
+      .reduce((s, a) => s + roughArmyPower(a), 0);
+    if (defRough > myRough * 1.7) continue;
+    const preview = previewBattle(state, army.id, t.to, t.viaSea, 60);
+    if (!preview) continue;
+    const p = state.provinces[t.to];
+    const rebelsInMyLand = p.owner === pid;
+    const neutral = p.owner === NEUTRAL;
+    let need = nerve;
+    if (rebelsInMyLand) need -= 0.12; // put down risings with prejudice
+    if (neutral) need -= 0.06; // free provinces are cheap meat
+    if (preview.winChance < need) continue;
+    let prize = neutral || rebelsInMyLand ? 16 : 24;
+    if (p.site) prize += 6;
+    if (p.terrain === 'meadow') prize += 5;
+    if (p.seatOf !== null && p.seatOf !== pid) prize += 18;
+    if (p.owner === lead && lead !== pid) prize += 8; // clip the leader's wings
+    if (p.owner >= 0 && creedOf(state.players[p.owner]) === 'umbra' && creedOf(state.players[pid]) === 'flame') prize += 4;
+    const score = preview.winChance * prize - preview.aExpectedLoss * 20 * (1 - persona.aggression * 0.5);
+    if (!bestAttack || score > bestAttack.score) bestAttack = { to: t.to, viaSea: t.viaSea, score };
+  }
+  if (bestAttack && bestAttack.score > 2) {
+    return dispatch({ t: 'moveArmy', armyId: army.id, to: bestAttack.to, viaSea: bestAttack.viaSea });
+  }
+
+  // 2) defend: reinforce an owned frontier province in danger
+  const danger = provincesOf(state, pid)
+    .filter((p) => p.id !== army.province && isFrontier(state, p))
+    .map((p) => ({ p, gap: threatAgainst(state, p) - garrisonPower(state, p) }))
+    .filter((d) => d.gap > 6)
+    .sort((a, b) => b.gap - a.gap);
+  if (danger.length > 0) {
+    const step = stepToward(state, army, danger[0].p.id);
+    if (step !== null) {
+      const t = targets.find((t2) => t2.to === step && !t2.hostile);
+      if (t) return dispatch({ t: 'moveArmy', armyId: army.id, to: t.to, viaSea: t.viaSea });
+    }
+  }
+
+  // 3) march toward the nearest worthwhile frontier
+  const frontierIds = state.provinces
+    .filter((p) => p.owner === pid && isFrontier(state, p))
+    .map((p) => p.id);
+  if (frontierIds.length > 0 && !frontierIds.includes(army.province)) {
+    const step = stepToward(state, army, frontierIds[0]);
+    if (step !== null) {
+      const t = targets.find((t2) => t2.to === step && !t2.hostile);
+      if (t) return dispatch({ t: 'moveArmy', armyId: army.id, to: t.to, viaSea: t.viaSea });
+    }
+  }
+  return false;
+}
+
+function stepToward(state: GameState, army: Army, dest: number): number | null {
+  // BFS through provinces the army could plausibly traverse (own or neutral-empty)
+  const pid = army.owner;
+  const passable = (id: number): boolean => {
+    const p = state.provinces[id];
+    if (p.owner === pid) return !armiesIn(state, id).some((a) => a.owner !== pid && a.owner !== NEUTRAL);
+    return false;
+  };
+  const prev = new Map<number, number>();
+  const queue = [army.province];
+  const seen = new Set([army.province]);
+  while (queue.length) {
+    const cur = queue.shift()!;
+    for (const n of state.provinces[cur].neighbors) {
+      if (seen.has(n)) continue;
+      seen.add(n);
+      prev.set(n, cur);
+      if (n === dest) {
+        // walk back to the first step
+        let step = n;
+        while (prev.get(step) !== undefined && prev.get(step) !== army.province) {
+          step = prev.get(step)!;
+        }
+        return step;
+      }
+      if (passable(n)) queue.push(n);
+    }
+  }
+  return null;
+}
+
+function garrisonPower(state: GameState, p: Province): number {
+  return armiesIn(state, p.id)
+    .filter((a) => a.owner === p.owner)
+    .reduce((s, a) => s + roughArmyPower(a), 0);
+}
+
+function threatAgainst(state: GameState, p: Province): number {
+  let threat = 0;
+  for (const n of p.neighbors) {
+    for (const a of armiesIn(state, n)) {
+      if (a.owner === p.owner) continue;
+      if (a.owner === NEUTRAL && a.kind) threat += roughArmyPower(a) * 0.6;
+      else if (a.owner >= 0 && atWar(state, p.owner, a.owner)) threat += roughArmyPower(a);
+      else if (a.owner >= 0 && attitudeOf(state, p.owner, a.owner).total < -30) threat += roughArmyPower(a) * 0.4;
+    }
+  }
+  return threat;
+}
+
+function totalPower(state: GameState, pid: PlayerId): number {
+  return armiesOf(state, pid).reduce((s, a) => s + roughArmyPower(a), 0);
+}
+
+function strongestThreat(state: GameState, pid: PlayerId): number {
+  let strongest = 0;
+  for (const other of state.players) {
+    if (other.id === pid || !other.alive) continue;
+    const borders = provincesOf(state, pid).some((p) =>
+      p.neighbors.some((n) => state.provinces[n].owner === other.id),
+    );
+    if (!borders && getStance(state, pid, other.id) !== 'war') continue;
+    const power = totalPower(state, other.id);
+    const hostileWeight = getStance(state, pid, other.id) === 'war' ? 1 : attitudeOf(state, pid, other.id).total < -20 ? 0.8 : 0.55;
+    strongest = Math.max(strongest, power * hostileWeight);
+  }
+  return strongest;
+}
+
+// -------------------------------------------------------------- diplomacy
+
+function proactiveDiplomacy(
+  state: GameState,
+  pid: PlayerId,
+  persona: ReturnType<typeof lordOf>['personality'],
+  dispatch: (a: Action) => boolean,
+): void {
+  const player = state.players[pid];
+  const myPower = totalPower(state, pid);
+  const lead = leaderId(state);
+  const atWarWith = state.players.filter((o) => o.alive && o.id !== pid && atWar(state, pid, o.id));
+
+  // sue for peace when a war is plainly lost
+  for (const enemy of atWarWith) {
+    const theirPower = totalPower(state, enemy.id);
+    const losingBadly = myPower < theirPower * 0.55;
+    const exhausted = myPower < theirPower * 0.8 && atWarWith.length > 1;
+    if (losingBadly || exhausted) {
+      const sweetener = persona.pride > 0.7 ? 0 : Math.min(60, Math.floor(player.gold * 0.15));
+      dispatch({ t: 'diplomacy', kind: 'offerPeace', target: enemy.id, gold: sweetener });
+      break;
+    }
+  }
+
+  // pick a war deliberately (one at a time, neighbors only)
+  if (atWarWith.length === 0 && state.turn > 5) {
+    let bestTarget: PlayerId | null = null;
+    let bestScore = 0;
+    for (const other of state.players) {
+      if (!other.alive || other.id === pid) continue;
+      const stance = getStance(state, pid, other.id);
+      if (stance === 'alliance') continue;
+      const borders = provincesOf(state, pid).some((p) =>
+        p.neighbors.some((n) => state.provinces[n].owner === other.id),
+      );
+      if (!borders) continue;
+      const attitude = attitudeOf(state, pid, other.id).total;
+      const theirPower = totalPower(state, other.id);
+      if (myPower < theirPower * 1.15) continue;
+      // land hunger: nothing free left to take makes neighbors look tastier
+      const frontierLeft = provincesOf(state, pid).some((p) =>
+        p.neighbors.some((n) => state.provinces[n].owner === NEUTRAL),
+      );
+      let score = persona.aggression * 40 - attitude * 0.5 + (myPower / Math.max(1, theirPower)) * 10;
+      if (!frontierLeft) score += 18;
+      if (other.id === lead && provincesOf(state, lead).length / state.provinces.length > 0.38) score += 25;
+      if (stance === 'pact') score -= persona.loyalty * 60; // oathbreaking weighs
+      const attitudeGate = persona.loyalty > 0.7 ? -25 : (frontierLeft ? -8 : 5);
+      if (attitude > attitudeGate && other.id !== lead) continue;
+      if (score > bestScore) {
+        bestScore = score;
+        bestTarget = other.id;
+      }
+    }
+    if (bestTarget !== null && bestScore > 30) {
+      dispatch({ t: 'diplomacy', kind: 'declareWar', target: bestTarget });
+    }
+  }
+
+  // courtesies: gift a promising friend; propose pacts to steady neighbors
+  if (player.gold > 400 && persona.loyalty > 0.4) {
+    const friend = state.players.find((o) => {
+      if (!o.alive || o.id === pid) return false;
+      const att = attitudeOf(state, pid, o.id).total;
+      return att > 5 && att < 40 && getStance(state, pid, o.id) !== 'war';
+    });
+    if (friend) {
+      dispatch({ t: 'diplomacy', kind: 'gift', target: friend.id, gold: 40 });
+    }
+  }
+  if (state.turn > 4 && state.turn % 4 === Math.abs(pid) % 4) {
+    const candidate = state.players.find((o) => {
+      if (!o.alive || o.id === pid) return false;
+      return getStance(state, pid, o.id) === 'peace' && attitudeOf(state, pid, o.id).total >= 12;
+    });
+    if (candidate) {
+      dispatch({ t: 'diplomacy', kind: 'offerPact', target: candidate.id });
+    }
+  }
+
+  // extortion is a personality trait
+  if (persona.greed > 0.75 && state.turn > 6 && atWarWith.length === 0) {
+    const mark = state.players.find((o) => {
+      if (!o.alive || o.id === pid) return false;
+      return totalPower(state, o.id) < myPower * 0.55 && getStance(state, pid, o.id) === 'peace' && o.gold > 150;
+    });
+    if (mark) {
+      dispatch({ t: 'diplomacy', kind: 'demand', target: mark.id, gold: Math.floor(mark.gold * 0.25) });
+    }
+  }
+}

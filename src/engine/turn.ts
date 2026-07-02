@@ -4,6 +4,7 @@
  * around to the first banner.
  */
 import { eliminatePlayer, resolveBattle } from './combat';
+import { decayDeeds } from './diplo';
 import { incomeReport, orderDrift, prosperityStep, leaderId } from './economy';
 import { makeCourtOffer, makeTroubleName } from './state';
 import { UNITS } from './content/units';
@@ -131,7 +132,17 @@ function enforceInsolvency(state: GameState, rng: Rng, pid: PlayerId, effects: E
     const army = state.armies[w.armyId];
     const [gone] = army.units.splice(w.idx, 1);
     disbanded.push(UNITS[gone.type].name);
-    if (army.units.length === 0 && army.heroIds.length === 0) delete state.armies[w.armyId];
+    if (army.units.length === 0) {
+      // heroes cannot hold a banner alone; back to court with them
+      for (const hid of [...army.heroIds]) {
+        const hero = state.heroes[hid];
+        if (hero) {
+          hero.armyId = null;
+          hero.province = army.province;
+        }
+      }
+      delete state.armies[w.armyId];
+    }
     player.gold += 12; // mustering-out pittance recovered
   }
   if (disbanded.length > 0) {
@@ -238,6 +249,9 @@ function roundEnd(state: GameState, rng: Rng, effects: Effect[]): void {
       resolveBattle(state, rng, army.id, target.id, false, army.province);
     }
   }
+
+  // -- memory fades a little
+  decayDeeds(state);
 
   // -- season turns
   state.turn++;
