@@ -54,6 +54,8 @@ export class GameScreen {
   private keyHandler = (e: KeyboardEvent): void => this.onKey(e);
   private mapDirty = true;
   pendingSpell: SpellId | null = null;
+  /** Mobile: the selection bottom-sheet collapsed to a slim bar. */
+  sheetCollapsed = false;
 
   constructor(app: App, state: GameState) {
     this.app = app;
@@ -308,8 +310,44 @@ export class GameScreen {
       }
     }
     audio.click();
+    this.ensureSelectionVisible();
     this.renderPanels();
     this.redrawMap();
+  }
+
+  isMobile(): boolean {
+    return window.innerWidth < 900;
+  }
+
+  /** Phones: the bottom sheet must never hide the province being acted on. */
+  private ensureSelectionVisible(): void {
+    if (!this.isMobile() || this.sel.provinceId === null) return;
+    const p = this.state.provinces[this.sel.provinceId];
+    const [sx, sy] = this.renderer.worldToScreen(p.cx + 0.5, p.cy + 0.5);
+    const rect = this.canvas.getBoundingClientRect();
+    if (rect.height === 0) return;
+    const sheetH = this.sheetCollapsed ? 64 : Math.min(rect.height * 0.42, 380);
+    const visibleH = rect.height - sheetH;
+    let dx = 0;
+    let dy = 0;
+    if (sy > visibleH - 48 || sy < 96) dy = visibleH * 0.45 - sy;
+    if (sx < 48 || sx > rect.width - 48) dx = rect.width * 0.5 - sx;
+    if (dx !== 0 || dy !== 0) {
+      this.renderer.offX += dx;
+      this.renderer.offY += dy;
+    }
+  }
+
+  /** Collapse/expand the mobile selection sheet. */
+  toggleSheet(): void {
+    this.sheetCollapsed = !this.sheetCollapsed;
+    this.ensureSelectionVisible();
+    this.renderPanels();
+    this.redrawMap();
+  }
+
+  renderPanelsPublic(): void {
+    this.renderPanels();
   }
 
   selectArmy(armyId: number): void {

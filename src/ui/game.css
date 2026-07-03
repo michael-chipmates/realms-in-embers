@@ -416,8 +416,19 @@
   .odds-sides, .battle-sides { grid-template-columns: 1fr; }
   .side-panel {
     left: 0; right: 0; top: auto; bottom: 0; width: 100%;
-    max-height: 46vh; padding: 0.5rem 0.5rem 0.6rem;
+    max-height: 42vh; padding: 0.3rem 0.5rem calc(0.5rem + env(safe-area-inset-bottom));
     background: linear-gradient(0deg, rgba(10, 7, 3, 0.92) 75%, transparent);
+  }
+  .sheet-handle {
+    display: flex; flex-direction: column; align-items: center; gap: 0.15rem;
+    width: 100%; padding: 0.3rem 0 0.4rem; color: var(--gold);
+    font-size: 0.8rem; letter-spacing: 0.06em;
+    background: rgba(22, 16, 10, 0.9); border: 1px solid rgba(201, 162, 39, 0.35);
+    border-radius: 8px 8px 4px 4px; min-height: 44px;
+  }
+  .sheet-handle-bar {
+    width: 44px; height: 4px; border-radius: 999px;
+    background: rgba(201, 162, 39, 0.5);
   }
   .chronicle-panel { top: 0.5rem; bottom: auto; max-height: 60vh; right: 0.5rem; }
   .chronicle-feed { max-height: 52vh; }

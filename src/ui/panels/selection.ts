@@ -38,7 +38,29 @@ export function renderSelectionPanel(screen: GameScreen, root: HTMLElement): voi
   }
 
   const army = sel.armyId !== null ? state.armies[sel.armyId] : null;
+
+  // phones: a grab-bar to drop the sheet out of the map's way
+  const handle = screen.isMobile()
+    ? h('button', {
+        class: 'sheet-handle',
+        'aria-expanded': String(!screen.sheetCollapsed),
+        'aria-label': screen.sheetCollapsed ? 'Show details' : 'Hide details, show the map',
+        onclick: () => screen.toggleSheet(),
+      },
+        h('span', { class: 'sheet-handle-bar' }),
+        screen.sheetCollapsed
+          ? `${p.name} — tap for details`
+          : 'Hide — show the map',
+      )
+    : null;
+
+  if (screen.isMobile() && screen.sheetCollapsed) {
+    mount(root, handle);
+    return;
+  }
+
   mount(root,
+    handle,
     renderProvinceCard(screen, p),
     ...armiesIn(state, p.id).map((a) => renderArmyCard(screen, a, a.id === sel.armyId)),
     army === null && p.owner === viewer && screen.current().kind === 'human' ? renderBuildCard(screen, p) : null,
