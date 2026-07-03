@@ -5,8 +5,11 @@
 import { LORD_BY_ID } from '../../engine/content/lords';
 import { chronicleScore } from '../../engine/victory';
 import { provincesOf } from '../../engine/helpers';
-import { h } from '../dom';
-import { lordDisplay } from '../format';
+import { h, mount } from '../dom';
+import { sigilShield } from '../heraldry';
+import { lordDisplay, playerColors, playerPatterns } from '../format';
+import { MapRenderer } from '../mapRenderer';
+import { buildWarTimeline } from '../timeline';
 import { openModal } from '../modal';
 import { breakdown, tip } from '../tooltip';
 import { buildSaga, downloadSaga } from '../saga';
@@ -42,7 +45,7 @@ export function showGameEnd(screen: GameScreen): void {
       const lord = LORD_BY_ID[p.lordId];
       const row = h('div', { class: 'standing-row' },
         h('span', { class: 'standing-rank' }, `${idx + 1}.`),
-        h('span', { class: 'lord-swatch', style: { background: lord.color } }),
+        sigilShield(lord.id, 26),
         h('span', { class: 'standing-name' }, `${lord.name}${p.alive ? '' : ' †'}${p.id === winner ? ' — the victor' : ''}`),
         h('span', { class: 'standing-score' }, String(score.total)),
       );
@@ -83,6 +86,7 @@ export function showGameEnd(screen: GameScreen): void {
         },
       }, 'Read the finished Saga'),
       h('button', { class: 'btn', onclick: () => downloadSaga(state) }, 'Save the Saga to a file'),
+      h('button', { class: 'btn', onclick: () => openWarReplay(screen) }, 'Watch the war again'),
       h('button', {
         class: 'btn',
         onclick: () => {
@@ -131,6 +135,83 @@ function renderCampaignGraph(screen: GameScreen): HTMLElement {
     h('h3', { class: 'settings-head' }, 'The shape of the war — provinces held, season by season'),
     graph,
   );
+}
+
+/** The whole war scrubbed on a slider — rebuilt from the action log. */
+export function openWarReplay(screen: GameScreen): void {
+  const state = screen.state;
+  const body = h('div', { style: { padding: '0.4rem 0.6rem 0.8rem', width: 'min(760px, 92vw)' } },
+    h('p', { class: 'small muted italic' }, 'Osperan rereads his notes…'),
+  );
+  const modal = openModal('The war, replayed', body, { wide: true });
+  void modal;
+  window.setTimeout(() => {
+    const timeline = buildWarTimeline(state);
+    const provinces = state.provinces.map((p) => ({ ...p }));
+    const canvas = h('canvas', {
+      style: { width: '100%', height: 'min(46vh, 420px)', display: 'block', borderRadius: '4px' },
+      role: 'img', 'aria-label': 'Map of the realm across the war',
+    });
+    const renderer = new MapRenderer(canvas);
+    renderer.setView({
+      mapW: state.mapW, mapH: state.mapH, cells: state.cells, provinces,
+      playerColors: playerColors(state), playerPatterns: playerPatterns(state),
+    });
+    const seasonLabel = h('div', { class: 'small-caps', style: { textAlign: 'center', color: 'var(--gold-bright)', minWidth: '9ch' } });
+    let frame = 0;
+    let playing: number | null = null;
+    const show = (i: number): void => {
+      frame = Math.max(0, Math.min(timeline.owners.length - 1, i));
+      const snapshot = timeline.owners[frame];
+      for (let pi = 0; pi < provinces.length; pi++) provinces[pi].owner = snapshot[pi];
+      renderer.render({ colorblind: screen.app.settings.colorblind });
+      seasonLabel.textContent = `Season ${timeline.rounds[frame]}`;
+      slider.value = String(frame);
+    };
+    const stop = (): void => {
+      if (playing !== null) {
+        window.clearInterval(playing);
+        playing = null;
+        playBtn.textContent = '▶ Play';
+      }
+    };
+    const slider = h('input', {
+      type: 'range', class: 'slider', style: { flex: '1' },
+      min: '0', max: String(timeline.owners.length - 1), step: '1', value: '0',
+      'aria-label': 'Season',
+      oninput: (e: Event) => {
+        stop();
+        show(parseInt((e.target as HTMLInputElement).value, 10));
+      },
+    }) as HTMLInputElement;
+    const playBtn = h('button', {
+      class: 'btn compact',
+      onclick: () => {
+        if (playing !== null) {
+          stop();
+          return;
+        }
+        if (frame >= timeline.owners.length - 1) frame = 0;
+        playBtn.textContent = '❚❚ Pause';
+        const tick = screen.app.settings.reducedMotion ? 120 : 280;
+        playing = window.setInterval(() => {
+          if (frame >= timeline.owners.length - 1) stop();
+          else show(frame + 1);
+        }, tick);
+      },
+    }, '▶ Play') as HTMLButtonElement;
+    mount(body,
+      h('div', { style: { background: '#0c0906', padding: '8px', borderRadius: '6px' } }, canvas),
+      h('div', { style: { display: 'flex', gap: '0.7rem', alignItems: 'center', marginTop: '0.6rem' } },
+        playBtn, slider, seasonLabel,
+      ),
+    );
+    requestAnimationFrame(() => {
+      renderer.resize();
+      renderer.fit();
+      show(0);
+    });
+  }, 60);
 }
 
 export function openSagaModal(screen: GameScreen, sagaText: string): void {

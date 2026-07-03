@@ -23,7 +23,10 @@ await page.screenshot({ path: `${outdir}/2-setup.png` });
 await page.locator('#setup-seed').fill('drive-test-7');
 await page.waitForTimeout(500);
 await page.getByRole('button', { name: 'Begin the Chronicle' }).click();
-await page.waitForTimeout(1800);
+await page.waitForTimeout(1600);
+const skipOnboarding = page.getByRole('button', { name: 'I have read the Chronicle before' });
+if (await skipOnboarding.isVisible().catch(() => false)) await skipOnboarding.click();
+await page.waitForTimeout(400);
 await page.screenshot({ path: `${outdir}/3-game.png` });
 
 // select own seat province (click center of canvas area where banner is — instead: use keyboard cycling)

@@ -97,13 +97,14 @@ export function aiResolveEvents(state: GameState, rng: Rng, pid: PlayerId, dispa
 }
 
 /** Event text for the UI (bound to its instance). */
-export function eventText(state: GameState, eventId: number): { title: string; text: string; choices: { label: string; preview: string }[] } | null {
+export function eventText(state: GameState, eventId: number): { defId: string; title: string; text: string; choices: { label: string; preview: string }[] } | null {
   const instance = state.pendingEvents.find((e) => e.id === eventId);
   if (!instance) return null;
   const def = EVENT_BY_ID[instance.defId];
   if (!def) return null;
   const ctx: EventCtx = { state, rng: null as never, pid: instance.player, province: instance.province, heroId: instance.heroId, effects: [] };
   return {
+    defId: def.id,
     title: def.title,
     text: def.text(ctx),
     choices: def.choices.map((c) => ({ label: c.label, preview: c.preview })),

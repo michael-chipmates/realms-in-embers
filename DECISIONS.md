@@ -100,3 +100,26 @@ dominion at 55% held 3 seasons.
 Shipped with zero runtime dependencies. Dev deps: vite, typescript, vitest,
 tsx, @types/node, playwright (screenshot-driven UI iteration — scripts/drive*.mjs
 replay real user flows headlessly and were how most UI bugs were caught).
+
+
+## D-014 · Post-ship polish: clarity beats subtlety (iteration 2)
+User playtest verdicts drove a clarity pass: the viewer's realm now renders
+unmistakably theirs (stronger fill, bright double border), terrain washes got
+real color, march targets carry explicit order-glyphs (crossed swords vs
+chevron), walls show as crenellated badges, rivers read at a glance. The
+earlier map was atmospheric but coy; a strategy map must answer "what's mine
+and where can I go" preattentively.
+
+## D-015 · Licensed score over generative, with a graceful ladder
+Scott Buckley's CC-BY 4.0 tracks (Penumbra; Song Of The Forge) are bundled and
+credited in-game. The ladder: user-provided playlist.json > bundled tracks >
+procedural WebAudio score. Attribution lives in Settings, README, and this
+file. The synth engine remains as the offline fallback and for all SFX.
+
+## D-016 · Art slots now, images later
+Fantasy Empires' looming Dungeon Master and ornamental map frame inspired
+(not copied): Osperan now has a visible presence at the chronicle head and the
+war table wears carved-brass corner flourishes. Every illustrated surface
+already queries a named art slot (src/ui/art.ts) with a procedural fallback,
+and docs/ART.md specifies the full generated-image manifest — provider,
+style block, per-image prompts — so the illustration round is a drop-in.

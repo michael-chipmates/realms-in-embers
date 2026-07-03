@@ -101,6 +101,11 @@ const P: Record<string, string> = {
 
 export type IconName = keyof typeof P;
 
+/** Raw path data for composing icons into other SVG (heraldry). */
+export function iconPathOf(name: string): string {
+  return P[name] ?? P.info;
+}
+
 export function iconSvg(name: string, size = 16, cls = ''): string {
   const d = P[name] ?? P.info;
   return `<svg class="icon ${cls}" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${d}"/></svg>`;

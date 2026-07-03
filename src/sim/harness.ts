@@ -22,6 +22,8 @@ interface GameRecord {
   rounds: number;
   winner: string | null;
   winnerLord: string | null;
+  winnerDifficulty: string | null;
+  seatDifficulties: string[];
   path: string | null;
   battles: number;
   rebellions: number;
@@ -113,6 +115,8 @@ function playGame(i: number): GameRecord {
     rounds: state.turn,
     winner: winner !== null ? `P${winner}` : null,
     winnerLord: winner !== null ? state.players[winner].lordId : null,
+    winnerDifficulty: winner !== null ? (state.players[winner].difficulty ?? 'knight') : null,
+    seatDifficulties: settings.players.map((p) => p.difficulty),
     path: state.victory.winPath,
     battles,
     rebellions,
@@ -172,6 +176,19 @@ function main(): void {
       console.log(`  ${(LORD_BY_ID[lord]?.name ?? lord).padEnd(24)} ${String(n).padStart(3)}`);
     }
     void byLordGames;
+    // difficulty fairness: wins per seat at each handicap tier
+    const diffSeats = new Map<string, number>();
+    const diffWins = new Map<string, number>();
+    for (const r of records) {
+      for (const d of r.seatDifficulties) diffSeats.set(d, (diffSeats.get(d) ?? 0) + 1);
+      if (r.winnerDifficulty) diffWins.set(r.winnerDifficulty, (diffWins.get(r.winnerDifficulty) ?? 0) + 1);
+    }
+    console.log('Win rate by AI difficulty (wins / seats):');
+    for (const d of ['squire', 'knight', 'warlord']) {
+      const seats = diffSeats.get(d) ?? 0;
+      const wins = diffWins.get(d) ?? 0;
+      console.log(`  ${d.padEnd(8)} ${String(wins).padStart(3)} / ${String(seats).padStart(3)}  ${seats > 0 ? Math.round((wins / seats) * 100) : 0}%`);
+    }
     const avgBattles = records.reduce((s, r) => s + r.battles, 0) / records.length;
     const avgChron = records.reduce((s, r) => s + r.chronicleEntries, 0) / records.length;
     console.log(`Average battles/game: ${avgBattles.toFixed(1)}, chronicle entries/game: ${avgChron.toFixed(0)}`);

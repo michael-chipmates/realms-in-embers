@@ -41,11 +41,11 @@ export class App {
     renderTitle(this);
   }
 
-  toSetup(): void {
+  toSetup(presetSeed?: string): void {
     this.gameScreen?.dispose();
     this.gameScreen = null;
     clear(this.root);
-    renderSetup(this);
+    renderSetup(this, presetSeed);
   }
 
   startGame(settings: GameSettings): void {

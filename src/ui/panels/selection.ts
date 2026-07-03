@@ -13,6 +13,7 @@ import { clear, h, mount } from '../dom';
 import { fmt, lordDisplay, signed } from '../format';
 import { iconSvg } from '../icons';
 import { breakdown, tip } from '../tooltip';
+import { audio } from '../audio';
 import type { GameScreen } from '../screens/game';
 
 export function renderSelectionPanel(screen: GameScreen, root: HTMLElement): void {
@@ -237,8 +238,8 @@ function renderBuildCard(screen: GameScreen, p: Province): HTMLElement | null {
     return true;
   });
   if (options.length === 0) return null;
-  return h('div', { class: 'panel side-card' },
-    h('div', { class: 'panel-title' }, 'Raise works'),
+  return h('details', { class: 'panel side-card side-section', open: true },
+    h('summary', {}, 'Raise works'),
     h('div', { class: 'option-grid' },
       ...options.map((b) => {
         const def = BUILDINGS[b];
@@ -248,7 +249,7 @@ function renderBuildCard(screen: GameScreen, p: Province): HTMLElement | null {
           class: 'option-btn',
           disabled: !afford,
           onclick: () => {
-            screen.dispatch({ t: 'build', province: p.id, building: b });
+            if (screen.dispatch({ t: 'build', province: p.id, building: b })) audio.hammer();
           },
         },
           h('span', { html: iconSvg(def.icon, 18) }),
@@ -291,8 +292,8 @@ function renderRecruitCard(screen: GameScreen, p: Province): HTMLElement | null 
     return true;
   });
   if (options.length === 0) return null;
-  return h('div', { class: 'panel side-card' },
-    h('div', { class: 'panel-title' }, 'Muster companies'),
+  return h('details', { class: 'panel side-card side-section', open: true },
+    h('summary', {}, 'Muster companies'),
     h('div', { class: 'option-grid' },
       ...options.map((id: UnitTypeId) => {
         const def = UNITS[id];
@@ -302,7 +303,7 @@ function renderRecruitCard(screen: GameScreen, p: Province): HTMLElement | null 
           class: 'option-btn',
           disabled: !afford,
           onclick: () => {
-            screen.dispatch({ t: 'recruit', province: p.id, unit: id });
+            if (screen.dispatch({ t: 'recruit', province: p.id, unit: id })) audio.drum();
           },
         },
           h('span', { html: iconSvg(def.icon, 18) }),

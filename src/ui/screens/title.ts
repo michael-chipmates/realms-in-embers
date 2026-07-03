@@ -1,5 +1,6 @@
 /** The title screen: a dark room, a warm table, and the ways in. */
 import { h, mount } from '../dom';
+import { artSlot } from '../art';
 import { iconSvg } from '../icons';
 import { hasAnySave, listSlots, loadSlot, newestSave, deleteSlot, importSave } from '../saves';
 import { openModal } from '../modal';
@@ -25,6 +26,14 @@ export function renderTitle(app: App): void {
           },
         }, 'Continue')
       : null,
+    h('button', {
+      class: 'btn title-btn',
+      onclick: () => {
+        const d = new Date();
+        const seed = `embermark-${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+        app.toSetup(seed);
+      },
+    }, 'Seed of the Day'),
     h('button', { class: 'btn title-btn', onclick: () => openLoadModal(app) }, 'Load a Chronicle'),
     h('button', { class: 'btn title-btn', onclick: () => openSettingsPanel(app) }, 'Settings'),
   );
@@ -32,6 +41,7 @@ export function renderTitle(app: App): void {
   const screen = h(
     'div',
     { class: 'room title-screen' },
+    artSlot('title-hall', h('span'), { className: 'title-backdrop', alt: '' }),
     h('div', { class: 'title-center' },
       h('p', { class: 'title-over muted italic' }, 'Forty years after the Sundering'),
       h('h1', { class: 'title-display title-main' }, 'Realms in Embers'),

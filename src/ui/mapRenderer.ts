@@ -31,6 +31,12 @@ export interface RenderOptions {
   hovered?: number | null;
   /** Highlighted as legal move targets. */
   targets?: Set<number>;
+  /** Subset of targets that mean a battle. */
+  targetsHostile?: Set<number>;
+  /** Sea-lane hints while a harbor army is selected. */
+  seaLanes?: { from: number; to: number }[];
+  /** The player whose realm should read unmistakably as "yours". */
+  viewer?: number;
   showGrid?: boolean;
   colorblind?: boolean;
   /** Army markers to draw (owner -1 = leaderless). */
@@ -42,11 +48,11 @@ interface Loop {
 }
 
 const TERRAIN_WASH: Record<Terrain, string> = {
-  meadow: 'rgba(196, 178, 116, 0.55)',
-  forest: 'rgba(139, 152, 105, 0.6)',
-  hills: 'rgba(186, 160, 108, 0.62)',
-  mountain: 'rgba(158, 143, 118, 0.66)',
-  moor: 'rgba(151, 152, 132, 0.55)',
+  meadow: 'rgba(214, 186, 100, 0.62)',
+  forest: 'rgba(124, 156, 94, 0.68)',
+  hills: 'rgba(198, 158, 92, 0.66)',
+  mountain: 'rgba(148, 136, 130, 0.72)',
+  moor: 'rgba(138, 152, 128, 0.6)',
 };
 
 const INK = '#3a2e1c';
@@ -198,15 +204,20 @@ export class MapRenderer {
         // terrain wash
         ctx.fillStyle = TERRAIN_WASH[p.terrain];
         ctx.fillRect(0, 0, w, hgt);
-        // owner tint
+        // owner tint — the viewer's own realm reads clearly stronger
         if (p.owner >= 0 && view.playerColors) {
-          ctx.globalAlpha = 0.34;
+          const mine = opts.viewer !== undefined && p.owner === opts.viewer;
+          ctx.globalAlpha = mine ? 0.52 : 0.38;
           ctx.fillStyle = view.playerColors[p.owner];
           ctx.fillRect(0, 0, w, hgt);
           ctx.globalAlpha = 1;
           if (opts.colorblind && view.playerPatterns) {
             drawPattern(ctx, view.playerPatterns[p.owner], view.playerColors[p.owner], w, hgt, this.scale);
           }
+        } else if (p.owner < 0) {
+          // free provinces sit back: a faint parchment-grey veil
+          ctx.fillStyle = 'rgba(216, 206, 180, 0.25)';
+          ctx.fillRect(0, 0, w, hgt);
         }
         this.drawTerrainGlyphs(ctx, p);
       } else {
@@ -232,11 +243,14 @@ export class MapRenderer {
 
     // --- rivers (under borders)
     ctx.save();
-    ctx.strokeStyle = 'rgba(64, 96, 110, 0.85)';
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
     for (const path of this.riverPaths) {
-      ctx.lineWidth = Math.max(1.5, this.scale * 0.16);
+      ctx.strokeStyle = 'rgba(52, 88, 108, 0.95)';
+      ctx.lineWidth = Math.max(2, this.scale * 0.22);
+      this.strokePath(ctx, path);
+      ctx.strokeStyle = 'rgba(150, 196, 210, 0.7)';
+      ctx.lineWidth = Math.max(1, this.scale * 0.08);
       this.strokePath(ctx, path);
     }
     ctx.restore();
@@ -245,14 +259,20 @@ export class MapRenderer {
     for (const p of view.provinces) {
       const loops = this.loops.get(p.id);
       if (!loops) continue;
+      const mine = opts.viewer !== undefined && p.owner === opts.viewer;
       ctx.save();
       this.pathLoops(ctx, loops);
       if (p.owner >= 0 && view.playerColors && !(opts.unseen?.has(p.id) ?? false)) {
         ctx.strokeStyle = view.playerColors[p.owner];
-        ctx.lineWidth = Math.max(2.5, this.scale * 0.24);
-        ctx.globalAlpha = 0.8;
+        ctx.lineWidth = Math.max(mine ? 3.5 : 2.5, this.scale * (mine ? 0.32 : 0.22));
+        ctx.globalAlpha = mine ? 0.95 : 0.75;
         ctx.stroke();
         ctx.globalAlpha = 1;
+        if (mine) {
+          ctx.strokeStyle = 'rgba(255, 240, 200, 0.5)';
+          ctx.lineWidth = Math.max(1.2, this.scale * 0.08);
+          ctx.stroke();
+        }
       }
       ctx.strokeStyle = INK_SOFT;
       ctx.lineWidth = Math.max(1, this.scale * 0.07);
@@ -288,8 +308,44 @@ export class MapRenderer {
       if (opts.unseen?.has(p.id)) continue;
       const [sx, sy] = this.worldToScreen(p.cx + 0.5, p.cy + 0.5);
       if (p.site) this.drawSite(ctx, p, sx, sy);
+      const wallTier = p.buildings.includes('walls3') ? 3 : p.buildings.includes('walls2') ? 2 : p.buildings.includes('walls1') ? 1 : 0;
+      if (wallTier > 0) {
+        this.drawWallsBadge(ctx, sx + this.scale * (p.site ? 0.9 : 0), sy + this.scale * 0.78, wallTier);
+      }
       if (p.seatOf !== null && p.seatOf >= 0 && view.playerColors) {
         this.drawBanner(ctx, sx, sy - this.scale * 1.15, view.playerColors[p.seatOf]);
+      }
+    }
+
+    // --- sea-lane hints for the selected harbor army
+    if (opts.seaLanes && opts.seaLanes.length > 0) {
+      ctx.save();
+      ctx.setLineDash([Math.max(4, this.scale * 0.4), Math.max(4, this.scale * 0.35)]);
+      ctx.strokeStyle = 'rgba(240, 244, 235, 0.65)';
+      ctx.lineWidth = Math.max(1.5, this.scale * 0.1);
+      for (const lane of opts.seaLanes) {
+        const a = view.provinces[lane.from];
+        const b = view.provinces[lane.to];
+        const [ax, ay] = this.worldToScreen(a.cx + 0.5, a.cy + 0.5);
+        const [bx, by] = this.worldToScreen(b.cx + 0.5, b.cy + 0.5);
+        const mx = (ax + bx) / 2;
+        const my = (ay + by) / 2 - Math.hypot(bx - ax, by - ay) * 0.14;
+        ctx.beginPath();
+        ctx.moveTo(ax, ay);
+        ctx.quadraticCurveTo(mx, my, bx, by);
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+
+    // --- march-order glyphs on legal targets
+    if (opts.targets && opts.targets.size > 0) {
+      for (const pid of opts.targets) {
+        if (opts.unseen?.has(pid)) continue;
+        const p = view.provinces[pid];
+        const [sx, sy] = this.worldToScreen(p.cx + 0.5, p.cy + 0.5);
+        const hostile = opts.targetsHostile?.has(pid) ?? false;
+        this.drawOrderGlyph(ctx, sx, sy - this.scale * 1.5, hostile);
       }
     }
 
@@ -313,6 +369,60 @@ export class MapRenderer {
       }
     }
     this.drawLabels(ctx, opts);
+  }
+
+  /** Crossed swords (battle) or a marching chevron (free move) on a wax disc. */
+  private drawOrderGlyph(ctx: CanvasRenderingContext2D, x: number, y: number, hostile: boolean): void {
+    const r = Math.max(9, this.scale * 0.6);
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, Math.PI * 2);
+    ctx.fillStyle = hostile ? 'rgba(138, 47, 38, 0.95)' : 'rgba(52, 74, 46, 0.92)';
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(255, 236, 190, 0.9)';
+    ctx.lineWidth = 1.6;
+    ctx.stroke();
+    ctx.strokeStyle = '#ffeccb';
+    ctx.lineWidth = Math.max(1.6, r * 0.16);
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    if (hostile) {
+      const k = r * 0.48;
+      ctx.moveTo(x - k, y - k);
+      ctx.lineTo(x + k, y + k);
+      ctx.moveTo(x + k, y - k);
+      ctx.lineTo(x - k, y + k);
+    } else {
+      const k = r * 0.42;
+      ctx.moveTo(x - k, y + k * 0.5);
+      ctx.lineTo(x, y - k * 0.6);
+      ctx.lineTo(x + k, y + k * 0.5);
+    }
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  /** Small crenellated badge for walled provinces. */
+  private drawWallsBadge(ctx: CanvasRenderingContext2D, x: number, y: number, tier: number): void {
+    const s = this.scale;
+    const w = s * 0.62;
+    const hgt = s * 0.4;
+    ctx.save();
+    ctx.fillStyle = tier >= 3 ? '#6b5a3c' : '#7d6f52';
+    ctx.strokeStyle = 'rgba(30, 22, 12, 0.85)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.rect(x - w / 2, y - hgt / 2, w, hgt);
+    ctx.fill();
+    // crenellations
+    const teeth = 3;
+    const tw = w / (teeth * 2 - 1);
+    for (let i = 0; i < teeth; i++) {
+      ctx.rect(x - w / 2 + i * tw * 2, y - hgt / 2 - tw, tw, tw);
+    }
+    ctx.fill();
+    ctx.stroke();
+    ctx.restore();
   }
 
   private drawArmyMarker(

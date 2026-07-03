@@ -17,6 +17,7 @@ import { h, mount, clear } from '../dom';
 import { fmt, lordDisplay, playerColors, playerPatterns, seasonName, signed } from '../format';
 import { iconSvg } from '../icons';
 import { MapRenderer } from '../mapRenderer';
+import { sigilShield } from '../heraldry';
 import { saveToSlot } from '../saves';
 import { breakdown, tip, hideTip } from '../tooltip';
 import { renderSelectionPanel } from '../panels/selection';
@@ -77,6 +78,12 @@ export class GameScreen {
       this.topbar,
       h('main', { class: 'war-table' },
         this.canvas,
+        h('div', { class: 'table-frame', 'aria-hidden': 'true' },
+          h('span', { class: 'frame-corner frame-tl' }),
+          h('span', { class: 'frame-corner frame-tr' }),
+          h('span', { class: 'frame-corner frame-bl' }),
+          h('span', { class: 'frame-corner frame-br' }),
+        ),
         this.sidePanel,
         this.chronicleEl,
         this.alertsEl,
@@ -158,10 +165,16 @@ export class GameScreen {
       const unseen = this.state.settings.fogOfWar
         ? new Set(this.state.provinces.map((p) => p.id).filter((id) => !viewer.seen.includes(id)))
         : undefined;
+      const selArmy = this.sel.armyId !== null ? this.state.armies[this.sel.armyId] : null;
       this.renderer.render({
         selected: this.sel.provinceId,
         hovered: this.hovered,
         targets: new Set(this.targets.map((t) => t.to)),
+        targetsHostile: new Set(this.targets.filter((t) => t.hostile).map((t) => t.to)),
+        seaLanes: selArmy
+          ? this.targets.filter((t) => t.viaSea).map((t) => ({ from: selArmy.province, to: t.to }))
+          : [],
+        viewer: this.viewerId(),
         colorblind: this.app.settings.colorblind,
         unseen,
         armies: this.armyMarkers(),
@@ -222,6 +235,7 @@ export class GameScreen {
       } else {
         const rect = this.canvas.getBoundingClientRect();
         const pid = this.renderer.provinceAt(e.clientX - rect.left, e.clientY - rect.top);
+        this.canvas.style.cursor = pid !== null ? 'pointer' : 'grab';
         if (pid !== this.hovered) {
           this.hovered = pid;
           this.redrawMap();
@@ -440,9 +454,8 @@ export class GameScreen {
 
   async endTurn(): Promise<void> {
     if (this.aiRunning || this.state.phase === 'ended') return;
-    const before = this.state.current;
+    audio.horn();
     if (!this.dispatch({ t: 'endTurn' })) return;
-    void before;
     await this.runAiTurns();
   }
 
@@ -509,7 +522,12 @@ export class GameScreen {
           } else {
             const atk = lordDisplay(this.state, effect.report.attacker.player);
             const def = lordDisplay(this.state, effect.report.defender.player);
-            this.toast(`Battle at ${effect.report.provinceName}: ${atk.name} against ${def.name} — ${effect.report.winner === 'attacker' ? atk.name : def.name} holds the field.`, 'war');
+            const report = effect.report;
+            this.toast(
+              `Battle at ${report.provinceName}: ${atk.name} against ${def.name} — ${report.winner === 'attacker' ? atk.name : def.name} holds the field.`,
+              'war',
+              () => openBattleReport(this, report),
+            );
           }
           break;
         }
@@ -546,13 +564,15 @@ export class GameScreen {
     this.renderChronicle();
   }
 
-  toast(text: string, kind: 'info' | 'war' | 'danger' | 'gold' = 'info'): void {
-    const el = h('div', { class: `toast toast-${kind}` }, text);
+  toast(text: string, kind: 'info' | 'war' | 'danger' | 'gold' = 'info', onClick?: () => void): void {
+    const el = onClick
+      ? h('button', { class: `toast toast-${kind} toast-click`, onclick: () => { el.remove(); onClick(); } }, text, h('span', { class: 'small muted', style: { display: 'block' } }, 'tap for the account'))
+      : h('div', { class: `toast toast-${kind}` }, text);
     this.toastsEl.appendChild(el);
     window.setTimeout(() => {
       el.classList.add('toast-out');
       window.setTimeout(() => el.remove(), 400);
-    }, 4200);
+    }, onClick ? 6500 : 4200);
     while (this.toastsEl.children.length > 4) this.toastsEl.firstChild?.remove();
   }
 
@@ -603,7 +623,7 @@ export class GameScreen {
     mount(this.topbar,
       h('button', { class: 'btn btn-quiet', 'aria-label': 'Menu', html: iconSvg('gear', 18), onclick: () => openMenuOverlay(this) }),
       h('div', { class: 'topbar-lord', style: { borderColor: lord.color } },
-        h('span', { class: 'lord-swatch', style: { background: lord.color } }),
+        sigilShield(viewer.lordId, 28),
         h('div', {},
           h('div', { class: 'topbar-lord-name' }, lord.name),
           h('div', { class: 'small muted' }, lord.epithet),

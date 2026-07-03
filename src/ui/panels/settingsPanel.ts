@@ -1,5 +1,6 @@
 /** Settings: accessibility and sound. Available from title and in game. */
 import { h } from '../dom';
+import { audio } from '../audio';
 import { openModal } from '../modal';
 import type { App } from '../app';
 
@@ -54,6 +55,11 @@ export function openSettingsPanel(app: App): void {
       s.volSfx = v;
       app.applySettings();
     }),
+    h('h3', { class: 'settings-head' }, 'Credits'),
+    h('div', { class: 'small muted', style: { lineHeight: '1.5' } },
+      ...audio.credits().map((line) => h('p', { style: { margin: '0 0 0.3rem' } }, line)),
+      h('p', { style: { margin: '0' } }, 'Everything else — code, world, words, icons — made for this game.'),
+    ),
     h('h3', { class: 'settings-head' }, 'Reading'),
     toggle('Veteran chronicle', s.veteranChronicle, (v) => {
       s.veteranChronicle = v;

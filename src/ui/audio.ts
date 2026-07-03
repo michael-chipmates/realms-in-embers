@@ -7,6 +7,13 @@
  * plays before the first user gesture (browser policy).
  */
 
+/**
+ * Bundled score: Scott Buckley — 'Penumbra' & 'Song Of The Forge',
+ * CC-BY 4.0 (www.scottbuckley.com.au). Credits shown in Settings & README.
+ * Drop your own MP3s in public/music/ + playlist.json to override.
+ */
+const DEFAULT_PLAYLIST = ['music/penumbra.mp3', 'music/song-of-the-forge.mp3'];
+
 class AudioEngine {
   private ctx: AudioContext | null = null;
   private master: GainNode | null = null;
@@ -16,6 +23,11 @@ class AudioEngine {
   private started = false;
   private vols = { master: 0.8, music: 0.6, sfx: 0.8 };
   private inGame = false;
+  private trackEl: HTMLAudioElement | null = null;
+  private trackSource: MediaElementAudioSourceNode | null = null;
+  private playlist: string[] = [...DEFAULT_PLAYLIST];
+  private trackIdx = 0;
+  private useTracks = true;
 
   private ensure(): boolean {
     if (this.ctx) return true;
@@ -61,6 +73,14 @@ class AudioEngine {
     if (this.started) this.startMusic();
   }
 
+  /** Attribution lines for the Settings credits block. */
+  credits(): string[] {
+    return [
+      "'Penumbra' by Scott Buckley — released under CC-BY 4.0. www.scottbuckley.com.au",
+      "'Song Of The Forge' by Scott Buckley — released under CC-BY 4.0. www.scottbuckley.com.au",
+    ];
+  }
+
   leaveGame(): void {
     this.inGame = false;
     this.stopMusic();
@@ -69,6 +89,72 @@ class AudioEngine {
   // ------------------------------------------------------------- music
 
   private startMusic(): void {
+    if (!this.ensure()) return;
+    if (this.useTracks) {
+      void this.startTrackMusic();
+    } else {
+      this.startGenerativeMusic();
+    }
+  }
+
+  /** Stream the bundled (or user-provided) score through the music bus. */
+  private async startTrackMusic(): Promise<void> {
+    if (this.trackEl) {
+      void this.trackEl.play().catch(() => undefined);
+      return;
+    }
+    try {
+      // users may override the score: public/music/playlist.json = ["music/a.mp3", ...]
+      try {
+        const res = await fetch('music/playlist.json');
+        if (res.ok) {
+          const list = (await res.json()) as string[];
+          if (Array.isArray(list) && list.length > 0) this.playlist = list;
+        }
+      } catch {
+        // no override — bundled score
+      }
+      const el = new Audio();
+      el.crossOrigin = 'anonymous';
+      el.preload = 'auto';
+      this.trackEl = el;
+      this.trackSource = this.ctx!.createMediaElementSource(el);
+      this.trackSource.connect(this.music!);
+      const playNext = (): void => {
+        if (!this.inGame || !this.trackEl) return;
+        el.src = this.playlist[this.trackIdx % this.playlist.length];
+        this.trackIdx++;
+        el.play().catch(() => {
+          // tracks unavailable (offline build without files): fall back for good
+          this.useTracks = false;
+          this.teardownTracks();
+          this.startGenerativeMusic();
+        });
+      };
+      el.addEventListener('ended', () => window.setTimeout(playNext, 2400));
+      el.addEventListener('error', () => {
+        this.useTracks = false;
+        this.teardownTracks();
+        this.startGenerativeMusic();
+      });
+      playNext();
+    } catch {
+      this.useTracks = false;
+      this.startGenerativeMusic();
+    }
+  }
+
+  private teardownTracks(): void {
+    if (this.trackEl) {
+      this.trackEl.pause();
+      this.trackEl.src = '';
+      this.trackEl = null;
+    }
+    this.trackSource?.disconnect();
+    this.trackSource = null;
+  }
+
+  private startGenerativeMusic(): void {
     if (!this.ensure() || this.musicTimer !== null) return;
     const ctx = this.ctx!;
     // hearth drone: two detuned low oscillators through a soft lowpass
@@ -128,6 +214,7 @@ class AudioEngine {
       window.clearTimeout(this.musicTimer);
       this.musicTimer = null;
     }
+    if (this.trackEl) this.trackEl.pause();
   }
 
   // --------------------------------------------------------------- sfx
@@ -203,6 +290,60 @@ class AudioEngine {
 
   quillScratch(): void {
     this.noise(0.18, 0.06, 3200);
+  }
+
+  /** End-of-season horn: a low swell with a fifth. */
+  horn(): void {
+    if (!this.ctx || !this.started) return;
+    const ctx = this.ctx;
+    const t = ctx.currentTime;
+    for (const [freq, gain] of [[146.8, 0.14], [220.2, 0.08]] as const) {
+      const osc = ctx.createOscillator();
+      osc.type = 'sawtooth';
+      osc.frequency.value = freq;
+      const filter = ctx.createBiquadFilter();
+      filter.type = 'lowpass';
+      filter.frequency.setValueAtTime(300, t);
+      filter.frequency.linearRampToValueAtTime(900, t + 0.35);
+      const g = ctx.createGain();
+      g.gain.setValueAtTime(0, t);
+      g.gain.linearRampToValueAtTime(gain, t + 0.18);
+      g.gain.exponentialRampToValueAtTime(0.001, t + 1.1);
+      osc.connect(filter);
+      filter.connect(g);
+      g.connect(this.sfx!);
+      osc.start(t);
+      osc.stop(t + 1.2);
+    }
+  }
+
+  /** Mason's hammer for laying works. */
+  hammer(): void {
+    this.blip(90, 0.16, 'sine', 0.22);
+    this.noise(0.08, 0.16, 1400, 0.01);
+    this.blip(72, 0.2, 'sine', 0.12, 0.16);
+    this.noise(0.07, 0.1, 1200, 0.17);
+  }
+
+  /** Muster drum for raising companies. */
+  drum(): void {
+    if (!this.ctx || !this.started) return;
+    const ctx = this.ctx;
+    for (const when of [0, 0.16, 0.32]) {
+      const t = ctx.currentTime + when;
+      const osc = ctx.createOscillator();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(160, t);
+      osc.frequency.exponentialRampToValueAtTime(55, t + 0.09);
+      const g = ctx.createGain();
+      g.gain.setValueAtTime(when === 0.32 ? 0.3 : 0.2, t);
+      g.gain.exponentialRampToValueAtTime(0.001, t + 0.18);
+      osc.connect(g);
+      g.connect(this.sfx!);
+      osc.start(t);
+      osc.stop(t + 0.2);
+      this.noise(0.05, 0.08, 2600, when + 0.005);
+    }
   }
 
   fanfare(): void {

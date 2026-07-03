@@ -4,6 +4,7 @@
  */
 import type { ChronicleEntry } from '../../engine/types';
 import { clear, h } from '../dom';
+import { artSlot } from '../art';
 import { iconSvg } from '../icons';
 import type { GameScreen } from '../screens/game';
 
@@ -20,6 +21,17 @@ const KIND_ICON: Record<ChronicleEntry['kind'], string> = {
 };
 
 let collapsed = window.innerWidth < 900;
+let filter: 'all' | ChronicleEntry['kind'] = 'all';
+
+const FILTERS: { key: 'all' | ChronicleEntry['kind']; label: string; icon: string }[] = [
+  { key: 'all', label: 'All', icon: 'quill' },
+  { key: 'war', label: 'War', icon: 'swords' },
+  { key: 'hero', label: 'Heroes', icon: 'hero' },
+  { key: 'magic', label: 'Magic', icon: 'ember' },
+  { key: 'diplomacy', label: 'Lords', icon: 'handshake' },
+  { key: 'realm', label: 'Realm', icon: 'order' },
+  { key: 'event', label: 'Events', icon: 'danger' },
+];
 
 export function renderChronicleFeed(screen: GameScreen, root: HTMLElement): void {
   const state = screen.state;
@@ -27,6 +39,7 @@ export function renderChronicleFeed(screen: GameScreen, root: HTMLElement): void
   const entries = state.chronicle
     .filter((e) => e.privateTo === undefined || e.privateTo === viewer)
     .filter((e) => !(state.settings.veteranChronicle && e.kind === 'teaching'))
+    .filter((e) => filter === 'all' || e.kind === filter || (filter === 'realm' && e.kind === 'turn') || e.kind === 'ceremony')
     .slice(-60);
 
   clear(root);
@@ -47,8 +60,24 @@ export function renderChronicleFeed(screen: GameScreen, root: HTMLElement): void
 
   const feed = h('div', { class: 'chronicle-feed' },
     h('div', { class: 'chronicle-heading' },
+      artSlot('osperan', h('span', { class: 'osperan-emblem', html: iconSvg('quill', 22) }), { className: 'art-osperan', alt: 'Osperan the Unresting at his ledger' }),
       h('div', { class: 'small-caps' }, 'The Chronicle of the Sundered Age'),
       h('div', { class: 'small muted italic' }, 'as set down by Osperan the Unresting'),
+    ),
+    h('div', { class: 'chronicle-filters', role: 'tablist', 'aria-label': 'Chronicle filters' },
+      ...FILTERS.map((f) =>
+        h('button', {
+          class: `chronicle-filter ${filter === f.key ? 'active' : ''}`,
+          role: 'tab',
+          'aria-selected': String(filter === f.key),
+          'aria-label': f.label,
+          title: f.label,
+          onclick: () => {
+            filter = f.key;
+            renderChronicleFeed(screen, root);
+          },
+        }, h('span', { html: iconSvg(f.icon, 13) }), f.label),
+      ),
     ),
     ...entries.map((entry) => renderEntry(screen, entry)),
   );

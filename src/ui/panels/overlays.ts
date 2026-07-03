@@ -24,6 +24,8 @@ import { openModal, type ModalHandle } from '../modal';
 import { breakdown, tip } from '../tooltip';
 import { exportSave, listSlots, loadSlot, saveToSlot } from '../saves';
 import { openSettingsPanel } from './settingsPanel';
+import { sigilShield } from '../heraldry';
+import { artSlot } from '../art';
 import type { GameScreen } from '../screens/game';
 
 // =============================================================== COURT
@@ -52,7 +54,7 @@ function renderCourt(screen: GameScreen, body: HTMLElement, modal: ModalHandle, 
           h('div', { class: 'side-card-title' }, `${offer.name}, ${offer.epithet}`),
           h('div', { class: 'small muted' }, `${cls.name}, level ${offer.level} · leaves in ${Math.max(0, offer.expiresTurn - state.turn)} ${offer.expiresTurn - state.turn === 1 ? 'season' : 'seasons'}`),
         ),
-        h('span', { html: iconSvg(cls.icon, 22), style: { color: 'var(--gold)' } }),
+        artSlot(`class-${offer.cls}`, h('span', { html: iconSvg(cls.icon, 22), style: { color: 'var(--gold)' } }), { className: 'art-class', alt: cls.name }),
       ),
       h('p', { class: 'small', style: { padding: '0 0.8rem' } },
         `Might ${offer.might} · Lore ${offer.lore} · Guile ${offer.guile} · Leadership ${offer.leadership}`),
@@ -559,9 +561,9 @@ function renderDiplomacy(screen: GameScreen, body: HTMLElement, focusPlayer?: Pl
 
     return h('div', { class: `panel side-card ${focusPlayer === other.id ? 'army-selected' : ''}` },
       h('div', { class: 'side-card-head' },
-        h('div', {},
+        artSlot(`lord-${lord.id}`, sigilShield(lord.id, 34), { className: 'art-portrait', alt: `${lord.name}` }),
+        h('div', { style: { flex: '1', minWidth: '0' } },
           h('div', { class: 'side-card-title' },
-            h('span', { class: 'lord-swatch', style: { background: lord.color, marginRight: '0.4em' } }),
             `${lord.name}, ${lord.epithet}`,
             other.alive ? '' : ' †'),
           h('div', { class: 'small muted' },
@@ -691,6 +693,8 @@ export function openMenuOverlay(screen: GameScreen): void {
   const content = h('div', { style: { padding: '0.8rem', display: 'flex', flexDirection: 'column', gap: '0.5rem', minWidth: '280px' } },
     h('button', { class: 'btn', onclick: () => { saveToSlot(state, nextFreeSlot()); screen.toast('The chronicle is shelved.', 'info'); } }, 'Save to a slot'),
     h('button', { class: 'btn', onclick: () => exportSave(state) }, 'Export to a file'),
+    h('p', { class: 'small muted', style: { margin: '0 0.2rem' } },
+      'War by letters: export after your turns and send the file to a fellow mortal — they load it and play on. The deterministic chronicle keeps everyone honest.'),
     h('button', {
       class: 'btn',
       onclick: () => {

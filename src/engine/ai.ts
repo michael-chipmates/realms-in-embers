@@ -754,6 +754,7 @@ function proactiveDiplomacy(
       );
       let score = persona.aggression * 40 - attitude * 0.5 + (myPower / Math.max(1, theirPower)) * 10;
       if (!frontierLeft) score += 18;
+      if (state.players.filter((p) => p.alive).length === 2) score += 14; // a duel admits no bystanders
       if (other.id === lead && provincesOf(state, lead).length / state.provinces.length > 0.38) score += 25;
       if (stance === 'pact') score -= persona.loyalty * 60; // oathbreaking weighs
       const attitudeGate = persona.loyalty > 0.7 ? -25 : (frontierLeft ? -8 : 5);

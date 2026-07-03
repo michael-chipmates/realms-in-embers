@@ -123,8 +123,8 @@ export const LORDS: LordDef[] = [
     color: '#5b6472', colorAlt: '#d8d2c2', pattern: 'stripes', sigil: 'gate',
     perk: {
       label: 'Stonefast',
-      desc: 'Walls cost 25% less. Your troops fight +10% harder defending your own provinces.',
-      fx: { wallDiscountPct: 25, defendOwnPct: 10 },
+      desc: 'Walls cost 30% less. Your troops fight +14% harder defending your own provinces.',
+      fx: { wallDiscountPct: 30, defendOwnPct: 14 },
     },
     lines: {
       intro: 'I held one gate for three days. I have since acquired more gates.',
@@ -190,8 +190,8 @@ export const LORDS: LordDef[] = [
     color: '#2a7f7f', colorAlt: '#e2ded0', pattern: 'dots', sigil: 'reed',
     perk: {
       label: 'Fen-Cunning',
-      desc: 'Moor provinces yield +4 gold. Spells cost 15% less Emberlight. You begin knowing Scrying Smoke.',
-      fx: { incomeTerrainId: 'moor', incomeTerrainAdd: 4, spellDiscountPct: 15, startingSpell: 'scryingSmoke' },
+      desc: 'Moor provinces yield +6 gold. Spells cost 20% less Emberlight. You begin knowing Scrying Smoke.',
+      fx: { incomeTerrainId: 'moor', incomeTerrainAdd: 6, spellDiscountPct: 20, startingSpell: 'scryingSmoke' },
     },
     lines: {
       intro: 'The bog told me how this ends. I’m only here to make sure it keeps its word.',

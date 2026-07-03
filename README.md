@@ -43,6 +43,30 @@ npm run sim     # headless harness: full AI-vs-AI games, invariants every round
 npm run build   # typecheck + production build (~97 KB gzipped, zero runtime deps)
 ```
 
+## Music & credits
+
+The score is **Scott Buckley** — *Penumbra* and *Song Of The Forge* — released
+under CC-BY 4.0 (www.scottbuckley.com.au), bundled in `public/music/` and
+credited in-game (Settings → Credits). Prefer your own soundtrack? Drop MP3s in
+`public/music/` and list them in `public/music/playlist.json`; the mixer picks
+them up, and falls back to the built-in generative score if files are missing.
+
+## Multiplayer
+
+- **Hotseat** (built-in): several mortals at one table; the map hides between turns.
+- **Courier play** (built-in): async war by letters — after your turns, "Seal &
+  send" exports the chronicle file; the other player loads it and plays on.
+  The deterministic core keeps everyone honest.
+- **Live online**: not shipped; the action-log architecture is ready for a thin
+  relay server (see FINAL_REPORT.md).
+
+## The illustrated edition (prepared)
+
+Every illustrated surface asks `src/ui/art.ts` for a named slot and falls back
+to procedural heraldry. `docs/ART.md` holds the complete manifest — files,
+sizes, style guide, and generation prompts — so an image-generation pass drops
+in with zero code changes.
+
 ## Repo map
 
 - `src/engine/` — the deterministic core. No DOM. One seeded RNG in-state, every

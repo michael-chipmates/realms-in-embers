@@ -1,5 +1,6 @@
 /** The realm answers back: event choices, previewed truthfully, undismissable. */
 import { eventText } from '../../engine/events';
+import { artSlot } from '../art';
 import { h } from '../dom';
 import { openModal } from '../modal';
 import type { GameScreen } from './game';
@@ -19,6 +20,7 @@ export function maybeOpenEventModal(screen: GameScreen): void {
 
   eventModalOpen = true;
   const content = h('div', { class: 'event-body' },
+    artSlot(`event-${info.defId}`, h('span'), { className: 'event-art', alt: '' }),
     h('p', { class: 'event-text' }, info.text),
     h('div', { class: 'event-choices' },
       ...info.choices.map((choice, idx) =>
