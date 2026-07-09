@@ -13,7 +13,7 @@ import { incomeReport, isDefiant, orderDrift, prosperityStep, leaderId, strainOf
 import { makeCourtOffer, makeTroubleName } from './state';
 import { UNITS } from './content/units';
 import {
-  armiesIn, armiesOf, clamp, heroesOf, lordName, makeUnits, newArmy, provincesOf, roughArmyPower,
+  addDeed, armiesIn, armiesOf, clamp, getStance, heroesOf, lordName, makeUnits, newArmy, provincesOf, roughArmyPower,
 } from './helpers';
 import { say, scribe } from './narrator';
 import type { Rng } from './rng';
@@ -302,6 +302,32 @@ function roundEnd(state: GameState, rng: Rng, effects: Effect[]): void {
     state.leaderRounds = 0;
   } else {
     state.leaderRounds++;
+  }
+
+  // -- the league: when one banner grows past arguing, the realm answers.
+  // Fires once per game; visible in every rival's attitude ledger.
+  if (state.victory.coalitionTurn === null && lead !== null) {
+    const share = provincesOf(state, lead).length / state.provinces.length;
+    const others = state.players.filter((p) => p.alive && p.id !== lead);
+    const longReign = share >= 0.34 && state.leaderRounds >= 10;
+    if ((share >= 0.4 || longReign) && others.length >= 2) {
+      state.victory.coalitionTurn = state.turn;
+      for (const p of others) {
+        addDeed(state, p.id, lead, {
+          id: 'coalition', label: 'The realm leagues against the mighty', delta: -15, decay: 0.15,
+        });
+        for (const q of others) {
+          if (q.id <= p.id) continue;
+          if (getStance(state, p.id, q.id) === 'war') continue;
+          addDeed(state, p.id, q.id, { id: 'leagueFellow', label: 'Fellow of the league', delta: 8, decay: 0.2 });
+          addDeed(state, q.id, p.id, { id: 'leagueFellow', label: 'Fellow of the league', delta: 8, decay: 0.2 });
+        }
+      }
+      say(state, rng, 'coalition', {
+        lord: lordName(state, lead),
+        share: Math.round(share * 100),
+      }, { about: lead });
+    }
   }
 
   // -- statistics for graphs & the saga

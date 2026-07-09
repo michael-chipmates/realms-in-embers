@@ -3,7 +3,7 @@ import { applyAction, createGame, deserializeGame, moveTargets, previewBattle, r
 import { entryKind } from '../src/engine/actions';
 import { incomeReport, orderDrift, provinceIncome } from '../src/engine/economy';
 import { defaultSettings } from '../src/engine/state';
-import { makeUnits } from '../src/engine/helpers';
+import { makeUnits, newArmy } from '../src/engine/helpers';
 import type { GameSettings, GameState } from '../src/engine/types';
 
 function freshGame(seed: string, players = 3): GameState {
@@ -184,6 +184,61 @@ describe('movement & combat', () => {
 });
 
 describe('war, peace and memory', () => {
+  it('a call to war, accepted, brings the third lord into the fight', () => {
+    const state = freshGame('joinwar-1', 3);
+    applyAction(state, { t: 'diplomacy', kind: 'declareWar', target: 1 });
+    const call = applyAction(state, { t: 'diplomacy', kind: 'joinWar', target: 2, against: 1, gold: 20 });
+    expect(call.ok).toBe(true);
+    const proposal = state.proposals.find((p) => p.kind === 'joinWar');
+    expect(proposal?.target).toBe(1);
+    cycleTo(state, 2);
+    const gold2Before = state.players[2].gold;
+    const respond = applyAction(state, { t: 'respond', proposalId: proposal!.id, accept: true });
+    expect(respond.ok).toBe(true);
+    expect(state.stances['1:2']).toBe('war');
+    expect(state.players[2].gold).toBe(gold2Before + 20);
+    expect((state.deeds['0>2'] ?? []).some((d) => d.id === 'answeredCall')).toBe(true);
+  });
+
+  it('calling someone into a war you are not fighting fails', () => {
+    const state = freshGame('joinwar-2', 3);
+    const call = applyAction(state, { t: 'diplomacy', kind: 'joinWar', target: 2, against: 1 });
+    expect(call.ok).toBe(false);
+  });
+
+  it('alliances are defensive: attacking one ally brings in the other', () => {
+    const state = freshGame('ally-1', 3);
+    // forge an alliance between 1 and 2 by direct state (the chain is tested elsewhere)
+    state.stances['1:2'] = 'alliance';
+    applyAction(state, { t: 'diplomacy', kind: 'declareWar', target: 1 });
+    expect(state.stances['0:1']).toBe('war');
+    expect(state.stances['0:2']).toBe('war');
+    expect((state.deeds['1>2'] ?? []).some((d) => d.id === 'honoredAlliance')).toBe(true);
+  });
+
+  it('combined assault: supporting banners fight, commit their season, and follow up on victory', () => {
+    const state = freshGame('coattack-1', 2);
+    // manufacture a clean tactical picture: two of ours adjacent to one weak enemy
+    const enemyProvince = state.provinces.find((p) => p.owner === 1)!;
+    const [n1, n2] = enemyProvince.neighbors;
+    state.provinces[n1].owner = 0;
+    state.provinces[n2].owner = 0;
+    for (const a of Object.values(state.armies)) {
+      if (a.owner === 0) { a.units = makeUnits('militia', 1); a.province = n1; a.moved = false; }
+      if (a.owner === 1) { a.units = makeUnits('militia', 2); a.province = enemyProvince.id; }
+    }
+    const main = Object.values(state.armies).find((a) => a.owner === 0)!;
+    const sup = newArmy(state, 0, n2, makeUnits('militia', 1));
+    applyAction(state, { t: 'diplomacy', kind: 'declareWar', target: 1 });
+    const res = applyAction(state, {
+      t: 'moveArmy', armyId: main.id, to: enemyProvince.id, support: [sup.id],
+    });
+    expect(res.ok).toBe(true);
+    expect(sup.moved).toBe(true);
+    const report = state.battles[state.battles.length - 1];
+    expect(report.aMods.some((m) => m.label.includes('Combined assault'))).toBe(true);
+  });
+
   it('peace can be offered, accepted, and chronicled', () => {
     const state = freshGame('diplo-1', 2);
     applyAction(state, { t: 'diplomacy', kind: 'declareWar', target: 1 });

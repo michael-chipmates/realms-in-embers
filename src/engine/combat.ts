@@ -448,28 +448,37 @@ function weaveSpells(
 
 // ----------------------------------------------------------------- preview
 
-export function previewBattle(state: GameState, armyId: number, targetProvince: number, viaSea = false, runs = 240): BattlePreview | null {
+export function previewBattle(state: GameState, armyId: number, targetProvince: number, viaSea = false, runs = 240, supportIds: number[] = [], fervor = false): BattlePreview | null {
   const army = state.armies[armyId];
   if (!army) return null;
   const target = state.provinces[targetProvince];
+  const supports = supportIds.map((id) => state.armies[id]).filter((a): a is Army => !!a && a.units.length > 0);
+  const atkArmies = [army, ...supports];
   const defenders = armiesIn(state, targetProvince).filter((a) => hostileTo(state, army.owner, a.owner));
   if (defenders.length === 0) return null;
 
-  const rng = new Rng(state.rng).fork(`preview-${armyId}-${targetProvince}-${state.turn}`);
+  const rng = new Rng(state.rng).fork(`preview-${armyId}-${targetProvince}-${state.turn}-${supportIds.join('.')}`);
   let wins = 0;
   let aLossSum = 0;
   let dLossSum = 0;
   let sample: { aMods: OddsModifier[]; dMods: OddsModifier[]; aStr: number; dStr: number } | null = null;
 
   for (let i = 0; i < runs; i++) {
-    const ctx = makeCtx(state, army.province, target, viaSea, [army], defenders);
+    const ctx = makeCtx(state, army.province, target, viaSea, atkArmies, defenders);
     const enemyTerrorA = defenders.some((d) => d.units.some((u) => UNITS[u.type].traits.includes('terror')));
-    const attackerTerror = army.units.some((u) => UNITS[u.type].traits.includes('terror'));
-    const aSide = buildSide(state, [army], 'attacker', ctx, enemyTerrorA, []);
+    const attackerTerror = atkArmies.some((a) => a.units.some((u) => UNITS[u.type].traits.includes('terror')));
+    const aSide = buildSide(state, atkArmies, 'attacker', ctx, enemyTerrorA, []);
     const dSide = buildSide(state, defenders, 'defender', ctx, attackerTerror, []);
+    if (supports.length > 0 && i === 0) {
+      aSide.mods.push({ label: `Combined assault — ${atkArmies.length} banners converge`, mult: 1 });
+    }
+    if (fervor && army.owner >= 0 && state.players[army.owner].emberlight >= FERVOR_COST) {
+      if (i === 0) aSide.mods.push({ label: `Emberlight fervor (−${FERVOR_COST} Emberlight)`, mult: FERVOR_MULT });
+      aSide.mult *= FERVOR_MULT;
+    }
     addCreedGrudgeMod(state, aSide, dSide.player);
     addCreedGrudgeMod(state, dSide, aSide.player);
-    weaveSpells(state, aSide, dSide, [army], defenders, false);
+    weaveSpells(state, aSide, dSide, atkArmies, defenders, false);
     if (!sample) {
       sample = {
         aMods: aSide.mods,
@@ -487,12 +496,13 @@ export function previewBattle(state: GameState, armyId: number, targetProvince: 
   const notes: string[] = [];
   const wallBonus = wallBonusOf(target);
   if (wallBonus > 0 && defenders.some((d) => d.owner === target.owner)) {
-    const hasSiege = army.units.some((u) => UNITS[u.type].traits.includes('siege'));
+    const hasSiege = atkArmies.some((a) => a.units.some((u) => UNITS[u.type].traits.includes('siege')));
     notes.push(hasSiege ? 'Your siegeworks will level the walls.' : 'Walls stand against you — siegeworks would level them.');
   }
   if (state.provinces[army.province].riverBorders.includes(target.id)) notes.push('You attack across a river (−15%).');
   if (viaSea) notes.push('An assault from the sea (−15%).');
-  const heroCount = army.heroIds.filter((h) => state.heroes[h]?.status === 'ready').length;
+  if (supports.length > 0) notes.push(`${supports.length} supporting ${supports.length === 1 ? 'banner joins' : 'banners join'} the assault; they commit their season, win or lose.`);
+  const heroCount = atkArmies.flatMap((a) => a.heroIds).filter((h) => state.heroes[h]?.status === 'ready').length;
   if (heroCount > 0) notes.push(heroCount === 1 ? 'Your hero risks wounds or death if the day goes ill.' : 'Your heroes risk wounds or death if the day goes ill.');
 
   return {
@@ -515,6 +525,11 @@ export interface BattleOutcome {
   attackerWon: boolean;
 }
 
+/** Opt-in attacker overcharge: raw Emberlight burned for battle power.
+ * Always previewed; a deliberate pre-commit decision, never automatic. */
+export const FERVOR_COST = 6;
+export const FERVOR_MULT = 1.12;
+
 export function resolveBattle(
   state: GameState,
   rng: Rng,
@@ -522,21 +537,36 @@ export function resolveBattle(
   targetProvince: number,
   viaSea: boolean,
   fromProvince: number,
+  supportIds: number[] = [],
+  fervor = false,
 ): BattleOutcome {
   const army = state.armies[armyId];
   const target = state.provinces[targetProvince];
+  const supports = supportIds.map((id) => state.armies[id]).filter((a): a is Army => !!a && a.units.length > 0);
+  const atkArmies = [army, ...supports];
+  // supporting banners commit their season to the assault, win or lose
+  for (const s of supports) s.moved = true;
   const defenders = armiesIn(state, targetProvince).filter((a) => hostileTo(state, army.owner, a.owner));
   const effects: Effect[] = [];
 
-  const ctx = makeCtx(state, fromProvince, target, viaSea, [army], defenders);
+  const ctx = makeCtx(state, fromProvince, target, viaSea, atkArmies, defenders);
   const defTerror = defenders.some((d) => d.units.some((u) => UNITS[u.type].traits.includes('terror')));
-  const atkTerror = army.units.some((u) => UNITS[u.type].traits.includes('terror'));
-  const aSide = buildSide(state, [army], 'attacker', ctx, defTerror, []);
+  const atkTerror = atkArmies.some((a) => a.units.some((u) => UNITS[u.type].traits.includes('terror')));
+  const aSide = buildSide(state, atkArmies, 'attacker', ctx, defTerror, []);
   const dSide = buildSide(state, defenders, 'defender', ctx, atkTerror, []);
+  if (supports.length > 0) {
+    aSide.mods.push({ label: `Combined assault — ${atkArmies.length} banners converge`, mult: 1 });
+  }
+  const spellNotes: BattleEventNote[] = [];
+  if (fervor && army.owner >= 0 && state.players[army.owner].emberlight >= FERVOR_COST) {
+    state.players[army.owner].emberlight -= FERVOR_COST;
+    aSide.mods.push({ label: `Emberlight fervor (−${FERVOR_COST} Emberlight)`, mult: FERVOR_MULT });
+    aSide.mult *= FERVOR_MULT;
+    spellNotes.push({ kind: 'spell', text: 'The attackers burned raw Emberlight for fervor — the line advanced glowing.' });
+  }
   addCreedGrudgeMod(state, aSide, dSide.player);
   addCreedGrudgeMod(state, dSide, aSide.player);
-  const spellNotes: BattleEventNote[] = [];
-  weaveSpells(state, aSide, dSide, [army], defenders, true, spellNotes);
+  weaveSpells(state, aSide, dSide, atkArmies, defenders, true, spellNotes);
 
   const beforeUnitsA = summarizeUnits(aSide);
   const beforeUnitsD = summarizeUnits(dSide);
@@ -593,7 +623,7 @@ export function resolveBattle(
   xpFor(dSide, aSide, !attackerWon);
 
   // ---- veterancy for surviving winners
-  const winnerArmies = attackerWon ? [army] : defenders;
+  const winnerArmies = attackerWon ? atkArmies : defenders;
   for (const wa of winnerArmies) {
     for (const u of wa.units) {
       if (u.hits > 0 && u.vet < 2 && rng.chance(0.3)) u.vet = (u.vet + 1) as 1 | 2;
@@ -617,22 +647,31 @@ export function resolveBattle(
     } else {
       disbandInto(state, rng, army, effects);
     }
+    // supporting banners never left home; they lick their wounds where they stand
   }
   pruneDead(army);
+  for (const s of supports) pruneDead(s);
   for (const d of defenders) pruneDead(d);
-  cleanupEmptyArmies(state, [army.id, ...defenders.map((d) => d.id)]);
+  cleanupEmptyArmies(state, [army.id, ...supports.map((s) => s.id), ...defenders.map((d) => d.id)]);
 
   // ---- capture
   let captured = false;
   const attacker = army.owner;
-  if (attackerWon && state.armies[army.id]) {
-    army.province = target.id;
-    army.moved = true;
+  const occupier = state.armies[army.id]
+    ? army
+    : supports.find((s) => state.armies[s.id] && s.units.length > 0) ?? null;
+  if (attackerWon && occupier) {
+    occupier.province = target.id;
+    occupier.moved = true;
     const previousOwner = target.owner;
     const canTake = previousOwner === NEUTRAL || hostileTo(state, attacker, previousOwner);
     if (canTake) {
       captured = true;
       captureProvince(state, rng, target, attacker, effects);
+    }
+    // the other surviving supports march in behind
+    for (const s of supports) {
+      if (s !== occupier && state.armies[s.id] && s.units.length > 0) s.province = target.id;
     }
   }
 

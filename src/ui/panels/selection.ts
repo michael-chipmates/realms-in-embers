@@ -7,7 +7,7 @@ import { RECRUITABLE, UNITS, VET_NAMES } from '../../engine/content/units';
 import { SITE_NAMES } from '../../engine/content/names';
 import { buildingCostFor, orderDrift, provinceIncome, unitCostFor } from '../../engine/economy';
 import { heroDerived } from '../../engine/heroFx';
-import { armiesIn, heroesOf, lordOf } from '../../engine/helpers';
+import { armiesIn, heroesOf, lordOf, seenBy } from '../../engine/helpers';
 import type { Army, Province, UnitTypeId } from '../../engine/types';
 import { clear, h, mount } from '../dom';
 import { fmt, lordDisplay, signed } from '../format';
@@ -27,7 +27,7 @@ export function renderSelectionPanel(screen: GameScreen, root: HTMLElement): voi
   root.classList.remove('side-panel-empty');
   const p = state.provinces[sel.provinceId];
   const viewer = screen.viewerId();
-  const fog = state.settings.fogOfWar && !state.players[viewer].seen.includes(p.id);
+  const fog = state.settings.fogOfWar && !seenBy(state, viewer).has(p.id);
 
   if (fog) {
     mount(root, h('div', { class: 'panel side-card' },

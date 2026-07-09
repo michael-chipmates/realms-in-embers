@@ -5,9 +5,10 @@
  */
 import { aiTakeTurn } from '../../engine/ai';
 import { applyAction, moveTargets, previewBattle } from '../../engine/engine';
+import { FERVOR_COST } from '../../engine/combat';
 import { emberlightIncome, incomeReport } from '../../engine/economy';
 import { LORD_BY_ID } from '../../engine/content/lords';
-import { armiesIn, heroesOf } from '../../engine/helpers';
+import { armiesIn, armiesOf, heroesOf, seenBy } from '../../engine/helpers';
 import type { Action, Army, Effect, GameState, SpellId } from '../../engine/types';
 import type { MoveTarget } from '../../engine/actions';
 import { SPELLS } from '../../engine/content/spells';
@@ -162,9 +163,9 @@ export class GameScreen {
     requestAnimationFrame(() => {
       if (!this.mapDirty || this.disposed) return;
       this.mapDirty = false;
-      const viewer = this.state.players[this.viewerId()];
-      const unseen = this.state.settings.fogOfWar
-        ? new Set(this.state.provinces.map((p) => p.id).filter((id) => !viewer.seen.includes(id)))
+      const visible = this.state.settings.fogOfWar ? seenBy(this.state, this.viewerId()) : null;
+      const unseen = visible
+        ? new Set(this.state.provinces.map((p) => p.id).filter((id) => !visible.has(id)))
         : undefined;
       const selArmy = this.sel.armyId !== null ? this.state.armies[this.sel.armyId] : null;
       this.renderer.render({
@@ -386,11 +387,17 @@ export class GameScreen {
   }
 
   private confirmAttack(army: Army, target: MoveTarget): void {
-    const preview = previewBattle(this.state, army.id, target.to, target.viaSea);
-    if (!preview) return;
     const province = this.state.provinces[target.to];
     const defenders = armiesIn(this.state, target.to).filter((a) => a.owner !== army.owner);
     const defOwner = defenders[0]?.owner ?? province.owner;
+
+    // banners that could join a combined assault on this field
+    const eligibleSupport = armiesOf(this.state, army.owner)
+      .filter((a) => a.id !== army.id && !a.moved && a.units.length > 0)
+      .filter((a) => moveTargets(this.state, a).some((mt) => mt.to === target.to && mt.hostile));
+    const chosen = new Set<number>();
+    let fervor = false;
+    const canFervor = army.owner >= 0 && this.state.players[army.owner].emberlight >= FERVOR_COST;
 
     const modBlock = (title: string, mods: { label: string; mult: number }[], strength: number) =>
       h('div', { class: 'odds-side' },
@@ -405,36 +412,79 @@ export class GameScreen {
         ),
       );
 
-    const pct = Math.round(preview.winChance * 100);
-    const content = h('div', { class: 'odds-body' },
-      h('div', { class: 'odds-meter-row' },
-        h('div', { class: 'odds-label' }, `${pct}% to carry the field`),
-        h('div', { class: 'odds-meter', role: 'img', 'aria-label': `Victory chance ${pct} percent` },
-          h('div', { class: 'odds-fill', style: { width: `${pct}%` } }),
+    const content = h('div', { class: 'odds-body' });
+    const render = (): void => {
+      const preview = previewBattle(this.state, army.id, target.to, target.viaSea, 240, [...chosen], fervor);
+      if (!preview) return;
+      const pct = Math.round(preview.winChance * 100);
+      mount(content,
+        h('div', { class: 'odds-meter-row' },
+          h('div', { class: 'odds-label' }, `${pct}% to carry the field`),
+          h('div', { class: 'odds-meter', role: 'img', 'aria-label': `Victory chance ${pct} percent` },
+            h('div', { class: 'odds-fill', style: { width: `${pct}%` } }),
+          ),
+          h('div', { class: 'small muted' },
+            `Expected losses — yours: ${Math.round(preview.aExpectedLoss * 100)}%, theirs: ${Math.round(preview.dExpectedLoss * 100)}%`),
         ),
-        h('div', { class: 'small muted' },
-          `Expected losses — yours: ${Math.round(preview.aExpectedLoss * 100)}%, theirs: ${Math.round(preview.dExpectedLoss * 100)}%`),
-      ),
-      h('div', { class: 'odds-sides' },
-        modBlock('Your host', preview.aMods, preview.aStrength),
-        modBlock(defOwner >= 0 ? `${lordDisplay(this.state, defOwner).name}'s defense` : 'The defenders', preview.dMods, preview.dStrength),
-      ),
-      preview.notes.length > 0
-        ? h('div', { class: 'odds-notes' }, ...preview.notes.map((n) => h('div', { class: 'small' }, `※ ${n}`)))
-        : null,
-      h('div', { class: 'odds-actions' },
-        h('button', {
-          class: 'btn btn-seal',
-          onclick: () => {
-            modal.close();
-            this.dispatch({ t: 'moveArmy', armyId: army.id, to: target.to, viaSea: target.viaSea });
-            audio.clash();
-            this.select(target.to, null);
-          },
-        }, h('span', { html: iconSvg('swords', 16) }), 'Give battle'),
-        h('button', { class: 'btn', onclick: () => modal.close() }, 'Hold'),
-      ),
-    );
+        eligibleSupport.length > 0
+          ? h('div', { class: 'odds-support' },
+              h('div', { class: 'odds-side-title' }, 'Sound the horns — banners in reach'),
+              ...eligibleSupport.map((s) => {
+                const label = `${s.units.length} ${s.units.length === 1 ? 'company' : 'companies'} in ${this.state.provinces[s.province].name}`;
+                const cb = h('input', {
+                  type: 'checkbox', id: `support-${s.id}`,
+                  onchange: (e: Event) => {
+                    if ((e.target as HTMLInputElement).checked) chosen.add(s.id);
+                    else chosen.delete(s.id);
+                    render();
+                  },
+                }) as HTMLInputElement;
+                cb.checked = chosen.has(s.id);
+                return h('label', { class: 'odds-support-row', for: `support-${s.id}` }, cb, h('span', {}, label));
+              }),
+              h('p', { class: 'small muted', style: { margin: '0.2rem 0 0' } },
+                'Supporting banners fight beside you and commit their season, win or lose.'),
+            )
+          : null,
+        canFervor
+          ? h('div', { class: 'odds-support' },
+              (() => {
+                const cb = h('input', {
+                  type: 'checkbox', id: 'fervor-box',
+                  onchange: (e: Event) => { fervor = (e.target as HTMLInputElement).checked; render(); },
+                }) as HTMLInputElement;
+                cb.checked = fervor;
+                return h('label', { class: 'odds-support-row', for: 'fervor-box' }, cb,
+                  h('span', {}, `Burn ${FERVOR_COST} Emberlight for fervor — your host fights +12% stronger, this battle only.`));
+              })(),
+            )
+          : null,
+        h('div', { class: 'odds-sides' },
+          modBlock(chosen.size > 0 ? `Your combined host (${chosen.size + 1} banners)` : 'Your host', preview.aMods, preview.aStrength),
+          modBlock(defOwner >= 0 ? `${lordDisplay(this.state, defOwner).name}'s defense` : 'The defenders', preview.dMods, preview.dStrength),
+        ),
+        preview.notes.length > 0
+          ? h('div', { class: 'odds-notes' }, ...preview.notes.map((n) => h('div', { class: 'small' }, `※ ${n}`)))
+          : null,
+        h('div', { class: 'odds-actions' },
+          h('button', {
+            class: 'btn btn-seal',
+            onclick: () => {
+              modal.close();
+              this.dispatch({
+                t: 'moveArmy', armyId: army.id, to: target.to, viaSea: target.viaSea,
+                ...(chosen.size > 0 ? { support: [...chosen] } : {}),
+                ...(fervor ? { fervor: true } : {}),
+              });
+              audio.clash();
+              this.select(target.to, null);
+            },
+          }, h('span', { html: iconSvg('swords', 16) }), chosen.size > 0 ? 'Give battle — together' : 'Give battle'),
+          h('button', { class: 'btn', onclick: () => modal.close() }, 'Hold'),
+        ),
+      );
+    };
+    render();
     const modal = openModal(`The battle for ${province.name}`, content, { wide: true });
   }
 

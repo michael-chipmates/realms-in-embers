@@ -4,7 +4,7 @@
  */
 import { applyAction } from './actions';
 import { Rng } from './rng';
-import { initGame } from './state';
+import { initGame, RULES_VERSION } from './state';
 import { beginTurn } from './turn';
 import type { Action, Effect, GameSettings, GameState, LoggedAction } from './types';
 
@@ -45,8 +45,12 @@ export function deserializeGame(json: string): GameState {
   if (file.app !== 'realms-in-embers') throw new Error('Not a Realms in Embers save.');
   if (file.v !== 1) throw new Error(`Save version ${file.v} is not supported.`);
   const state = file.state;
-  if (!state || state.v !== 1 || !Array.isArray(state.rng) || !Array.isArray(state.provinces)) {
-    throw new Error('The save is damaged — the chronicle cannot be reopened.');
+  // Saves from any rules version <= current load and play forward correctly
+  // (the rng stream lives in the state). Only byte-exact log REPLAY is
+  // version-bound; see RULES_VERSION in state.ts.
+  if (!state || typeof state.v !== 'number' || state.v < 1 || state.v > RULES_VERSION
+    || !Array.isArray(state.rng) || !Array.isArray(state.provinces)) {
+    throw new Error('The save is damaged or from a newer age — the chronicle cannot be reopened.');
   }
   return state;
 }

@@ -556,6 +556,18 @@ function renderDiplomacy(screen: GameScreen, body: HTMLElement, focusPlayer?: Pl
         actions.push(h('button', { class: 'btn compact', onclick: () => openGoldPrompt(screen, 'How much gold to demand?', (gold) => {
           if (gold > 0 && screen.dispatch({ t: 'diplomacy', kind: 'demand', target: other.id, gold })) refresh();
         }) }, 'Demand tribute'));
+        // call this lord into one of your wars (if they aren't already in it)
+        for (const enemy of state.players) {
+          if (!enemy.alive || enemy.id === player.id || enemy.id === other.id) continue;
+          if (getStance(state, player.id, enemy.id) !== 'war') continue;
+          if (getStance(state, other.id, enemy.id) === 'war') continue;
+          const enemyLord = LORD_BY_ID[enemy.lordId];
+          const callBtn = h('button', { class: 'btn compact', onclick: () => openGoldPrompt(screen, `Gold for ${lord.name}'s war-chest? (0 is allowed)`, (gold) => {
+            if (screen.dispatch({ t: 'diplomacy', kind: 'joinWar', target: other.id, against: enemy.id, gold })) refresh();
+          }) }, `Call to war vs ${enemyLord.name.split(' ')[0]}`);
+          tip(callBtn, `Ask ${lord.name} to enter your war against ${enemyLord.name}. Warm relations, shared enemies, and gold all help. A refusal is remembered — briefly.`);
+          actions.push(callBtn);
+        }
       }
     }
 

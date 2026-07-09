@@ -236,6 +236,14 @@ const BANKS = {
       () => `Ash fell on the eastern shires again: the old scars of the Sundering smoking in their sleep. The realm remembers what broke it, even when its lords do not.`,
     ],
   ),
+  coalition: defineBank<{ lord: string; share: number }>(
+    'ceremony',
+    [
+      (c) => `Mark this season well: ${c.lord} holds ${c.share} lands in the hundred, and the other claimants have stopped quarreling about precedence. Couriers ride between courts that were not speaking last winter. The realm has learned the old arithmetic — the mighty are a common cause.`,
+      (c) => `A league is forming. No treaty names it and every court denies it, but ${c.lord}'s ${c.share} parts of the realm have accomplished what forty years of sermons could not: the rest of them are talking. I have seen this before. It ends loudly.`,
+    ],
+    true,
+  ),
   lordSpeech: defineBank<{ lord: string; quote: string }>(
     'diplomacy',
     [

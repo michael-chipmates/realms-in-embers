@@ -182,3 +182,16 @@ export function roughArmyPower(army: Army): number {
 export function playerPower(state: GameState, pid: PlayerId): number {
   return armiesOf(state, pid).reduce((sum, a) => sum + roughArmyPower(a), 0);
 }
+
+/** Everything `viewer` can see under fog: their own memory plus, while an
+ * alliance holds, everything their allies can see. Shared maps are one of
+ * the concrete privileges of a full alliance. */
+export function seenBy(state: GameState, viewer: PlayerId): Set<number> {
+  const out = new Set(state.players[viewer].seen);
+  for (const p of state.players) {
+    if (p.id !== viewer && p.alive && getStance(state, viewer, p.id) === 'alliance') {
+      for (const id of p.seen) out.add(id);
+    }
+  }
+  return out;
+}

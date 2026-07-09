@@ -379,7 +379,7 @@ export type Action =
   | { t: 'build'; province: ProvinceId; building: BuildingId }
   | { t: 'recruit'; province: ProvinceId; unit: UnitTypeId }
   | { t: 'disband'; armyId: number; index: number }
-  | { t: 'moveArmy'; armyId: number; to: ProvinceId; viaSea?: boolean }
+  | { t: 'moveArmy'; armyId: number; to: ProvinceId; viaSea?: boolean; support?: number[]; fervor?: boolean }
   | { t: 'splitArmy'; armyId: number; unitIdx: number[]; heroIds: number[]; to: ProvinceId; viaSea?: boolean }
   | { t: 'mergeArmies'; from: number; into: number }
   | { t: 'setStance'; armyId: number; stance: Stance }
@@ -393,7 +393,7 @@ export type Action =
   | { t: 'startRite'; spellId: SpellId }
   | { t: 'pledgeEmberlight'; amount: number }
   | { t: 'castSpell'; spell: SpellId; province?: ProvinceId; targetPlayer?: PlayerId }
-  | { t: 'diplomacy'; kind: 'declareWar' | 'offerPeace' | 'offerPact' | 'offerAlliance' | 'gift' | 'demand' | 'breakPact'; target: PlayerId; gold?: number }
+  | { t: 'diplomacy'; kind: 'declareWar' | 'offerPeace' | 'offerPact' | 'offerAlliance' | 'gift' | 'demand' | 'breakPact' | 'joinWar'; target: PlayerId; gold?: number; against?: PlayerId }
   | { t: 'respond'; proposalId: number; accept: boolean }
   | { t: 'eventChoice'; eventId: number; choiceIdx: number }
   | { t: 'concede' };

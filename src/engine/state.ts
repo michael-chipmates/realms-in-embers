@@ -17,6 +17,15 @@ import type {
 } from './types';
 import { NEUTRAL } from './types';
 
+/** Bumped on every change to engine semantics that alters the RNG stream or
+ * action behavior. Saves from older versions still load and play forward
+ * correctly (rng state lives in the save), but their action logs are only
+ * guaranteed to replay byte-identically under the version that wrote them.
+ * v1: launch rules. v2: lordSpeech chronicle entries (iteration 2).
+ * v3: coalitions, joinWar, defensive alliances, combined assaults,
+ *     emberlight fervor (iteration 3). */
+export const RULES_VERSION = 3;
+
 export const HANDICAPS: Record<Difficulty, PlayerHandicap> = {
   squire: { incomeMult: 0.85, label: 'Squire — AI earns 15% less gold and attacks only with clear advantage.' },
   knight: { incomeMult: 1.0, label: 'Knight — AI plays with even hands. No bonuses either way.' },
@@ -98,7 +107,7 @@ export function initGame(settings: GameSettings): GameState {
   const seats = pickSeats(rng, map.provinces, settings.players.length);
 
   const state: GameState = {
-    v: 1,
+    v: RULES_VERSION,
     seed,
     rng: rngState,
     turn: 1,

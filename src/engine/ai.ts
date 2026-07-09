@@ -21,7 +21,7 @@ import { buildingCostFor, incomeReport, unitCostFor } from './economy';
 import { BUILD_ORDER, BUILDINGS } from './content/world';
 import { RECRUITABLE, UNITS } from './content/units';
 import {
-  armiesIn, armiesOf, atWar, creedOf, getStance, heroesOf, lordOf, provincesOf, roughArmyPower,
+  armiesIn, armiesOf, atWar, creedOf, deedsOf, getStance, heroesOf, lordOf, provincesOf, roughArmyPower,
 } from './helpers';
 import { leaderId } from './economy';
 import type { Action, Army, Effect, GameState, PlayerId, Province, UnitTypeId } from './types';
@@ -101,6 +101,20 @@ function respondToProposals(state: GameState, pid: PlayerId, dispatch: (a: Actio
       case 'demand': {
         const afford = proposal.gold <= state.players[pid].gold * 0.4;
         accept = theirPower > myPower * 1.5 && afford && persona.pride < 0.75;
+        break;
+      }
+      case 'joinWar': {
+        const against = proposal.target;
+        if (against === undefined || !state.players[against].alive) { accept = false; break; }
+        const attToTarget = attitudeOf(state, pid, against).total;
+        const targetPower = totalPower(state, against);
+        const targetShare = provincesOf(state, against).length / state.provinces.length;
+        const hopeless = targetPower > (myPower + theirPower) * 1.4;
+        const menaced = targetShare > 0.38 || attToTarget <= -15;
+        const bought = proposal.gold >= 40 && persona.greed > 0.45 && attToTarget <= 0;
+        accept = !hopeless
+          && attitude >= 0
+          && (menaced || bought || (attToTarget <= -8 && persona.aggression > 0.5));
         break;
       }
       default:
@@ -515,6 +529,12 @@ function attackNerve(state: GameState, pid: PlayerId): number {
   if (player.difficulty === 'squire') threshold += 0.08;
   if (state.turn < 12) threshold -= 0.06; // the land-grab years
   if (state.turn > 30) threshold -= 0.04; // the chronicle shortens; boldness pays
+  // once the league has formed, everyone but the leader fights braver
+  const lead = leaderId(state);
+  if (state.victory.coalitionTurn !== null && lead !== null && lead !== pid) {
+    const share = provincesOf(state, lead).length / state.provinces.length;
+    if (share >= 0.34) threshold -= 0.05;
+  }
   return threshold;
 }
 
@@ -578,23 +598,42 @@ function actWithArmy(state: GameState, pid: PlayerId, army: Army, nerve: number,
     }
   }
 
-  // 1) fight: score hostile targets by preview odds x prize
-  let bestAttack: { to: number; viaSea: boolean; score: number } | null = null;
+  // 1) fight: score hostile targets by preview odds x prize.
+  // When a lone banner lacks the nerve, sound the horns: a combined assault
+  // with nearby unmoved banners may carry what one could not.
+  let bestAttack: { to: number; viaSea: boolean; score: number; support: number[] } | null = null;
   const myRough = roughArmyPower(army);
+  const idle = armiesOf(state, pid).filter((a) => a.id !== army.id && !a.moved && a.units.length > 0);
   for (const t of targets.filter((t2) => t2.hostile)) {
-    // don't waste scrying on hopeless odds
-    const defRough = armiesIn(state, t.to)
-      .filter((a) => a.owner !== pid)
-      .reduce((s, a) => s + roughArmyPower(a), 0);
-    if (defRough > myRough * 1.7) continue;
-    const preview = previewBattle(state, army.id, t.to, t.viaSea, 60);
-    if (!preview) continue;
     const p = state.provinces[t.to];
     const rebelsInMyLand = p.owner === pid;
     const neutral = p.owner === NEUTRAL;
     let need = nerve;
     if (rebelsInMyLand) need -= 0.12; // put down risings with prejudice
     if (neutral) need -= 0.06; // free provinces are cheap meat
+
+    // supports that could join this particular assault
+    const possibleSupport = idle
+      .filter((a) => moveTargets(state, a).some((mt) => mt.to === t.to && mt.hostile))
+      .sort((a, b) => roughArmyPower(b) - roughArmyPower(a))
+      .slice(0, 2);
+
+    const defRough = armiesIn(state, t.to)
+      .filter((a) => a.owner !== pid)
+      .reduce((s, a) => s + roughArmyPower(a), 0);
+    const combinedRough = myRough + possibleSupport.reduce((s, a) => s + roughArmyPower(a), 0);
+    if (defRough > combinedRough * 1.7) continue;
+
+    let preview = previewBattle(state, army.id, t.to, t.viaSea, 60);
+    if (!preview) continue;
+    let support: number[] = [];
+    if (preview.winChance < need && possibleSupport.length > 0 && !rebelsInMyLand) {
+      const joint = previewBattle(state, army.id, t.to, t.viaSea, 60, possibleSupport.map((a) => a.id));
+      if (joint && joint.winChance >= need && joint.winChance > preview.winChance + 0.08) {
+        preview = joint;
+        support = possibleSupport.map((a) => a.id);
+      }
+    }
     if (preview.winChance < need) continue;
     let prize = neutral || rebelsInMyLand ? 16 : 24;
     if (p.site) prize += 6;
@@ -602,11 +641,15 @@ function actWithArmy(state: GameState, pid: PlayerId, army: Army, nerve: number,
     if (p.seatOf !== null && p.seatOf !== pid) prize += 18;
     if (p.owner === lead && lead !== pid) prize += 8; // clip the leader's wings
     if (p.owner >= 0 && creedOf(state.players[p.owner]) === 'umbra' && creedOf(state.players[pid]) === 'flame') prize += 4;
-    const score = preview.winChance * prize - preview.aExpectedLoss * 20 * (1 - persona.aggression * 0.5);
-    if (!bestAttack || score > bestAttack.score) bestAttack = { to: t.to, viaSea: t.viaSea, score };
+    let score = preview.winChance * prize - preview.aExpectedLoss * 20 * (1 - persona.aggression * 0.5);
+    if (support.length > 0) score -= 3; // committing several banners costs tempo
+    if (!bestAttack || score > bestAttack.score) bestAttack = { to: t.to, viaSea: t.viaSea, score, support };
   }
   if (bestAttack && bestAttack.score > 2) {
-    return dispatch({ t: 'moveArmy', armyId: army.id, to: bestAttack.to, viaSea: bestAttack.viaSea });
+    return dispatch({
+      t: 'moveArmy', armyId: army.id, to: bestAttack.to, viaSea: bestAttack.viaSea,
+      ...(bestAttack.support.length > 0 ? { support: bestAttack.support } : {}),
+    });
   }
 
   // 2) defend: reinforce an owned frontier province in danger
@@ -764,6 +807,31 @@ function proactiveDiplomacy(
     }
     if (bestTarget !== null && bestScore > 30) {
       dispatch({ t: 'diplomacy', kind: 'declareWar', target: bestTarget });
+    }
+  }
+
+  // call friends into a hard war (the scheming layer): if my enemy outweighs
+  // me — or is the runaway leader — recruit the willing against them.
+  if (atWarWith.length > 0) {
+    const enemy = atWarWith
+      .map((o) => ({ o, power: totalPower(state, o.id) }))
+      .sort((a, b) => b.power - a.power)[0];
+    const enemyShare = provincesOf(state, enemy.o.id).length / state.provinces.length;
+    const hardWar = enemy.power > myPower * 1.05 || enemy.o.id === lead && enemyShare > 0.34;
+    // one embassy per few seasons, and never to a court that just refused us
+    const myTurnToAsk = state.turn % 3 === Math.abs(pid) % 3;
+    if (hardWar && myTurnToAsk) {
+      const recruit = state.players.find((o) => {
+        if (!o.alive || o.id === pid || o.id === enemy.o.id) return false;
+        if (getStance(state, pid, o.id) === 'war' || getStance(state, o.id, enemy.o.id) === 'war') return false;
+        if (state.proposals.some((pr) => pr.from === pid && pr.to === o.id)) return false;
+        if (deedsOf(state, pid, o.id).some((d) => d.id === 'refusedCall')) return false;
+        return attitudeOf(state, pid, o.id).total >= 0 && attitudeOf(state, o.id, enemy.o.id).total <= 0;
+      });
+      if (recruit) {
+        const sweetener = player.gold > 300 ? Math.min(60, Math.floor(player.gold * 0.12)) : 0;
+        dispatch({ t: 'diplomacy', kind: 'joinWar', target: recruit.id, against: enemy.o.id, gold: sweetener });
+      }
     }
   }
 
