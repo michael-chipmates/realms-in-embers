@@ -4,6 +4,8 @@ import { entryKind } from '../src/engine/actions';
 import { incomeReport, orderDrift, provinceIncome } from '../src/engine/economy';
 import { defaultSettings } from '../src/engine/state';
 import { makeUnits, newArmy } from '../src/engine/helpers';
+import { EVENT_BY_ID } from '../src/engine/content/events';
+import { Rng } from '../src/engine/rng';
 import type { GameSettings, GameState } from '../src/engine/types';
 
 function freshGame(seed: string, players = 3): GameState {
@@ -180,6 +182,22 @@ describe('movement & combat', () => {
     if (state.armies[army.id]) {
       expect(moveTargets(state, state.armies[army.id]).length).toBeGreaterThan(0);
     }
+  });
+});
+
+describe('event chains', () => {
+  it('paying the wolfshead toll plants the return visit; buying the relic plants its homesickness', () => {
+    const state = freshGame('chain-1', 2);
+    const wolfshead = EVENT_BY_ID.wolfsheadReturn;
+    const homesick = EVENT_BY_ID.hummingHomesick;
+    // without flags, neither chain event can bind
+    expect(wolfshead.when(state, 0, new Rng(state.rng))).toBeNull();
+    expect(homesick.when(state, 0, new Rng(state.rng))).toBeNull();
+    // with the planted flags, both bind
+    state.players[0].flags['tollPaid:7'] = true;
+    state.players[0].flags.peddlerRelic = true;
+    expect(wolfshead.when(state, 0, new Rng(state.rng))).not.toBeNull();
+    expect(homesick.when(state, 0, new Rng(state.rng))).not.toBeNull();
   });
 });
 

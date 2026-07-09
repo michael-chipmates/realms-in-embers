@@ -3,7 +3,7 @@
  * province/hero when drawn, offers real choices with previewed consequences,
  * and its costs are the costs it states. AI lords choose by temperament.
  */
-import { artifactDefIdsInPlay, clamp, grantArtifactTo, heroesOf, lordOf, provincesOf } from '../helpers';
+import { addDeed, artifactDefIdsInPlay, clamp, grantArtifactTo, heroesOf, lordOf, provincesOf } from '../helpers';
 import { grantXp, woundHero } from '../heroes';
 import { makeUnits, newArmy } from '../helpers';
 import { ARTIFACTS, QUEST_ARTIFACTS } from './artifacts';
@@ -292,6 +292,7 @@ export const EVENTS: EventDef[] = [
               const defId = ctx.rng.pick(pool);
               const artId = grantArtifactTo(ctx.state, ctx.pid, defId);
               ctx.effects.push({ e: 'artifactFound', artifactId: artId, by: ctx.pid });
+              player(ctx).flags.peddlerRelic = true; // it remembers where it came from
               return `Under the brass plating: ${ARTIFACTS[defId].name}, old as the realm and annoyed about the plating. The peddler was gone before it was verified, which itself verifies something. (artifact gained)`;
             }
           }
@@ -545,6 +546,410 @@ export const EVENTS: EventDef[] = [
         preview: 'No loan, no debt, no smile.',
         aiScore: () => 3,
         apply: () => 'The clerk bowed, unsurprised — declined offers are also entered in the guild\'s books, under a column nobody outside has read.',
+      },
+    ],
+  },
+
+  // ------------------------------------------------- chains & consequences
+
+  {
+    id: 'wolfsheadReturn',
+    title: 'The Toll Has Gone Up',
+    weight: 4,
+    cooldown: 8,
+    when: (state, pid) => {
+      const paidKey = Object.keys(state.players[pid].flags).find((k) => k.startsWith('tollPaid:') && state.players[pid].flags[k]);
+      if (!paidKey) return null;
+      const p = provincesOf(state, pid)[0];
+      return p ? { province: p.id, heroId: null } : null;
+    },
+    text: () => `A second bill arrives from the wolfshead band, in the same excellent hand: the road toll has doubled, "owing to increased demand." A postscript thanks you for your continued custom. Paying once, it turns out, is a subscription.`,
+    choices: [
+      {
+        label: 'Pay the new rate (100 gold)',
+        preview: '−100 gold; the roads stay quiet another while.',
+        aiScore: (p, ctx) => (player(ctx).gold > 300 ? 2 + (1 - p.pride) * 3 : 0),
+        apply: (ctx) => {
+          player(ctx).gold = Math.max(0, player(ctx).gold - 100);
+          return 'The crown paid. The receipt came back franked and itemized, with a small discount noted "for loyalty." Somewhere a clerk of outlaws is doing very well. (−100 gold)';
+        },
+      },
+      {
+        label: 'Refuse and hunt them',
+        preview: 'A marauder band appears in a border province; the toll ends for good either way.',
+        aiScore: (p) => 3 + p.aggression * 4 + p.pride * 3,
+        apply: (ctx) => {
+          for (const key of Object.keys(player(ctx).flags)) {
+            if (key.startsWith('tollPaid:')) delete player(ctx).flags[key];
+          }
+          const border = provincesOf(ctx.state, ctx.pid).find((pp) =>
+            pp.neighbors.some((n) => ctx.state.provinces[n].owner !== ctx.pid)) ?? prov(ctx);
+          newArmy(ctx.state, NEUTRAL, border.id, makeUnits('marauders', 2), { kind: 'marauders', stance: 'bold' });
+          return `The reply went back nailed to the bill. The wolfsheads honored the old forms and declared themselves openly — two companies of them, in ${border.name}. At least the accounting is over. (marauders appear)`;
+        },
+      },
+      {
+        label: 'Hire them instead',
+        preview: '−140 gold; gain 2 veteran companies at your seat. Your reeves despair.',
+        aiScore: (p, ctx) => (player(ctx).gold > 320 ? 2 + (1 - p.loyalty) * 4 : 0),
+        apply: (ctx) => {
+          player(ctx).gold = Math.max(0, player(ctx).gold - 140);
+          for (const key of Object.keys(player(ctx).flags)) {
+            if (key.startsWith('tollPaid:')) delete player(ctx).flags[key];
+          }
+          const seat = ctx.state.provinces[player(ctx).seatProvince];
+          const units = makeUnits('spears', 2);
+          for (const u of units) u.vet = 1;
+          newArmy(ctx.state, ctx.pid, seat.id, units);
+          return 'The crown made the band an offer with a seal on it. They read it twice, laughed once, and mustered under your banner by month\'s end — veterans, every one, of robbing you. (+2 veteran companies)';
+        },
+      },
+    ],
+  },
+  {
+    id: 'hummingHomesick',
+    title: 'The Relic Wants to Go Home',
+    weight: 4,
+    cooldown: 12,
+    when: (state, pid) => {
+      if (!state.players[pid].flags.peddlerRelic) return null;
+      const site = provincesOf(state, pid).find((pp) => pp.site === 'embersite')
+        ?? state.provinces.find((pp) => pp.site === 'embersite' && pp.owner === pid);
+      const anywhere = provincesOf(state, pid)[0];
+      return anywhere ? { province: (site ?? anywhere).id, heroId: null } : null;
+    },
+    text: () => `The peddler's relic has begun humming in daylight, and always in the same key. The court adepts, consulted, report it is homesick — the note matches the resonance of an ember-site. It would like to be carried there. It is not, they stress, asking.`,
+    choices: [
+      {
+        label: 'Carry it to the burning ground',
+        preview: '+10 Emberlight; +4 order at the site province if you hold one.',
+        aiScore: (p) => 3 + p.mysticism * 5,
+        apply: (ctx) => {
+          delete player(ctx).flags.peddlerRelic;
+          player(ctx).emberlight = Math.min(999, player(ctx).emberlight + 10);
+          if (prov(ctx).site === 'embersite' && prov(ctx).owner === ctx.pid) {
+            prov(ctx).order = clamp(prov(ctx).order + 4, 0, 100);
+          }
+          return 'The relic was carried home in procession and set on the warm ground, where it sang one long note and went quiet, satisfied. The site glows steadier for it, and the light lingers on your adepts\' hands. (+10 Emberlight)';
+        },
+      },
+      {
+        label: 'Sell it to a collector',
+        preview: '+130 gold; your adepts are appalled (−4 order at your seat).',
+        aiScore: (p) => 1 + p.greed * 5,
+        apply: (ctx) => {
+          delete player(ctx).flags.peddlerRelic;
+          player(ctx).gold += 130;
+          const seat = ctx.state.provinces[player(ctx).seatProvince];
+          seat.order = clamp(seat.order - 4, 0, 100);
+          return 'A collector paid handsomely and departed at speed. The humming could be heard from his coach until the second milestone. The adepts have submitted a formal protest, in verse. (+130 gold, −4 order at the seat)';
+        },
+      },
+      {
+        label: 'Lock it in the deep vault',
+        preview: 'No cost. The humming continues. You will hear it on quiet nights.',
+        aiScore: (p) => 1 + p.pride * 2,
+        apply: (ctx) => {
+          delete player(ctx).flags.peddlerRelic;
+          return 'The relic went into the deepest vault, wrapped in three blankets. On still nights the sentries on the vault stair report the stone itself humming, softly, like a kettle deciding. Nothing has come of it. Yet.';
+        },
+      },
+    ],
+  },
+
+  // --------------------------------------------------------- new standalone
+
+  {
+    id: 'winterEnvoys',
+    title: 'Envoys Wintering Over',
+    weight: 3,
+    cooldown: 8,
+    when: (state, pid) => {
+      const other = state.players.find((o) => o.alive && o.id !== pid && (state.stances[`${Math.min(pid, o.id)}:${Math.max(pid, o.id)}`] ?? 'peace') !== 'war');
+      const p = provincesOf(state, pid).find((pp) => pp.seatOf === pid);
+      return other && p ? { province: p.id, heroId: null } : null;
+    },
+    text: (ctx) => {
+      const other = ctx.state.players.find((o) => o.alive && o.id !== ctx.pid && (ctx.state.stances[`${Math.min(ctx.pid, o.id)}:${Math.max(ctx.pid, o.id)}`] ?? 'peace') !== 'war')!;
+      return `Storms have closed the passes, and ${lordOf(other).name}'s envoys — caught mid-journey — request the hospitality of your hall for the winter. Envoys eat, drink, flatter, and above all watch. Hospitality is never only hospitality.`;
+    },
+    choices: [
+      {
+        label: 'Host them in state',
+        preview: '−40 gold; their lord warms toward you considerably.',
+        aiScore: (p, ctx) => (player(ctx).gold > 150 ? 3 + p.loyalty * 3 : 1),
+        apply: (ctx) => {
+          const other = ctx.state.players.find((o) => o.alive && o.id !== ctx.pid && (ctx.state.stances[`${Math.min(ctx.pid, o.id)}:${Math.max(ctx.pid, o.id)}`] ?? 'peace') !== 'war')!;
+          player(ctx).gold = Math.max(0, player(ctx).gold - 40);
+          addDeed(ctx.state, other.id, ctx.pid, { id: 'winterHost', label: 'Sheltered our envoys in style', delta: 12, decay: 0.4 });
+          return `The envoys wintered on the good wine and left in spring with kind reports and several new waistcoat sizes. ${lordOf(other).name} will hear of every course served. (−40 gold, their regard warms)`;
+        },
+      },
+      {
+        label: 'House them plainly',
+        preview: 'No cost; a modest courtesy, modestly remembered.',
+        aiScore: () => 3,
+        apply: (ctx) => {
+          const other = ctx.state.players.find((o) => o.alive && o.id !== ctx.pid && (ctx.state.stances[`${Math.min(ctx.pid, o.id)}:${Math.max(ctx.pid, o.id)}`] ?? 'peace') !== 'war')!;
+          addDeed(ctx.state, other.id, ctx.pid, { id: 'winterHost', label: 'Sheltered our envoys', delta: 5, decay: 0.6 });
+          return 'The envoys got clean rooms, plain fare, and civility by the cord. Diplomacy survived the winter at room temperature. (their regard warms a little)';
+        },
+      },
+      {
+        label: 'Turn them back to the passes',
+        preview: 'No cost; their lord takes offense. Your borders learn you are not soft.',
+        aiScore: (p) => 1 + p.pride * 3 + p.aggression * 2,
+        apply: (ctx) => {
+          const other = ctx.state.players.find((o) => o.alive && o.id !== ctx.pid && (ctx.state.stances[`${Math.min(ctx.pid, o.id)}:${Math.max(ctx.pid, o.id)}`] ?? 'peace') !== 'war')!;
+          addDeed(ctx.state, other.id, ctx.pid, { id: 'winterSnub', label: 'Turned our envoys into the snow', delta: -10, decay: 0.7 });
+          const seat = ctx.state.provinces[player(ctx).seatProvince];
+          seat.order = clamp(seat.order + 2, 0, 100);
+          return `The envoys were escorted back to the pass with correct papers and incorrect weather. They survived, which was considerate of the storm. ${lordOf(other).name} has been given a full account, twice. (their regard cools, +2 order at the seat)`;
+        },
+      },
+    ],
+  },
+  {
+    id: 'saltRoadCensus',
+    title: 'The Census of Hearths',
+    weight: 2,
+    cooldown: 14,
+    when: (state, pid) => {
+      const p = provincesOf(state, pid);
+      return p.length >= 4 && state.turn > 10 ? { province: p[0].id, heroId: null } : null;
+    },
+    text: () => `The counting-house proposes a census of hearths — every roof, herd, and mill in the realm, entered fair. Costly, slow, and deeply unpopular with everyone who has ever rounded a number in their own favor. But a realm that knows itself taxes true.`,
+    choices: [
+      {
+        label: 'Commission it (60 gold)',
+        preview: '−60 gold; +3 order in every province you rule.',
+        aiScore: (p, ctx) => (player(ctx).gold > 200 ? 3 + p.greed * 2 + p.loyalty * 2 : 1),
+        apply: (ctx) => {
+          player(ctx).gold = Math.max(0, player(ctx).gold - 60);
+          for (const p of provincesOf(ctx.state, ctx.pid)) p.order = clamp(p.order + 3, 0, 100);
+          return 'The census took a season and cost three clerks their eyesight, but the rolls came back true. Fair tithes fell on fair numbers, and the grumbling — for once — had nowhere to put its lever. (+3 order everywhere)';
+        },
+      },
+      {
+        label: 'The realm knows itself well enough',
+        preview: 'No cost, no census, no argument with the millers.',
+        aiScore: () => 3,
+        apply: () => 'The proposal was filed under Later, where it joined its ancestors. The millers celebrated quietly. So did everyone with a second, unregistered herd.',
+      },
+    ],
+  },
+  {
+    id: 'oldBattlefield',
+    title: 'The Plow Finds the War',
+    weight: 3,
+    cooldown: 10,
+    when: (state, pid) => {
+      const p = provincesOf(state, pid).find((pp) => pp.terrain === 'meadow' || pp.terrain === 'hills');
+      return p && state.turn > 6 ? { province: p.id, heroId: null } : null;
+    },
+    text: (ctx) => `A plow-team in ${prov(ctx).name} has turned up the realm's older business: a battlefield of the Sundering wars, shallow-buried — rusted mail, split shields, and bones lying where the lines broke. The field waits on your word before anyone plants over it.`,
+    choices: [
+      {
+        label: 'Bury them with honors',
+        preview: '+7 order here; the realm approves of a lord who tends the dead.',
+        aiScore: (p) => 3 + p.loyalty * 4,
+        apply: (ctx) => {
+          prov(ctx).order = clamp(prov(ctx).order + 7, 0, 100);
+          return 'The dead were raised, named where names survived, and buried under one long barrow with the honors of both their armies — nobody now recalls which side which bone held. The province plants over peace this spring. (+7 order)';
+        },
+      },
+      {
+        label: 'Salvage the iron',
+        preview: '+55 gold; −4 order here (the folk mislike it).',
+        aiScore: (p) => 2 + p.greed * 4,
+        apply: (ctx) => {
+          player(ctx).gold += 55;
+          prov(ctx).order = clamp(prov(ctx).order - 4, 0, 100);
+          return 'The iron went to the smiths by the wagonload, the bones back under the furrows unblessed. The village keeps its shutters latched at the new moon now, and does not say why to your reeves. (+55 gold, −4 order)';
+        },
+      },
+      {
+        label: 'Call for the old banners\' kin',
+        preview: 'Gain 1 militia company here — descendants come to claim their grandfathers\' war.',
+        aiScore: (p) => 2 + p.aggression * 3,
+        apply: (ctx) => {
+          newArmy(ctx.state, ctx.pid, prov(ctx).id, makeUnits('militia', 1));
+          return 'Word went out for the kin of the fallen, and they came — for the burial, then for the swords, then, hesitantly, for the muster. Grief drills surprisingly well. (+1 militia company)';
+        },
+      },
+    ],
+  },
+  {
+    id: 'borderWedding',
+    title: 'A Wedding Across the March',
+    weight: 3,
+    cooldown: 10,
+    when: (state, pid) => {
+      const p = provincesOf(state, pid).find((pp) =>
+        pp.neighbors.some((n) => {
+          const o = state.provinces[n].owner;
+          return o >= 0 && o !== pid && (state.stances[`${Math.min(pid, o)}:${Math.max(pid, o)}`] ?? 'peace') !== 'war';
+        }));
+      return p ? { province: p.id, heroId: null } : null;
+    },
+    text: (ctx) => {
+      const p = prov(ctx);
+      const otherId = p.neighbors.map((n) => ctx.state.provinces[n].owner).find((o) => o >= 0 && o !== ctx.pid)!;
+      return `A miller's daughter of ${p.name} is to marry a horse-trader from across ${lordOf(ctx.state.players[otherId]).name}'s march. Both villages have invited both lords, in the cheerful conviction that rulers exist to bless weddings and pay for the second barrel.`;
+    },
+    choices: [
+      {
+        label: 'Attend and pay for the barrel',
+        preview: '−15 gold; +4 order here; the neighboring lord warms to you.',
+        aiScore: (p) => 3 + p.loyalty * 3,
+        apply: (ctx) => {
+          const p = prov(ctx);
+          const otherId = p.neighbors.map((n) => ctx.state.provinces[n].owner).find((o) => o >= 0 && o !== ctx.pid)!;
+          player(ctx).gold = Math.max(0, player(ctx).gold - 15);
+          p.order = clamp(p.order + 4, 0, 100);
+          addDeed(ctx.state, otherId, ctx.pid, { id: 'weddingGuest', label: 'Danced at the border wedding', delta: 7, decay: 0.5 });
+          return 'Both lords attended; only one danced, and the border will be retelling which for a decade. The barrel was paid for, and its successor. Marches are held with garrisons, but they are kept with weddings. (+4 order, the neighbor warms)';
+        },
+      },
+      {
+        label: 'Send a gift, keep your distance',
+        preview: '−10 gold; +2 order here.',
+        aiScore: () => 3,
+        apply: (ctx) => {
+          player(ctx).gold = Math.max(0, player(ctx).gold - 10);
+          prov(ctx).order = clamp(prov(ctx).order + 2, 0, 100);
+          return 'A silver cup went in the crown\'s name, with a note read aloud between courses. Adequate, said the village, which is the border\'s highest grade for lords. (+2 order)';
+        },
+      },
+      {
+        label: 'Forbid the match',
+        preview: '+1 company of border watch mustered free; −6 order here; the neighbor takes offense.',
+        aiScore: (p) => 1 + p.pride * 2 + p.aggression * 2,
+        apply: (ctx) => {
+          const p = prov(ctx);
+          const otherId = p.neighbors.map((n) => ctx.state.provinces[n].owner).find((o) => o >= 0 && o !== ctx.pid)!;
+          p.order = clamp(p.order - 6, 0, 100);
+          addDeed(ctx.state, otherId, ctx.pid, { id: 'weddingForbid', label: 'Forbade the border match', delta: -8, decay: 0.8 });
+          newArmy(ctx.state, ctx.pid, p.id, makeUnits('militia', 1));
+          return 'The match was forbidden on grounds of border security, which fooled no one, least of all the couple, who eloped across the march by the goat path. The new watch post watches mostly for them. (+1 militia, −6 order, the neighbor cools)';
+        },
+      },
+    ],
+  },
+  {
+    id: 'smugglersMoon',
+    title: 'Boats Under a Dark Moon',
+    weight: 3,
+    cooldown: 9,
+    when: (state, pid) => {
+      const p = provincesOf(state, pid).find((pp) => pp.coastal);
+      return p ? { province: p.id, heroId: null } : null;
+    },
+    text: (ctx) => `Your excisemen report boats landing below ${prov(ctx).name} on moonless nights — untaxed salt, untaxed silk, and untaxed answers about both. Half the village is in on it. The honest half, mostly.`,
+    choices: [
+      {
+        label: 'Look the other way, for a consideration',
+        preview: '+70 gold; −4 order here.',
+        aiScore: (p) => 2 + p.greed * 4 + (1 - p.loyalty) * 2,
+        apply: (ctx) => {
+          player(ctx).gold += 70;
+          prov(ctx).order = clamp(prov(ctx).order - 4, 0, 100);
+          return 'An understanding was reached on the beach at low tide, sealed with a chest of unminted opinion. The excisemen have taken up night-fishing, at the crown\'s suggestion. (+70 gold, −4 order)';
+        },
+      },
+      {
+        label: 'Burn the boats',
+        preview: '+5 order here; the coast respects a firm hand.',
+        aiScore: (p) => 3 + p.pride * 3,
+        apply: (ctx) => {
+          prov(ctx).order = clamp(prov(ctx).order + 5, 0, 100);
+          return 'The boats burned on the tideline in a row, bright enough to read by. Salt costs more now, and the village pays it with the special sourness of people who respect you. (+5 order)';
+        },
+      },
+      {
+        label: 'License them as \'night ferrymen\'',
+        preview: '+35 gold now; +5% gold from this province hereafter is already in your tithes — call it formalized.',
+        aiScore: (p) => 3 + p.greed * 2,
+        apply: (ctx) => {
+          player(ctx).gold += 35;
+          prov(ctx).prosperity = clamp(prov(ctx).prosperity + 6, 0, 100);
+          return 'The smugglers were issued licenses, seals, and a schedule of fees, and were last seen reading them with expressions of profound professional grief. Trade continues, now with paperwork. (+35 gold, prosperity rises)';
+        },
+      },
+    ],
+  },
+  {
+    id: 'chartsOfTheOldRealm',
+    title: 'Charts of the Old Realm',
+    weight: 2,
+    cooldown: 12,
+    when: (state, pid) => {
+      if (!state.settings.fogOfWar) return null;
+      const unknown = state.provinces.filter((pp) => !state.players[pid].seen.includes(pp.id));
+      const p = provincesOf(state, pid)[0];
+      return unknown.length >= 3 && p ? { province: p.id, heroId: null } : null;
+    },
+    text: () => `A monastery clearing its flooded undercroft has found pre-Sundering survey charts — the whole realm, inked when it was one. Forty years stale, but rivers move slower than borders. The abbot offers them to the crown, for the roof fund.`,
+    choices: [
+      {
+        label: 'Buy the charts (45 gold)',
+        preview: '−45 gold; several unknown provinces are revealed on your map.',
+        aiScore: (p, ctx) => (player(ctx).gold > 120 ? 3 + p.mysticism * 2 : 1),
+        apply: (ctx) => {
+          player(ctx).gold = Math.max(0, player(ctx).gold - 45);
+          const unknown = ctx.state.provinces.filter((pp) => !player(ctx).seen.includes(pp.id));
+          let n = 0;
+          for (const pp of unknown) {
+            if (n >= 4) break;
+            player(ctx).seen.push(pp.id);
+            n++;
+          }
+          return `The charts came rolled in oilcloth, smelling of forty years of dark. The realm as it was — and mostly, still, as it is. Your map-room filled in ${n} blank ${n === 1 ? 'province' : 'provinces'} by candlelight. (−45 gold)`;
+        },
+      },
+      {
+        label: 'Let the abbey keep them',
+        preview: 'No cost; the monks pray for your roof-mindedness.',
+        aiScore: () => 2,
+        apply: () => 'The crown declined, with a small donation for the roof anyway. The abbot blessed you in the register with the careful gratitude of a man filing a receipt with heaven.',
+      },
+    ],
+  },
+  {
+    id: 'prodigalBanner',
+    title: 'The Masterless Companies',
+    weight: 4,
+    cooldown: 8,
+    when: (state, pid) => {
+      const fallen = state.players.some((o) => !o.alive);
+      const p = provincesOf(state, pid).find((pp) => pp.seatOf === pid);
+      return fallen && p ? { province: p.id, heroId: null } : null;
+    },
+    text: () => `Veterans of a fallen claimant's host stand at your gate under a rolled, colorless banner — soldiers of a realm that stopped existing around them. They ask for service. Their sergeant asks only that nobody say their old lord's name like a joke.`,
+    choices: [
+      {
+        label: 'Take their oath',
+        preview: 'Gain 2 veteran spearguard companies; −3 order at your seat (the folk mistrust turned coats).',
+        aiScore: (p) => 3 + p.aggression * 3,
+        apply: (ctx) => {
+          const seat = ctx.state.provinces[player(ctx).seatProvince];
+          const units = makeUnits('spears', 2);
+          for (const u of units) u.vet = 1;
+          newArmy(ctx.state, ctx.pid, seat.id, units);
+          seat.order = clamp(seat.order - 3, 0, 100);
+          return 'They swore with the flat readiness of men who have learned exactly what oaths weigh, and drilled better than your own guard by the second week. Nobody says the old name like a joke. The sergeant sees to it. (+2 veteran companies, −3 order)';
+        },
+      },
+      {
+        label: 'Feed them and send them on',
+        preview: '−15 gold; +3 order at your seat; word of your decency travels.',
+        aiScore: (p) => 2 + p.loyalty * 3,
+        apply: (ctx) => {
+          player(ctx).gold = Math.max(0, player(ctx).gold - 15);
+          const seat = ctx.state.provinces[player(ctx).seatProvince];
+          seat.order = clamp(seat.order + 3, 0, 100);
+          return 'They ate at the long tables, slept dry, and went on with bread in their packs. At the gate the sergeant saluted a banner not his and meant it. The realm heard of it, as realms do. (−15 gold, +3 order)';
+        },
       },
     ],
   },
