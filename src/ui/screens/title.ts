@@ -1,4 +1,7 @@
-/** The title screen: a dark room, a warm table, and the ways in. */
+/** The title screen: a dark room, a warm table, and the ways in.
+ * It should feel inhabited — the chronicler is still writing when you
+ * walk in. Motion here is UI-only (never the game rng) and every effect
+ * respects reduced-motion. */
 import { h, mount } from '../dom';
 import { artSlot } from '../art';
 import { iconSvg } from '../icons';
@@ -7,24 +10,35 @@ import { openModal } from '../modal';
 import { openSettingsPanel } from '../panels/settingsPanel';
 import type { App } from '../app';
 
+/** Osperan keeps writing between wars. A different line each visit. */
+const EPIGRAPHS = [
+  'Somebody has to bury them properly.',
+  'The margin for the dead is ruled wide. It has never once been wide enough.',
+  'Forty years, and the ink still smells of smoke.',
+  'Every claimant believes the fire will know them. The fire has never once asked a name.',
+  'I have outlived the realm, the throne, and myself. The paperwork continues.',
+  'Wars end at one of two harvests. Hope for the wheat.',
+  'The candle leans toward the door when you enter. It remembers doors.',
+  'History is what survives its witnesses. Sit down; you are about to be survived.',
+];
+
 export function renderTitle(app: App): void {
   const canContinue = hasAnySave();
+  const newest = canContinue ? newestSave() : null;
+  const epigraph = EPIGRAPHS[Math.floor(Math.random() * EPIGRAPHS.length)];
 
   const menu = h(
     'div',
     { class: 'title-menu' },
     h('button', { class: 'btn btn-seal title-btn', onclick: () => app.toSetup() }, 'New Chronicle'),
-    canContinue
+    newest
       ? h('button', {
           class: 'btn title-btn',
           onclick: () => {
-            const newest = newestSave();
-            if (newest) {
-              const state = loadSlot(newest.key);
-              if (state) app.continueGame(state);
-            }
+            const state = loadSlot(newest.key);
+            if (state) app.continueGame(state);
           },
-        }, 'Continue')
+        }, `Continue — ${newest.lords.split(',')[0]?.trim() ?? 'the war'}, season ${newest.turn}`)
       : null,
     h('button', {
       class: 'btn title-btn',
@@ -49,11 +63,55 @@ export function renderTitle(app: App): void {
       h('p', { class: 'muted italic title-sub' },
         'The throne is cold. The chronicler is not quite dead. The war for the ashes begins with you.'),
       menu,
+      h('p', { class: 'small muted italic title-epigraph' }, `“${epigraph}” — O.`),
       h('p', { class: 'small muted title-foot' },
         'A turn-based strategy chronicle · an original homage to the spirit of 1993'),
     ),
   );
   mount(app.root, screen);
+  if (!app.settings.reducedMotion) startEmberDrift(screen);
+}
+
+/** A quiet column of embers rising through the dark. UI-only randomness;
+ * stops itself the moment the title screen leaves the DOM. */
+function startEmberDrift(screen: HTMLElement): void {
+  const canvas = h('canvas', { class: 'title-embers', 'aria-hidden': 'true' }) as HTMLCanvasElement;
+  screen.insertBefore(canvas, screen.children[1] ?? null);
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return;
+  interface Ember { x: number; y: number; r: number; vy: number; vx: number; warm: number; phase: number }
+  const embers: Ember[] = [];
+  const spawn = (y?: number): Ember => ({
+    x: Math.random(),
+    y: y ?? 1 + Math.random() * 0.1,
+    r: 0.8 + Math.random() * 1.8,
+    vy: 0.0006 + Math.random() * 0.0012,
+    vx: (Math.random() - 0.5) * 0.0003,
+    warm: 0.55 + Math.random() * 0.45,
+    phase: Math.random() * Math.PI * 2,
+  });
+  for (let i = 0; i < 26; i++) embers.push(spawn(Math.random()));
+  let t = 0;
+  const frame = (): void => {
+    if (!canvas.isConnected) return; // title gone; stop drawing
+    const w = canvas.clientWidth, hgt = canvas.clientHeight;
+    if (canvas.width !== w || canvas.height !== hgt) { canvas.width = w; canvas.height = hgt; }
+    ctx.clearRect(0, 0, w, hgt);
+    t += 1;
+    for (let i = 0; i < embers.length; i++) {
+      const e = embers[i];
+      e.y -= e.vy;
+      e.x += e.vx + Math.sin(t / 90 + e.phase) * 0.00012;
+      if (e.y < -0.05) embers[i] = spawn();
+      const flicker = 0.75 + 0.25 * Math.sin(t / 14 + e.phase);
+      ctx.beginPath();
+      ctx.arc(e.x * w, e.y * hgt, e.r, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(${232 - e.warm * 40}, ${130 + e.warm * 30}, 44, ${0.10 + 0.25 * e.warm * flicker})`;
+      ctx.fill();
+    }
+    requestAnimationFrame(frame);
+  };
+  requestAnimationFrame(frame);
 }
 
 export function openLoadModal(app: App): void {

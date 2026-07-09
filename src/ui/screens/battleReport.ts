@@ -46,10 +46,10 @@ export function openBattleReport(screen: GameScreen, report: BattleReport): void
   const roundEls = report.rounds.map((r, i) => {
     const total = Math.max(1, r.aPower + r.dPower);
     const aShare = Math.round((r.aPower / total) * 100);
-    const el = h('div', { class: 'battle-round', style: reduced ? {} : { opacity: '0', transition: 'opacity 240ms' } },
+    const el = h('div', { class: 'battle-round', 'data-share': String(aShare), style: reduced ? {} : { opacity: '0', transition: 'opacity 240ms' } },
       h('div', { class: 'small muted battle-round-label' }, i === 0 && report.rounds.length > 1 && r.notes.some((n) => n.includes('Arrow')) ? 'Volleys' : `Clash ${i + (report.rounds[0]?.notes.some((n) => n.includes('Arrow')) ? 0 : 1)}`),
       h('div', { class: 'battle-balance', role: 'img', 'aria-label': `Strength ${r.aPower} against ${r.dPower}` },
-        h('div', { class: 'battle-balance-a', style: { width: `${aShare}%` } }),
+        h('div', { class: 'battle-balance-a', style: { width: reduced ? `${aShare}%` : '50%' } }),
       ),
       h('div', { class: 'small battle-round-losses' },
         h('span', { class: r.aLoss > 0 ? 'neg' : 'muted' }, `−${r.aLoss}`),
@@ -63,12 +63,18 @@ export function openBattleReport(screen: GameScreen, report: BattleReport): void
   const tail: HTMLElement[] = [];
   const rounds = h('div', { class: 'battle-rounds' }, ...roundEls);
   let revealTimer: number | null = null;
+  const revealRound = (el: HTMLElement): void => {
+    el.style.opacity = '1';
+    el.classList.add('battle-round-live');
+    const bar = el.querySelector<HTMLElement>('.battle-balance-a');
+    if (bar) bar.style.width = `${el.dataset.share}%`; // the scales tip
+  };
   const revealAll = (): void => {
     if (revealTimer !== null) {
       window.clearTimeout(revealTimer);
       revealTimer = null;
     }
-    for (const el of roundEls) el.style.opacity = '1';
+    for (const el of roundEls) revealRound(el);
     for (const el of tail) el.style.opacity = '1';
     skipBtn.style.display = 'none';
   };
@@ -79,7 +85,7 @@ export function openBattleReport(screen: GameScreen, report: BattleReport): void
     let i = 0;
     const step = (): void => {
       if (i < roundEls.length) {
-        roundEls[i].style.opacity = '1';
+        revealRound(roundEls[i]);
         audio.clash();
         i++;
         revealTimer = window.setTimeout(step, 520);

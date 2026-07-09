@@ -89,6 +89,11 @@ export class GameScreen {
         this.chronicleEl,
         this.alertsEl,
         this.toastsEl,
+        h('div', { class: 'map-zoom', 'aria-label': 'Map zoom' },
+          h('button', { class: 'btn btn-quiet map-zoom-btn', 'aria-label': 'Zoom in', onclick: () => this.zoomCenter(1.25) }, '+'),
+          h('button', { class: 'btn btn-quiet map-zoom-btn', 'aria-label': 'Zoom out', onclick: () => this.zoomCenter(0.8) }, '−'),
+          h('button', { class: 'btn btn-quiet map-zoom-btn', 'aria-label': 'Fit the whole realm', onclick: () => { this.renderer.fit(); this.redrawMap(); } }, '⊡'),
+        ),
       ),
     );
     mount(root, this.el);
@@ -163,25 +168,54 @@ export class GameScreen {
     requestAnimationFrame(() => {
       if (!this.mapDirty || this.disposed) return;
       this.mapDirty = false;
-      const visible = this.state.settings.fogOfWar ? seenBy(this.state, this.viewerId()) : null;
-      const unseen = visible
-        ? new Set(this.state.provinces.map((p) => p.id).filter((id) => !visible.has(id)))
-        : undefined;
-      const selArmy = this.sel.armyId !== null ? this.state.armies[this.sel.armyId] : null;
-      this.renderer.render({
-        selected: this.sel.provinceId,
-        hovered: this.hovered,
-        targets: new Set(this.targets.map((t) => t.to)),
-        targetsHostile: new Set(this.targets.filter((t) => t.hostile).map((t) => t.to)),
-        seaLanes: selArmy
-          ? this.targets.filter((t) => t.viaSea).map((t) => ({ from: selArmy.province, to: t.to }))
-          : [],
-        viewer: this.viewerId(),
-        colorblind: this.app.settings.colorblind,
-        unseen,
-        armies: this.armyMarkers(),
-      });
+      this.renderNow();
     });
+  }
+
+  private renderNow(): void {
+    const visible = this.state.settings.fogOfWar ? seenBy(this.state, this.viewerId()) : null;
+    const unseen = visible
+      ? new Set(this.state.provinces.map((p) => p.id).filter((id) => !visible.has(id)))
+      : undefined;
+    const selArmy = this.sel.armyId !== null ? this.state.armies[this.sel.armyId] : null;
+    this.renderer.render({
+      selected: this.sel.provinceId,
+      hovered: this.hovered,
+      targets: new Set(this.targets.map((t) => t.to)),
+      targetsHostile: new Set(this.targets.filter((t) => t.hostile).map((t) => t.to)),
+      seaLanes: selArmy
+        ? this.targets.filter((t) => t.viaSea).map((t) => ({ from: selArmy.province, to: t.to }))
+        : [],
+      viewer: this.viewerId(),
+      colorblind: this.app.settings.colorblind,
+      unseen,
+      armies: this.armyMarkers(),
+      fx: this.ripples.length > 0 ? { ripples: this.ripples } : undefined,
+    });
+  }
+
+  /** Capture ripple: a short, self-cleaning animation layer over the map. */
+  private ripples: { province: number; t: number; color: string }[] = [];
+  private rippleLoop = false;
+
+  addCaptureRipple(province: number, owner: number): void {
+    if (this.app.settings.reducedMotion) return;
+    const color = owner >= 0 ? lordDisplay(this.state, owner).color : 'rgba(200, 190, 160, 0.9)';
+    this.ripples.push({ province, t: 0, color });
+    if (this.rippleLoop) return;
+    this.rippleLoop = true;
+    let last = performance.now();
+    const step = (now: number): void => {
+      if (this.disposed) { this.rippleLoop = false; return; }
+      const dt = (now - last) / 700; // ~0.7s per ripple
+      last = now;
+      for (const r of this.ripples) r.t += dt;
+      this.ripples = this.ripples.filter((r) => r.t < 1.35);
+      this.renderNow();
+      if (this.ripples.length > 0) requestAnimationFrame(step);
+      else this.rippleLoop = false;
+    };
+    requestAnimationFrame(step);
   }
 
   private armyMarkers() {
@@ -287,6 +321,11 @@ export class GameScreen {
     this.renderer.offX = px - wx * this.renderer.scale;
     this.renderer.offY = py - wy * this.renderer.scale;
     this.redrawMap();
+  }
+
+  private zoomCenter(factor: number): void {
+    const rect = this.canvas.getBoundingClientRect();
+    this.zoomAt(rect.left + rect.width / 2, rect.top + rect.height / 2, factor);
   }
 
   private onProvinceClick(pid: number | null): void {
@@ -515,7 +554,7 @@ export class GameScreen {
     this.refresh();
     while (!this.disposed && this.state.phase === 'playing' && this.current().kind === 'ai') {
       const lord = LORD_BY_ID[this.current().lordId];
-      this.showAiBanner(`${lord.name} ${lord.epithet} considers the map…`);
+      this.showAiBanner(`${lord.name} ${lord.epithet} considers the map…`, lord.id);
       await this.pause(this.app.settings.reducedMotion ? 40 : 260);
       const effects = aiTakeTurn(this.state);
       this.presentEffects(effects);
@@ -545,13 +584,15 @@ export class GameScreen {
 
   private aiBanner: HTMLElement | null = null;
 
-  private showAiBanner(text: string): void {
+  private showAiBanner(text: string, lordId?: string): void {
     if (!this.aiBanner) {
       this.aiBanner = h('div', { class: 'ai-banner' });
       this.el.appendChild(this.aiBanner);
     }
-    this.aiBanner.textContent = text;
-    this.aiBanner.style.display = 'block';
+    clear(this.aiBanner);
+    if (lordId) this.aiBanner.appendChild(sigilShield(lordId, 22));
+    this.aiBanner.appendChild(h('span', {}, text));
+    this.aiBanner.style.display = 'flex';
   }
 
   private hideAiBanner(): void {
@@ -588,6 +629,7 @@ export class GameScreen {
         }
         case 'captured': {
           if (effect.by === viewer || effect.from === viewer) audio.march();
+          this.addCaptureRipple(effect.province, effect.by);
           this.redrawMap();
           break;
         }

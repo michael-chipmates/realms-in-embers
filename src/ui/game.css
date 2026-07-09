@@ -21,7 +21,31 @@
 .title-sub { max-width: 42ch; margin: 0.4rem auto 0; }
 .title-menu { display: flex; flex-direction: column; gap: 0.7rem; margin: 2rem auto 0; width: min(300px, 80vw); }
 .title-btn { font-size: 1.02rem; }
-.title-foot { margin-top: 2.2rem; opacity: 0.65; }
+.title-epigraph { margin-top: 1.6rem; opacity: 0.8; min-height: 1.4em; }
+.title-foot { margin-top: 0.8rem; opacity: 0.65; }
+
+/* the hall breathes: a slow drift on the backdrop, a candle-flicker on the
+   wordmark. Both stand down under reduced motion. */
+.title-embers { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0; }
+body:not(.reduced-motion) .title-backdrop .art-img {
+  animation: title-drift 52s ease-in-out infinite alternate;
+}
+@keyframes title-drift {
+  from { transform: scale(1.04) translate(-0.6%, 0.4%); }
+  to { transform: scale(1.1) translate(0.8%, -0.6%); }
+}
+body:not(.reduced-motion) .title-main {
+  animation: candle-glow 6.5s ease-in-out infinite;
+}
+@keyframes candle-glow {
+  0%, 100% { text-shadow: 0 0 18px rgba(232, 132, 44, 0.35), 0 2px 4px rgba(0,0,0,0.6); }
+  38% { text-shadow: 0 0 26px rgba(232, 132, 44, 0.5), 0 2px 4px rgba(0,0,0,0.6); }
+  55% { text-shadow: 0 0 15px rgba(232, 132, 44, 0.3), 0 2px 4px rgba(0,0,0,0.6); }
+  76% { text-shadow: 0 0 23px rgba(246, 196, 83, 0.42), 0 2px 4px rgba(0,0,0,0.6); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .title-backdrop .art-img, .title-main { animation: none !important; }
+}
 
 /* --------------------------------------------------------------- setup */
 
@@ -276,6 +300,7 @@ details.side-section:not([open]) > summary { border-bottom: none; }
   border: 1px solid rgba(201, 162, 39, 0.4); border-radius: 999px;
   padding: 0.4rem 1.1rem; font-style: italic; color: var(--gold-bright);
   font-size: 0.9rem; pointer-events: none;
+  align-items: center; gap: 0.5rem;
 }
 
 /* --------------------------------------------------------------- modals */
@@ -375,7 +400,13 @@ details.side-section:not([open]) > summary { border-bottom: none; }
   height: 10px; border-radius: 999px; overflow: hidden;
   background: rgba(138, 47, 38, 0.5);
 }
-.battle-balance-a { height: 100%; background: rgba(159, 191, 119, 0.75); transition: width 300ms; }
+.battle-balance-a { height: 100%; background: rgba(159, 191, 119, 0.75); transition: width 460ms cubic-bezier(0.2, 0.9, 0.3, 1.1); }
+.battle-round-live .battle-round-losses .neg { animation: casualty-pulse 520ms ease-out; }
+@keyframes casualty-pulse {
+  0% { transform: scale(1.5); filter: brightness(1.8); }
+  100% { transform: scale(1); filter: brightness(1); }
+}
+body.reduced-motion .battle-round-live .battle-round-losses .neg { animation: none; }
 .battle-round-losses { display: flex; justify-content: space-between; }
 .battle-note { padding-left: 0.4rem; }
 .battle-events { margin-top: 0.7rem; border-top: 1px dashed rgba(201, 162, 39, 0.3); padding-top: 0.5rem; }
@@ -537,6 +568,18 @@ details.side-section:not([open]) > summary { border-bottom: none; }
   border: 1px solid rgba(201, 162, 39, 0.4); box-shadow: var(--shadow-deep);
 }
 .lord-intro-quote { color: var(--gold-bright); font-style: italic; }
+.map-zoom {
+  position: absolute; right: 0.9rem; bottom: 4.4rem; z-index: 5;
+  display: flex; flex-direction: column; gap: 0.3rem;
+}
+.map-zoom-btn {
+  width: 40px; height: 40px; min-height: 40px; padding: 0;
+  font-size: 1.2rem; line-height: 1; justify-content: center;
+  background: rgba(22, 16, 10, 0.85);
+}
+@media (max-width: 720px) {
+  .map-zoom { display: none; } /* phones pinch */
+}
 .odds-support {
   margin: 0.6rem 0; padding: 0.5rem 0.7rem;
   border: 1px solid rgba(201, 162, 39, 0.3); border-radius: 5px;

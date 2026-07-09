@@ -41,6 +41,8 @@ export interface RenderOptions {
   colorblind?: boolean;
   /** Army markers to draw (owner -1 = leaderless). */
   armies?: { province: number; owner: number; strength: number; hasHero: boolean; kind?: string }[];
+  /** Transient animation layer: capture ripples (t runs 0→1). UI-only. */
+  fx?: { ripples?: { province: number; t: number; color: string }[] };
 }
 
 interface Loop {
@@ -369,6 +371,28 @@ export class MapRenderer {
       }
     }
     this.drawLabels(ctx, opts);
+
+    // --- transient fx layer (capture ripples: a banner planted in the ground)
+    if (opts.fx?.ripples) {
+      for (const ripple of opts.fx.ripples) {
+        const p = view.provinces[ripple.province];
+        if (!p || opts.unseen?.has(ripple.province)) continue;
+        const [cx, cy] = this.worldToScreen(p.cx + 0.5, p.cy + 0.5);
+        const t = Math.min(1, Math.max(0, ripple.t));
+        const ease = 1 - (1 - t) * (1 - t);
+        for (const ring of [0, 0.35]) {
+          const rt = Math.min(1, Math.max(0, ease - ring));
+          if (rt <= 0) continue;
+          ctx.beginPath();
+          ctx.arc(cx, cy, this.scale * (0.8 + rt * 3.6), 0, Math.PI * 2);
+          ctx.strokeStyle = ripple.color;
+          ctx.globalAlpha = (1 - rt) * 0.55;
+          ctx.lineWidth = Math.max(1.5, this.scale * 0.16 * (1 - rt));
+          ctx.stroke();
+        }
+        ctx.globalAlpha = 1;
+      }
+    }
   }
 
   /** Crossed swords (battle) or a marching chevron (free move) on a wax disc. */
@@ -639,21 +663,28 @@ export class MapRenderer {
 
   private drawLabels(ctx: CanvasRenderingContext2D, opts: RenderOptions): void {
     const view = this.view!;
+    // Declutter: zoomed far out, names overlap into noise. Fade them in as
+    // the table comes closer; selected/hovered provinces always keep theirs.
+    const fade = Math.min(1, Math.max(0, (this.scale - 9) / 5));
     ctx.save();
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     for (const p of view.provinces) {
       if (opts.unseen?.has(p.id)) continue;
+      const focused = opts.selected === p.id || opts.hovered === p.id;
+      if (fade <= 0 && !focused) continue;
       const [sx, sy] = this.worldToScreen(p.cx + 0.5, p.cy + 0.5);
       const size = Math.max(9, Math.min(15, this.scale * 0.62));
       ctx.font = `600 ${size}px "Iowan Old Style", Palatino, Georgia, serif`;
       const yy = sy - this.scale * 0.35;
+      ctx.globalAlpha = focused ? 1 : fade;
       ctx.lineWidth = 3;
       ctx.strokeStyle = 'rgba(226, 210, 170, 0.75)';
       ctx.strokeText(p.name, sx, yy);
       ctx.fillStyle = INK;
       ctx.fillText(p.name, sx, yy);
     }
+    ctx.globalAlpha = 1;
     ctx.restore();
   }
 }
