@@ -19,3 +19,10 @@ if (invite) {
 } else {
   app.toTitle();
 }
+
+// offline keeper: after first visit the whole game works with no network
+if (import.meta.env.PROD && 'serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    void navigator.serviceWorker.register('sw.js');
+  });
+}
