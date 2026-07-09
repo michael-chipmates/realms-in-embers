@@ -19,7 +19,8 @@ import http from 'http';
 const PORT = parseInt(process.argv[2] ?? process.env.PORT ?? '8787', 10);
 const MAX_ROOMS = 2000;
 const MAX_LOG = 40000; // entries per room; a full campaign is well under this
-const MAX_BLOB = 64 * 1024; // bytes per encrypted entry
+const MAX_BLOB = 16 * 1024; // bytes per encrypted entry (real acts are ~300 B)
+const MAX_ROOM_BYTES = 4 * 1024 * 1024; // total ciphertext per room
 const ROOM_TTL_MS = 1000 * 60 * 60 * 24 * 14; // idle rooms evaporate after 14 days
 
 /** room -> { log: string[], sockets: Set<ws>, touched: number } */
@@ -29,7 +30,7 @@ function room(id) {
   let r = rooms.get(id);
   if (!r) {
     if (rooms.size >= MAX_ROOMS) return null;
-    r = { log: [], sockets: new Set(), touched: Date.now() };
+    r = { log: [], bytes: 0, sockets: new Set(), touched: Date.now() };
     rooms.set(id, r);
   }
   r.touched = Date.now();
@@ -68,9 +69,14 @@ wss.on('connection', (ws) => {
     }
     if (msg.t === 'append' && joined && typeof msg.data === 'string' && msg.data.length <= MAX_BLOB) {
       const r = rooms.get(joined);
-      if (!r || r.log.length >= MAX_LOG) return;
+      if (!r) return;
+      if (r.log.length >= MAX_LOG || r.bytes + msg.data.length > MAX_ROOM_BYTES) {
+        ws.send(JSON.stringify({ t: 'error', error: 'room log full' }));
+        return;
+      }
       const seq = r.log.length;
       r.log.push(msg.data);
+      r.bytes += msg.data.length;
       r.touched = Date.now();
       const out = JSON.stringify({ t: 'entry', seq, data: msg.data });
       for (const s of r.sockets) if (s.readyState === 1) s.send(out);

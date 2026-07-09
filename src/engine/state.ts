@@ -32,8 +32,14 @@ import { NEUTRAL } from './types';
  * v6: ten new events incl. two chains (wolfshead return, homesick relic)
  *     (iteration 7).
  * v7: guild loan no longer offered when its due date would outlive the
- *     Chronicle (model-playtest exploit finding). */
-export const RULES_VERSION = 7;
+ *     Chronicle (model-playtest exploit finding).
+ * v8: adversarial-review round — smugglers prosperity fixed to the real
+ *     multiplier scale, wedding/envoy events re-bind safely, paid wolfshead
+ *     tolls actually protect (and die with the band), undefended sacks go
+ *     through captureProvince (breakable rituals), joinWar refuses
+ *     oathbreaking and re-clamps bribes, fervor preview matches battle,
+ *     heroes detach where the banner fell. */
+export const RULES_VERSION = 8;
 
 export const HANDICAPS: Record<Difficulty, PlayerHandicap> = {
   squire: { incomeMult: 0.85, label: 'Squire — AI earns 15% less gold and attacks only with clear advantage.' },

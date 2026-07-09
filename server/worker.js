@@ -1,11 +1,14 @@
 /**
  * The blind relay — Cloudflare Workers + Durable Objects flavor.
  * Identical protocol to server/relay.mjs; clients cannot tell them apart.
- * Each room is one Durable Object with its log in transactional storage,
- * so campaigns survive hibernation and deploys.
+ *
+ * Each room is one Durable Object. The log is stored ONE KEY PER ENTRY
+ * (`e:<seq>` + a `count` key) — a single-value log would hit the 128 KiB
+ * value cap mid-campaign and silently eat every action after it.
+ * Idle rooms evaporate after 14 days via the DO alarm.
  *
  * Deploy (from server/): npx wrangler deploy
- * For EU data residency, set the room namespace jurisdiction in wrangler.toml.
+ * For EU data residency, pin the namespace jurisdiction (see wrangler.toml).
  */
 
 export default {
@@ -26,19 +29,42 @@ export default {
 };
 
 const MAX_LOG = 40000;
-const MAX_BLOB = 64 * 1024;
+const MAX_BLOB = 16 * 1024;
+const MAX_ROOM_BYTES = 4 * 1024 * 1024; // a full campaign is well under 1 MiB
+const ROOM_TTL_MS = 1000 * 60 * 60 * 24 * 14;
 
 export class RelayRoom {
   constructor(state) {
     this.state = state;
   }
 
+  async meta() {
+    return (await this.state.storage.get('meta')) ?? { count: 0, bytes: 0 };
+  }
+
+  async backlog(count) {
+    if (count === 0) return [];
+    const keys = Array.from({ length: count }, (_, i) => `e:${i}`);
+    const map = await this.state.storage.get(keys);
+    return keys.map((k) => map.get(k)).filter((v) => typeof v === 'string');
+  }
+
+  async touch() {
+    await this.state.storage.setAlarm(Date.now() + ROOM_TTL_MS);
+  }
+
+  async alarm() {
+    // 14 idle days: the room evaporates, ciphertext and all
+    await this.state.storage.deleteAll();
+  }
+
   async fetch(request) {
     const pair = new WebSocketPair();
     const [client, server] = Object.values(pair);
     this.state.acceptWebSocket(server);
-    const log = (await this.state.storage.get('log')) ?? [];
-    server.send(JSON.stringify({ t: 'joined', seq: log.length, log }));
+    const meta = await this.meta();
+    server.send(JSON.stringify({ t: 'joined', seq: meta.count, log: await this.backlog(meta.count) }));
+    await this.touch();
     this.broadcastPeers(server);
     return new Response(null, { status: 101, webSocket: client });
   }
@@ -47,17 +73,24 @@ export class RelayRoom {
     let msg;
     try { msg = JSON.parse(raw); } catch { return; }
     if (msg.t === 'join') {
-      // late joins over an existing socket: resend the backlog
-      const log = (await this.state.storage.get('log')) ?? [];
-      ws.send(JSON.stringify({ t: 'joined', seq: log.length, log }));
+      // (re)join over an existing socket: resend the backlog
+      const meta = await this.meta();
+      ws.send(JSON.stringify({ t: 'joined', seq: meta.count, log: await this.backlog(meta.count) }));
+      await this.touch();
       return;
     }
     if (msg.t === 'append' && typeof msg.data === 'string' && msg.data.length <= MAX_BLOB) {
-      const log = (await this.state.storage.get('log')) ?? [];
-      if (log.length >= MAX_LOG) return;
-      const seq = log.length;
-      log.push(msg.data);
-      await this.state.storage.put('log', log);
+      const meta = await this.meta();
+      if (meta.count >= MAX_LOG || meta.bytes + msg.data.length > MAX_ROOM_BYTES) {
+        ws.send(JSON.stringify({ t: 'error', error: 'room log full' }));
+        return;
+      }
+      const seq = meta.count;
+      await this.state.storage.put({
+        [`e:${seq}`]: msg.data,
+        meta: { count: seq + 1, bytes: meta.bytes + msg.data.length },
+      });
+      await this.touch();
       const out = JSON.stringify({ t: 'entry', seq, data: msg.data });
       for (const s of this.state.getWebSockets()) {
         try { s.send(out); } catch { /* gone */ }

@@ -2,30 +2,37 @@
  * The online war lobby: one link, friends click it, lords get picked,
  * the host seals the muster. No accounts — a display name and a seat.
  * Everything past this screen travels encrypted; the relay reads nothing.
+ *
+ * The seat roster is PINNED inside the encrypted `start` entry, so every
+ * client (and every rejoiner, forever) derives the same table from the
+ * same bytes — late hellos cannot fork it.
  */
-import { LORDS, LORD_BY_ID } from '../../engine/content/lords';
+import { LORDS } from '../../engine/content/lords';
 import { defaultSettings } from '../../engine/state';
 import type { GameSettings, PlayerSetup } from '../../engine/types';
 import { h, mount, clear } from '../dom';
 import { sigilShield } from '../heraldry';
 import {
   CLOCK_PRESETS, NetClient, inviteLink, makeRoomKey, randomRoomId, relayUrl,
-  type ClockConfig, type NetPayload,
+  type ClockConfig, type NetEntry, type NetPayload,
 } from '../net';
 import type { App } from '../app';
 
+export const MAX_SEATS = 6;
+
 export interface OnlineSession {
   client: NetClient;
+  /** Your seat, or −1: a spectator (watch, never act). */
   mySeat: number;
   myCid: string;
   clock: ClockConfig;
-  /** cid per human seat, in seat order. */
+  /** cid per human seat, in seat order — pinned by the start entry. */
   seatCids: (string | null)[];
-  /** How many relay entries were consumed to build the current state. */
+  /** Next relay seq the game screen will consume. */
   cursor: number;
 }
 
-interface LobbyPeer { cid: string; name: string; seat: number | null }
+interface LobbyPeer { cid: string; name: string; seat: number | null; lastSeq: number }
 
 function myCid(): string {
   let cid = localStorage.getItem('rie-cid');
@@ -41,15 +48,22 @@ function myName(): string {
 }
 
 /** Aggregate hellos (last write per cid wins) into the current table. */
-function tableFrom(entries: { payload: NetPayload }[]): LobbyPeer[] {
+function tableFrom(entries: NetEntry[]): LobbyPeer[] {
   const peers = new Map<string, LobbyPeer>();
   for (const e of entries) {
-    const p = e.payload as NetPayload & { cid?: string };
-    if (p.kind === 'hello' && typeof p.cid === 'string') {
-      peers.set(p.cid, { cid: p.cid, name: p.name, seat: p.seat });
+    const p = e.payload;
+    if (p.kind === 'hello') {
+      peers.set(p.cid, { cid: p.cid, name: p.name, seat: p.seat, lastSeq: e.seq });
     }
   }
   return [...peers.values()];
+}
+
+/** Earlier claim wins a contested seat; later claimants are the losers. */
+function seatLoser(peers: LobbyPeer[], cid: string): boolean {
+  const me = peers.find((p) => p.cid === cid);
+  if (!me || me.seat === null) return false;
+  return peers.some((p) => p.cid !== cid && p.seat === me.seat && p.lastSeq < me.lastSeq);
 }
 
 export async function openOnlineLobby(app: App, invite?: { roomId: string; key: string }): Promise<void> {
@@ -104,22 +118,25 @@ export async function openOnlineLobby(app: App, invite?: { roomId: string; key: 
   const sendHello = (seat: number | null): void => {
     const name = nameInput.value.trim() || 'A nameless lord';
     localStorage.setItem('rie-name', name);
-    void client.send({ kind: 'hello', name, seat, cid } as NetPayload & { cid: string });
+    void client.send({ kind: 'hello', cid, name, seat });
   };
 
   const isHost = (): boolean => {
-    const first = client.entries.find((e) => (e.payload as { kind: string }).kind === 'hello') as { payload: { cid?: string } } | undefined;
-    return !first || first.payload.cid === cid;
+    const first = client.list().find((e) => e.payload.kind === 'hello');
+    return !first || (first.payload as { cid?: string }).cid === cid;
   };
 
   const tryStart = (): void => {
-    const peers = tableFrom(client.entries).filter((p) => p.seat !== null).sort((a, b) => (a.seat! - b.seat!));
-    if (peers.length < 1) return;
-    const humanSeats = peers.length;
-    const totalSeats = Math.min(6, humanSeats + aiFill);
+    const seated = tableFrom(client.list())
+      .filter((p) => p.seat !== null)
+      .sort((a, b) => a.seat! - b.seat!)
+      .slice(0, MAX_SEATS);
+    if (seated.length < 1) return;
+    const seatCids = seated.map((p) => p.cid);
+    const totalSeats = Math.min(MAX_SEATS, seatCids.length + aiFill);
     const players: PlayerSetup[] = [];
     for (let i = 0; i < totalSeats; i++) {
-      players.push(i < humanSeats
+      players.push(i < seatCids.length
         ? { kind: 'human', lordId: 'random', difficulty: 'knight' }
         : { kind: 'ai', lordId: 'random', difficulty: 'knight' });
     }
@@ -131,35 +148,47 @@ export async function openOnlineLobby(app: App, invite?: { roomId: string; key: 
       fogOfWar: fog,
       players,
     };
-    void client.send({ kind: 'start', settings, clock: CLOCK_PRESETS[clockIdx] });
+    void client.send({ kind: 'start', settings, clock: CLOCK_PRESETS[clockIdx], seatCids });
   };
 
-  const startGame = (settings: GameSettings, clock: ClockConfig): void => {
+  const startGame = (startEntry: NetEntry): void => {
     if (started) return;
+    const payload = startEntry.payload;
+    if (payload.kind !== 'start') return;
     started = true;
-    const peers = tableFrom(client.entries).filter((p) => p.seat !== null).sort((a, b) => (a.seat! - b.seat!));
-    const seatCids = peers.map((p) => p.cid);
-    const mySeat = seatCids.indexOf(cid);
+    const mySeat = payload.seatCids.indexOf(cid); // −1 = spectator, honestly
     const session: OnlineSession = {
       client,
-      mySeat: mySeat >= 0 ? mySeat : 0,
+      mySeat,
       myCid: cid,
-      clock,
-      seatCids: [...seatCids, ...Array(Math.max(0, settings.players.length - seatCids.length)).fill(null)],
-      cursor: client.entries.length,
+      clock: payload.clock,
+      seatCids: [
+        ...payload.seatCids,
+        ...Array(Math.max(0, payload.settings.players.length - payload.seatCids.length)).fill(null),
+      ],
+      cursor: startEntry.seq + 1, // rejoiners replay every act AFTER the start
     };
-    app.startOnlineGame(settings, session);
+    app.startOnlineGame(payload.settings, session);
   };
 
   const render = (): void => {
     if (started) return;
-    const peers = tableFrom(client.entries);
+    const peers = tableFrom(client.list());
     const seated = peers.filter((p) => p.seat !== null).sort((a, b) => (a.seat! - b.seat!));
     const unseated = peers.filter((p) => p.seat === null);
     const mySeatNow = peers.find((p) => p.cid === cid)?.seat ?? null;
 
+    // contested chair and we sat down later: stand up and take the next one
+    if (seatLoser(peers, cid)) {
+      const taken = new Set(peers.filter((p) => !seatLoser(peers, p.cid)).map((p) => p.seat));
+      let seat = 0;
+      while (taken.has(seat) && seat < MAX_SEATS) seat++;
+      sendHello(seat < MAX_SEATS ? seat : null);
+      return; // re-render on the echo
+    }
+
     mount(tableEl,
-      h('h3', { class: 'settings-head' }, `At the table (${seated.length})`),
+      h('h3', { class: 'settings-head' }, `At the table (${seated.length} of ${MAX_SEATS})`),
       ...(seated.length === 0 ? [h('p', { class: 'small muted italic' }, 'Nobody seated yet. Take a chair.')] : []),
       ...seated.map((p) => h('div', { class: 'lobby-row' },
         sigilShield(LORDS[(p.seat ?? 0) % LORDS.length].id, 22),
@@ -172,17 +201,19 @@ export async function openOnlineLobby(app: App, invite?: { roomId: string; key: 
     );
 
     const hostControls = isHost() && mySeatNow !== null;
+    const tableFull = seated.length >= MAX_SEATS;
     mount(controls,
       mySeatNow === null
         ? h('button', {
             class: 'btn btn-seal', style: { marginTop: '0.6rem' },
+            disabled: tableFull,
             onclick: () => {
               const taken = new Set(seated.map((p) => p.seat));
               let seat = 0;
               while (taken.has(seat)) seat++;
-              sendHello(seat);
+              if (seat < MAX_SEATS) sendHello(seat);
             },
-          }, 'Take a seat')
+          }, tableFull ? 'The table is full — watch, or wait' : 'Take a seat')
         : h('button', { class: 'btn compact', onclick: () => sendHello(null) }, 'Stand up'),
       hostControls
         ? h('div', { class: 'lobby-host' },
@@ -207,19 +238,22 @@ export async function openOnlineLobby(app: App, invite?: { roomId: string; key: 
       ? `Connected · relay ${relayUrl().replace(/^wss?:\/\//, '')}`
       : s === 'connecting' ? 'Reaching the relay…' : 'Relay lost — retrying…';
   };
+  client.onError = (message) => {
+    status.textContent = `The relay declined: ${message}`;
+  };
   client.onBacklogReady = () => {
     // did this war already start? (rejoin path)
-    const startEntry = client.entries.find((e) => e.payload.kind === 'start');
-    if (startEntry && startEntry.payload.kind === 'start') {
-      startGame(startEntry.payload.settings, startEntry.payload.clock);
+    const startEntry = client.list().find((e) => e.payload.kind === 'start');
+    if (startEntry) {
+      startGame(startEntry);
       return;
     }
-    sendHello(tableFrom(client.entries).find((p) => p.cid === cid)?.seat ?? null);
+    sendHello(tableFrom(client.list()).find((p) => p.cid === cid)?.seat ?? null);
     render();
   };
   client.onEntry = (e) => {
     if (e.payload.kind === 'start') {
-      startGame(e.payload.settings, e.payload.clock);
+      startGame(e);
       return;
     }
     render();
@@ -239,6 +273,3 @@ function select(options: string[], value: string, onChange: (v: string) => void)
     onchange: (e: Event) => onChange((e.target as HTMLSelectElement).value),
   }, ...options.map((o) => h('option', { value: o, selected: o === value }, o)));
 }
-
-// keep LORD_BY_ID referenced for future lord-claim UI without an unused-import error
-void LORD_BY_ID;

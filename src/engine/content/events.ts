@@ -50,6 +50,18 @@ const prov = (ctx: EventCtx) => ctx.state.provinces[ctx.province!];
 const hero = (ctx: EventCtx) => ctx.state.heroes[ctx.heroId!];
 const player = (ctx: EventCtx) => ctx.state.players[ctx.pid];
 
+/** The wedding's other lord: first non-warring foreign neighbor of the bound
+ * province — the SAME filter `when` used, re-checked at resolution. */
+function weddingNeighbor(ctx: EventCtx): PlayerId | null {
+  const p = prov(ctx);
+  for (const n of p.neighbors) {
+    const o = ctx.state.provinces[n].owner;
+    if (o >= 0 && o !== ctx.pid && ctx.state.players[o].alive
+      && (ctx.state.stances[`${Math.min(ctx.pid, o)}:${Math.max(ctx.pid, o)}`] ?? 'peace') !== 'war') return o;
+  }
+  return null;
+}
+
 function richestProvince(state: GameState, pid: PlayerId, pred?: (p: (typeof state.provinces)[number]) => boolean) {
   const mine = provincesOf(state, pid).filter((p) => (pred ? pred(p) : true));
   if (mine.length === 0) return null;
@@ -561,8 +573,19 @@ export const EVENTS: EventDef[] = [
     weight: 4,
     cooldown: 8,
     when: (state, pid) => {
-      const paidKey = Object.keys(state.players[pid].flags).find((k) => k.startsWith('tollPaid:') && state.players[pid].flags[k]);
-      if (!paidKey) return null;
+      const flags = state.players[pid].flags;
+      let liveKey: string | null = null;
+      for (const k of Object.keys(flags)) {
+        if (!k.startsWith('tollPaid:') || !flags[k]) continue;
+        const bandId = parseInt(k.slice('tollPaid:'.length), 10);
+        const band = state.armies[bandId];
+        if (!band || band.kind !== 'marauders') {
+          delete flags[k]; // the band is gone; the arrangement dies with it
+        } else if (!liveKey) {
+          liveKey = k;
+        }
+      }
+      if (!liveKey) return null;
       const p = provincesOf(state, pid)[0];
       return p ? { province: p.id, heroId: null } : null;
     },
@@ -673,7 +696,8 @@ export const EVENTS: EventDef[] = [
       return other && p ? { province: p.id, heroId: null } : null;
     },
     text: (ctx) => {
-      const other = ctx.state.players.find((o) => o.alive && o.id !== ctx.pid && (ctx.state.stances[`${Math.min(ctx.pid, o.id)}:${Math.max(ctx.pid, o.id)}`] ?? 'peace') !== 'war')!;
+      const other = ctx.state.players.find((o) => o.alive && o.id !== ctx.pid && (ctx.state.stances[`${Math.min(ctx.pid, o.id)}:${Math.max(ctx.pid, o.id)}`] ?? 'peace') !== 'war');
+      if (!other) return 'Storms have closed the passes; a party of foreign envoys sought your hall — and left again when word of new wars reached them. The hearth stays yours.';
       return `Storms have closed the passes, and ${lordOf(other).name}'s envoys — caught mid-journey — request the hospitality of your hall for the winter. Envoys eat, drink, flatter, and above all watch. Hospitality is never only hospitality.`;
     },
     choices: [
@@ -682,7 +706,8 @@ export const EVENTS: EventDef[] = [
         preview: '−40 gold; their lord warms toward you considerably.',
         aiScore: (p, ctx) => (player(ctx).gold > 150 ? 3 + p.loyalty * 3 : 1),
         apply: (ctx) => {
-          const other = ctx.state.players.find((o) => o.alive && o.id !== ctx.pid && (ctx.state.stances[`${Math.min(ctx.pid, o.id)}:${Math.max(ctx.pid, o.id)}`] ?? 'peace') !== 'war')!;
+          const other = ctx.state.players.find((o) => o.alive && o.id !== ctx.pid && (ctx.state.stances[`${Math.min(ctx.pid, o.id)}:${Math.max(ctx.pid, o.id)}`] ?? 'peace') !== 'war');
+          if (!other) return 'The envoys were gone before the feast was laid — new wars travel faster than couriers. The kitchens ate well that week.';
           player(ctx).gold = Math.max(0, player(ctx).gold - 40);
           addDeed(ctx.state, other.id, ctx.pid, { id: 'winterHost', label: 'Sheltered our envoys in style', delta: 12, decay: 0.4 });
           return `The envoys wintered on the good wine and left in spring with kind reports and several new waistcoat sizes. ${lordOf(other).name} will hear of every course served. (−40 gold, their regard warms)`;
@@ -693,7 +718,8 @@ export const EVENTS: EventDef[] = [
         preview: 'No cost; a modest courtesy, modestly remembered.',
         aiScore: () => 3,
         apply: (ctx) => {
-          const other = ctx.state.players.find((o) => o.alive && o.id !== ctx.pid && (ctx.state.stances[`${Math.min(ctx.pid, o.id)}:${Math.max(ctx.pid, o.id)}`] ?? 'peace') !== 'war')!;
+          const other = ctx.state.players.find((o) => o.alive && o.id !== ctx.pid && (ctx.state.stances[`${Math.min(ctx.pid, o.id)}:${Math.max(ctx.pid, o.id)}`] ?? 'peace') !== 'war');
+          if (!other) return 'The rooms were aired for nobody: the envoys had already turned back at the pass. The housekeeper filed the linens under Optimism.';
           addDeed(ctx.state, other.id, ctx.pid, { id: 'winterHost', label: 'Sheltered our envoys', delta: 5, decay: 0.6 });
           return 'The envoys got clean rooms, plain fare, and civility by the cord. Diplomacy survived the winter at room temperature. (their regard warms a little)';
         },
@@ -703,7 +729,8 @@ export const EVENTS: EventDef[] = [
         preview: 'No cost; their lord takes offense. Your borders learn you are not soft.',
         aiScore: (p) => 1 + p.pride * 3 + p.aggression * 2,
         apply: (ctx) => {
-          const other = ctx.state.players.find((o) => o.alive && o.id !== ctx.pid && (ctx.state.stances[`${Math.min(ctx.pid, o.id)}:${Math.max(ctx.pid, o.id)}`] ?? 'peace') !== 'war')!;
+          const other = ctx.state.players.find((o) => o.alive && o.id !== ctx.pid && (ctx.state.stances[`${Math.min(ctx.pid, o.id)}:${Math.max(ctx.pid, o.id)}`] ?? 'peace') !== 'war');
+          if (!other) return 'There was nobody left to turn away; the passes had already answered for you. The sentries logged a quiet week.';
           addDeed(ctx.state, other.id, ctx.pid, { id: 'winterSnub', label: 'Turned our envoys into the snow', delta: -10, decay: 0.7 });
           const seat = ctx.state.provinces[player(ctx).seatProvince];
           seat.order = clamp(seat.order + 2, 0, 100);
@@ -797,7 +824,8 @@ export const EVENTS: EventDef[] = [
     },
     text: (ctx) => {
       const p = prov(ctx);
-      const otherId = p.neighbors.map((n) => ctx.state.provinces[n].owner).find((o) => o >= 0 && o !== ctx.pid)!;
+      const otherId = weddingNeighbor(ctx);
+      if (otherId === null) return `A miller's daughter of ${p.name} was to marry across the march — but the border closed with the banns half-read. The village keeps the bunting for better seasons.`;
       return `A miller's daughter of ${p.name} is to marry a horse-trader from across ${lordOf(ctx.state.players[otherId]).name}'s march. Both villages have invited both lords, in the cheerful conviction that rulers exist to bless weddings and pay for the second barrel.`;
     },
     choices: [
@@ -807,7 +835,8 @@ export const EVENTS: EventDef[] = [
         aiScore: (p) => 3 + p.loyalty * 3,
         apply: (ctx) => {
           const p = prov(ctx);
-          const otherId = p.neighbors.map((n) => ctx.state.provinces[n].owner).find((o) => o >= 0 && o !== ctx.pid)!;
+          const otherId = weddingNeighbor(ctx);
+          if (otherId === null) return 'The wedding dissolved with the border that hosted it. The barrel was drunk anyway, to absent friends.';
           player(ctx).gold = Math.max(0, player(ctx).gold - 15);
           p.order = clamp(p.order + 4, 0, 100);
           addDeed(ctx.state, otherId, ctx.pid, { id: 'weddingGuest', label: 'Danced at the border wedding', delta: 7, decay: 0.5 });
@@ -830,7 +859,8 @@ export const EVENTS: EventDef[] = [
         aiScore: (p) => 1 + p.pride * 2 + p.aggression * 2,
         apply: (ctx) => {
           const p = prov(ctx);
-          const otherId = p.neighbors.map((n) => ctx.state.provinces[n].owner).find((o) => o >= 0 && o !== ctx.pid)!;
+          const otherId = weddingNeighbor(ctx);
+          if (otherId === null) return 'The forbidding arrived after the border had already done the forbidding. The couple eloped anyway, out of principle.';
           p.order = clamp(p.order - 6, 0, 100);
           addDeed(ctx.state, otherId, ctx.pid, { id: 'weddingForbid', label: 'Forbade the border match', delta: -8, decay: 0.8 });
           newArmy(ctx.state, ctx.pid, p.id, makeUnits('militia', 1));
@@ -875,7 +905,7 @@ export const EVENTS: EventDef[] = [
         aiScore: (p) => 3 + p.greed * 2,
         apply: (ctx) => {
           player(ctx).gold += 35;
-          prov(ctx).prosperity = clamp(prov(ctx).prosperity + 6, 0, 100);
+          prov(ctx).prosperity = clamp(prov(ctx).prosperity + 0.05, 0.5, 1.3);
           return 'The smugglers were issued licenses, seals, and a schedule of fees, and were last seen reading them with expressions of profound professional grief. Trade continues, now with paperwork. (+35 gold, prosperity rises)';
         },
       },

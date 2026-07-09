@@ -473,13 +473,18 @@ export function previewBattle(state: GameState, armyId: number, targetProvince: 
     if (supports.length > 0 && i === 0) {
       aSide.mods.push({ label: `Combined assault — ${atkArmies.length} banners converge`, mult: 1 });
     }
-    if (fervor && army.owner >= 0 && state.players[army.owner].emberlight >= FERVOR_COST) {
+    const fervorPaid = fervor && army.owner >= 0 && state.players[army.owner].emberlight >= FERVOR_COST;
+    if (fervorPaid) {
       if (i === 0) aSide.mods.push({ label: `Emberlight fervor (−${FERVOR_COST} Emberlight)`, mult: FERVOR_MULT });
       aSide.mult *= FERVOR_MULT;
     }
     addCreedGrudgeMod(state, aSide, dSide.player);
     addCreedGrudgeMod(state, dSide, aSide.player);
+    // spells must be affordability-checked against the post-fervor pool,
+    // exactly as resolveBattle will see it — deduct, weave, restore
+    if (fervorPaid) state.players[army.owner].emberlight -= FERVOR_COST;
     weaveSpells(state, aSide, dSide, atkArmies, defenders, false);
+    if (fervorPaid) state.players[army.owner].emberlight += FERVOR_COST;
     if (!sample) {
       sample = {
         aMods: aSide.mods,
@@ -891,7 +896,7 @@ export function captureProvince(
   // storming the ground breaks any seat-ritual being held on it: the
   // Rekindling is a public promise, and promises can be interrupted.
   const broken = state.activeQuests.filter((q) => {
-    if (q.owner !== previous || q.province !== province.id) return false;
+    if (q.province !== province.id || q.owner === newOwner) return false;
     const def = QUESTS[q.defId];
     return def?.site === 'ownSeat';
   });

@@ -495,6 +495,8 @@ function diplomacyAction(
       if (getStance(state, pid, against) !== 'war') return fail('It is not your war to share.');
       if (getStance(state, target, against) === 'war') return fail('They already fight that war.');
       if (stance === 'war') return fail('They will not take calls from an enemy.');
+      const bond = getStance(state, target, against);
+      if (bond === 'pact' || bond === 'alliance') return fail('They are sworn to that lord — the call would be an insult.');
       const gold = Math.max(0, Math.floor(action.gold ?? 0));
       if (player.gold < gold) return fail('Your treasury cannot cover that inducement.');
       queueProposal(state, pid, target, 'joinWar', gold,
@@ -715,9 +717,12 @@ export function applyProposalResponse(
         addDeed(state, from, to, { id: 'refusedCall', label: 'Refused our call to war', delta: -6, decay: 1 });
         break;
       }
-      // The war may have ended, or the responder joined it another way.
+      // The war may have ended, or the responder joined it another way,
+      // or new oaths now bind them to the target — never force oathbreaking.
       if (getStance(state, from, against) !== 'war') break;
       if (getStance(state, to, against) === 'war') break;
+      const bondNow = getStance(state, to, against);
+      if (bondNow === 'pact' || bondNow === 'alliance') break;
       const gold = Math.min(proposal.gold, state.players[from].gold);
       if (gold > 0) {
         state.players[from].gold -= gold;

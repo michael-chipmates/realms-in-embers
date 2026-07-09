@@ -193,11 +193,16 @@ describe('event chains', () => {
     // without flags, neither chain event can bind
     expect(wolfshead.when(state, 0, new Rng(state.rng))).toBeNull();
     expect(homesick.when(state, 0, new Rng(state.rng))).toBeNull();
-    // with the planted flags, both bind
-    state.players[0].flags['tollPaid:7'] = true;
+    // with the planted flags (and a LIVING band — dead bands GC their toll), both bind
+    const band = newArmy(state, -1, state.provinces.find((p) => p.owner === -1)!.id, makeUnits('marauders', 2), { kind: 'marauders' });
+    state.players[0].flags[`tollPaid:${band.id}`] = true;
     state.players[0].flags.peddlerRelic = true;
     expect(wolfshead.when(state, 0, new Rng(state.rng))).not.toBeNull();
     expect(homesick.when(state, 0, new Rng(state.rng))).not.toBeNull();
+    // the band dies; the arrangement dies with it
+    delete state.armies[band.id];
+    expect(wolfshead.when(state, 0, new Rng(state.rng))).toBeNull();
+    expect(state.players[0].flags[`tollPaid:${band.id}`]).toBeUndefined();
   });
 });
 

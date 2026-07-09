@@ -82,7 +82,10 @@ function view(state, pid, rejections) {
           const pv = previewBattle(state, a.id, t.to, t.viaSea, 60);
           L.push(`    -> can ATTACK #${t.to} ${p.name}${t.viaSea ? ' (by sea)' : ''}: ${pv ? Math.round(pv.winChance * 100) + '% to win, ~' + Math.round(pv.aExpectedLoss * 100) + '% losses' : 'no preview'}`);
         } else {
-          L.push(`    -> can move to #${t.to} ${p.name}${p.owner === -1 ? ' (free province, walk in)' : ''}${t.viaSea ? ' (by sea)' : ''}`);
+          const label = p.owner === -1
+            ? ' (free province — entering claims it)'
+            : p.owner === pid ? '' : ` (${LORD_BY_ID[state.players[p.owner].lordId].name}'s land — treaty passage only, no capture)`;
+          L.push(`    -> can move to #${t.to} ${p.name}${label}${t.viaSea ? ' (by sea)' : ''}`);
         }
       }
     }

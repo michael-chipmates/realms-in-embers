@@ -7,11 +7,16 @@
  * else. Reconnection is free: the relay replays the encrypted backlog and
  * the deterministic engine rebuilds the exact game.
  *
+ * Integrity model (documented honestly): the room id is bound into each
+ * blob as AES-GCM additional data, so ciphertext cannot be replayed across
+ * rooms; WITHIN a room the relay is trusted for ordering — this is a
+ * trust-your-friends table, not an adversarial ladder.
+ *
  * Message kinds inside the encrypted envelope:
- *   hello   {seat?: number, name: string}         — presence + seat claims
- *   start   {settings: GameSettings, clock}       — host begins the war
- *   act     {seat: number, action: Action}        — one game action
- *   chat    {name: string, text: string}          — table talk
+ *   hello   {cid, seat?, name}                        — presence + seat claims
+ *   start   {settings, clock, seatCids}               — host begins the war
+ *   act     {seat, action}                            — one game action
+ *   chat    {name, text}                              — table talk
  */
 import type { Action, GameSettings } from '../engine/types';
 
@@ -31,8 +36,8 @@ export const CLOCK_PRESETS: ClockConfig[] = [
 ];
 
 export type NetPayload =
-  | { kind: 'hello'; name: string; seat: number | null }
-  | { kind: 'start'; settings: GameSettings; clock: ClockConfig }
+  | { kind: 'hello'; cid: string; name: string; seat: number | null }
+  | { kind: 'start'; settings: GameSettings; clock: ClockConfig; seatCids: string[] }
   | { kind: 'act'; seat: number; action: Action }
   | { kind: 'chat'; name: string; text: string };
 
@@ -59,24 +64,33 @@ async function importKey(b64key: string): Promise<CryptoKey> {
   return crypto.subtle.importKey('raw', unb64(b64key), { name: 'AES-GCM' }, false, ['encrypt', 'decrypt']);
 }
 
-async function encrypt(key: CryptoKey, payload: NetPayload): Promise<string> {
+function aad(roomId: string): Uint8Array<ArrayBuffer> {
+  const bytes = new TextEncoder().encode(`rie:${roomId}`);
+  const out = new Uint8Array(new ArrayBuffer(bytes.length));
+  out.set(bytes);
+  return out;
+}
+
+async function encrypt(key: CryptoKey, roomId: string, payload: NetPayload): Promise<string> {
   const iv = crypto.getRandomValues(new Uint8Array(12));
   const data = new TextEncoder().encode(JSON.stringify(payload));
-  const ct = new Uint8Array(await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, data));
+  const ct = new Uint8Array(await crypto.subtle.encrypt(
+    { name: 'AES-GCM', iv, additionalData: aad(roomId) }, key, data));
   const out = new Uint8Array(iv.length + ct.length);
   out.set(iv); out.set(ct, iv.length);
   return b64(out);
 }
 
-async function decrypt(key: CryptoKey, blob: string): Promise<NetPayload | null> {
+async function decrypt(key: CryptoKey, roomId: string, blob: string): Promise<NetPayload | null> {
   try {
     const buf = unb64(blob);
     const iv = buf.slice(0, 12);
     const ct = buf.slice(12);
-    const pt = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, key, ct);
+    const pt = await crypto.subtle.decrypt(
+      { name: 'AES-GCM', iv, additionalData: aad(roomId) }, key, ct);
     return JSON.parse(new TextDecoder().decode(pt)) as NetPayload;
   } catch {
-    return null; // wrong key or tampered blob: ignore, honestly
+    return null; // wrong key, wrong room, or tampered blob: ignore, honestly
   }
 }
 
@@ -96,7 +110,7 @@ export function randomRoomId(): string {
   return b64(bytes);
 }
 
-/** The whole invite: room id in the query-ish part, key in the fragment. */
+/** The whole invite: room id + key ride the fragment, never any wire. */
 export function inviteLink(roomId: string, key: string): string {
   const base = `${location.origin}${location.pathname}`;
   return `${base}#war=${roomId}.${key}`;
@@ -114,14 +128,26 @@ export class NetClient {
   private key: CryptoKey | null = null;
   private closed = false;
   private backoff = 500;
-  /** Entries in relay order, decrypted. */
-  readonly entries: NetEntry[] = [];
+  private joined = false;
+  /** Strictly-serialized message processing: crypto is async, sockets are not. */
+  private pump: Promise<void> = Promise.resolve();
+  /** Payloads composed while the socket was down; flushed after (re)join. */
+  private outbox: NetPayload[] = [];
+  /** Decrypted entries INDEXED BY SEQ (dense from the relay; gaps only while
+   * a blob is still decrypting — consumers must treat undefined as "wait"). */
+  readonly entries: (NetEntry | undefined)[] = [];
   onEntry: ((e: NetEntry) => void) | null = null;
   onBacklogReady: (() => void) | null = null;
   onPeers: ((n: number) => void) | null = null;
   onStatus: ((s: 'connecting' | 'open' | 'closed') => void) | null = null;
+  onError: ((message: string) => void) | null = null;
 
   constructor(readonly roomId: string, private readonly keyB64: string) {}
+
+  /** All decrypted entries in seq order (skipping still-decrypting gaps). */
+  list(): NetEntry[] {
+    return this.entries.filter((e): e is NetEntry => e !== undefined);
+  }
 
   async connect(): Promise<void> {
     this.key = await importKey(this.keyB64);
@@ -130,12 +156,14 @@ export class NetClient {
 
   private open(): void {
     if (this.closed) return;
+    this.joined = false;
     this.onStatus?.('connecting');
-    const base = relayUrl();
-    // node relay speaks join-over-socket; the CF worker addresses rooms by path
-    const url = base.includes('workers.dev') || base.includes('/room/')
-      ? `${base.replace(/\/$/, '')}/room/${this.roomId}`
-      : base;
+    const base = relayUrl().replace(/\/$/, '');
+    // 'path' mode addresses rooms by URL (Cloudflare worker); 'socket' mode
+    // joins over the socket (node relay). Heuristic default, explicit override.
+    const mode = localStorage.getItem('rie-relay-mode')
+      ?? (base.includes('workers.dev') ? 'path' : 'socket');
+    const url = mode === 'path' ? `${base}/room/${this.roomId}` : base;
     const ws = new WebSocket(url);
     this.ws = ws;
     ws.addEventListener('open', () => {
@@ -143,7 +171,10 @@ export class NetClient {
       this.onStatus?.('open');
       ws.send(JSON.stringify({ t: 'join', room: this.roomId }));
     });
-    ws.addEventListener('message', (ev) => void this.onMessage(String(ev.data)));
+    ws.addEventListener('message', (ev) => {
+      const raw = String(ev.data);
+      this.pump = this.pump.then(() => this.onMessage(raw)).catch(() => { /* keep pumping */ });
+    });
     ws.addEventListener('close', () => {
       this.onStatus?.('closed');
       if (!this.closed) {
@@ -154,33 +185,45 @@ export class NetClient {
   }
 
   private async onMessage(raw: string): Promise<void> {
-    let msg: { t: string; seq?: number; data?: string; log?: string[]; n?: number };
+    let msg: { t: string; seq?: number; data?: string; log?: string[]; n?: number; error?: string };
     try { msg = JSON.parse(raw); } catch { return; }
+    if (msg.t === 'error') {
+      this.onError?.(msg.error ?? 'relay refused');
+      return;
+    }
     if (msg.t === 'joined' && Array.isArray(msg.log)) {
-      // full backlog: decrypt in order, replacing anything we had
-      this.entries.length = 0;
       for (let i = 0; i < msg.log.length; i++) {
-        const payload = await decrypt(this.key!, msg.log[i]);
-        if (payload) this.entries.push({ seq: i, payload });
+        if (this.entries[i]) continue; // already decrypted (live entry beat us)
+        const payload = await decrypt(this.key!, this.roomId, msg.log[i]);
+        if (payload) this.entries[i] = { seq: i, payload };
       }
+      this.joined = true;
       this.onBacklogReady?.();
+      const pending = this.outbox.splice(0);
+      for (const payload of pending) void this.send(payload);
       return;
     }
     if (msg.t === 'entry' && typeof msg.data === 'string' && typeof msg.seq === 'number') {
-      if (this.entries.some((e) => e.seq === msg.seq)) return;
-      const payload = await decrypt(this.key!, msg.data);
+      if (this.entries[msg.seq]) return;
+      const payload = await decrypt(this.key!, this.roomId, msg.data);
       if (!payload) return;
       const entry = { seq: msg.seq, payload };
-      this.entries.push(entry);
+      this.entries[msg.seq] = entry;
       this.onEntry?.(entry);
       return;
     }
     if (msg.t === 'peer' && typeof msg.n === 'number') this.onPeers?.(msg.n);
   }
 
+  /** Queue-and-forget: if the relay is down, the payload waits and flushes
+   * after the next successful join. Order among local sends is preserved. */
   async send(payload: NetPayload): Promise<void> {
-    if (!this.ws || this.ws.readyState !== 1 || !this.key) return;
-    this.ws.send(JSON.stringify({ t: 'append', data: await encrypt(this.key, payload) }));
+    if (!this.key) { this.outbox.push(payload); return; }
+    if (!this.ws || this.ws.readyState !== 1 || !this.joined) {
+      this.outbox.push(payload);
+      return;
+    }
+    this.ws.send(JSON.stringify({ t: 'append', data: await encrypt(this.key, this.roomId, payload) }));
   }
 
   close(): void {

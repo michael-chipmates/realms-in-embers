@@ -83,7 +83,18 @@ try {
 
   await a.screenshot({ path: `${outdir}/on2-a-season2.png` });
   await b.screenshot({ path: `${outdir}/on3-b-season2.png` });
-  console.log(errors.length ? 'ERRORS:\n' + [...new Set(errors)].join('\n') : 'online drive clean: 2 clients, 2 turns, identical state');
+
+  // REJOIN: B refreshes mid-game via the invite link and must land exactly
+  // where the war stands (the cursor bug once reset rejoiners to season 1)
+  await b.goto(invite, { waitUntil: 'networkidle' });
+  await b.waitForSelector('.end-turn', { timeout: 15000 });
+  await b.waitForTimeout(1200);
+  const sb2 = await seasonOf(b);
+  if (sb2 !== 2) throw new Error(`rejoin landed at season ${sb2}, wanted 2`);
+  const hb2 = await hash(b);
+  if (hb2 !== ha) throw new Error('rejoined client state diverged');
+
+  console.log(errors.length ? 'ERRORS:\n' + [...new Set(errors)].join('\n') : 'online drive clean: 2 clients, 2 turns, identical state, rejoin lands mid-war');
 } finally {
   await browser.close();
   relay.kill();

@@ -99,16 +99,23 @@ export class GameScreen {
     this.startClock();
   }
 
-  /** Apply every not-yet-consumed relay action, in relay order. */
-  private consumeNet(): void {
+  /** Apply every already-decrypted relay action, strictly in seq order.
+   * PAUSES (without consuming) while the local AI wheel is between the
+   * relayed endTurn and the next human seat — every client walks the same
+   * AI turns at its own pace, and acts must wait for it. Gaps in the
+   * entry array (blobs still decrypting) also pause; the pump will call
+   * us again. */
+  consumeNet(): void {
     const session = this.online!;
-    while (session.cursor < session.client.entries.length) {
+    for (;;) {
       const entry = session.client.entries[session.cursor];
-      session.cursor++;
+      if (!entry) break; // not arrived / not decrypted yet
       const payload = entry.payload;
-      if (payload.kind !== 'act') continue;
-      if (this.state.phase === 'ended') continue;
-      if (payload.seat !== this.state.current) continue; // stale or dishonest: engine order rules
+      if (payload.kind !== 'act') { session.cursor++; continue; }
+      if (this.state.phase === 'ended') { session.cursor++; continue; }
+      if (this.aiRunning || this.current().kind === 'ai') break; // wait for the wheel
+      if (payload.seat !== this.state.current) { session.cursor++; continue; } // stale/dishonest
+      session.cursor++;
       const result = applyAction(this.state, payload.action);
       if (result.ok) {
         this.presentEffects(result.effects);
@@ -116,10 +123,24 @@ export class GameScreen {
       }
     }
     this.refresh();
-    // if the log left us on an AI seat (e.g. mid-reconnect), let the wheel turn
-    if (this.state.phase === 'playing' && this.current().kind === 'ai' && !this.aiRunning) {
+    if (this.state.phase === 'ended') {
+      this.showEndOnce();
+      return;
+    }
+    // the log left us on an AI seat: let the wheel turn (it re-enters
+    // consumeNet when it finishes)
+    if (this.current().kind === 'ai' && !this.aiRunning) {
       void this.runAiTurns();
     }
+  }
+
+  private endShown = false;
+
+  showEndOnce(): void {
+    if (this.endShown) return;
+    this.endShown = true;
+    this.refresh();
+    showGameEnd(this);
   }
 
   private onTurnAdvanced(): void {
@@ -200,12 +221,14 @@ export class GameScreen {
 
     // if we loaded into an AI's turn (or a finished game), keep the wheel turning
     if (this.state.phase === 'ended') {
-      showGameEnd(this);
-    } else if (this.current().kind === 'ai') {
-      void this.runAiTurns();
-    } else {
+      this.showEndOnce();
+    } else if (this.current().kind === 'ai' && !this.online) {
+      void this.runAiTurns(); // online: consumeNet drives the wheel once entries land
+    } else if (!this.online) {
       maybeShowOnboarding(this);
       maybeOpenEventModal(this);
+    } else {
+      maybeShowOnboarding(this);
     }
   }
 
@@ -229,8 +252,13 @@ export class GameScreen {
 
   /** The player whose eyes we render through (fog, private chronicle). */
   viewerId(): number {
-    // online, you are always yourself — even during a rival's turn
-    if (this.online) return this.online.mySeat;
+    // online, you are always yourself — even during a rival's turn.
+    // Spectators watch through the first living human's eyes.
+    if (this.online) {
+      if (this.online.mySeat >= 0) return this.online.mySeat;
+      const humans = this.state.players.filter((p) => p.kind === 'human' && p.alive);
+      return humans[0]?.id ?? 0;
+    }
     const cur = this.current();
     if (cur.kind === 'human') return cur.id;
     const humans = this.state.players.filter((p) => p.kind === 'human' && p.alive);
@@ -629,7 +657,17 @@ export class GameScreen {
   dispatch(action: Action): boolean {
     // online: your actions travel to the relay and apply when they echo
     // back — one total order for every table, reconnection for free.
-    if (this.online && this.state.current === this.online.mySeat && this.state.phase === 'playing') {
+    // NOTHING applies locally out of turn: not hotkeys, not armed spells,
+    // not spectators. The relay log is the only pen.
+    if (this.online) {
+      if (this.online.mySeat < 0) {
+        this.toast('You are watching this war, not writing it.', 'info');
+        return false;
+      }
+      if (this.state.phase !== 'playing' || this.state.current !== this.online.mySeat) {
+        this.toast('Not your season.', 'info');
+        return false;
+      }
       void this.online.client.send({ kind: 'act', seat: this.online.mySeat, action });
       return true;
     }
@@ -669,8 +707,7 @@ export class GameScreen {
     this.aiRunning = false;
 
     if (this.state.phase === 'ended') {
-      this.refresh();
-      showGameEnd(this);
+      this.showEndOnce();
       return;
     }
     // autosave at the start of every human turn
@@ -680,6 +717,12 @@ export class GameScreen {
     }
     this.refresh();
     if (!this.online || this.state.current === this.online.mySeat) maybeOpenEventModal(this);
+    if (this.online) {
+      // the human seated after an AI block never crosses a relayed endTurn:
+      // top up their clock here, then drain anything that queued meanwhile
+      this.onTurnAdvanced();
+      this.consumeNet();
+    }
   }
 
   private pause(ms: number): Promise<void> {

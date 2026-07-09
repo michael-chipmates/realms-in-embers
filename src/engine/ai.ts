@@ -106,12 +106,17 @@ function respondToProposals(state: GameState, pid: PlayerId, dispatch: (a: Actio
       case 'joinWar': {
         const against = proposal.target;
         if (against === undefined || !state.players[against].alive) { accept = false; break; }
+        // never against a lord we are sworn to — that road is oathbreaking
+        const bond = getStance(state, pid, against);
+        if (bond === 'pact' || bond === 'alliance') { accept = false; break; }
         const attToTarget = attitudeOf(state, pid, against).total;
         const targetPower = totalPower(state, against);
         const targetShare = provincesOf(state, against).length / state.provinces.length;
         const hopeless = targetPower > (myPower + theirPower) * 1.4;
         const menaced = targetShare > 0.38 || attToTarget <= -15;
-        const bought = proposal.gold >= 40 && persona.greed > 0.45 && attToTarget <= 0;
+        // weigh what the proposer can actually PAY, not what they promised
+        const realBribe = Math.min(proposal.gold, state.players[proposal.from].gold);
+        const bought = realBribe >= 40 && persona.greed > 0.45 && attToTarget <= 0;
         accept = !hopeless
           && attitude >= 0
           && (menaced || bought || (attToTarget <= -8 && persona.aggression > 0.5));

@@ -3,7 +3,7 @@
  * (neutral raids, victory checks, stats, omens) when the table comes back
  * around to the first banner.
  */
-import { eliminatePlayer, resolveBattle } from './combat';
+import { captureProvince, eliminatePlayer, resolveBattle } from './combat';
 import { decayDeeds } from './diplo';
 import { drawEvent } from './events';
 import { refreshRiteOffers } from './magic';
@@ -246,11 +246,14 @@ function roundEnd(state: GameState, rng: Rng, effects: Effect[]): void {
     const p = state.provinces[army.province];
     const raidChance = kind === 'rebels' ? 0.4 : 0.25;
     if (!rng.chance(raidChance)) continue;
-    // target: adjacent owned province, weakest garrison, richest for marauders
+    // target: adjacent owned province, weakest garrison, richest for marauders.
+    // A paid wolfshead toll is honored: that band skips that lord's lands.
+    const paidOff = (owner: number): boolean =>
+      kind === 'marauders' && owner >= 0 && !!state.players[owner].flags[`tollPaid:${army.id}`];
     const targets = p.neighbors
       .map((id) => state.provinces[id])
-      .filter((t) => t.owner >= 0);
-    if (p.owner >= 0) targets.push(p); // rebels strike the province they infest first
+      .filter((t) => t.owner >= 0 && !paidOff(t.owner));
+    if (p.owner >= 0 && !paidOff(p.owner)) targets.push(p); // rebels strike the province they infest first
     if (targets.length === 0) continue;
     const myPower = roughArmyPower(army);
     const viable = targets.filter((t) => {
@@ -264,12 +267,13 @@ function roundEnd(state: GameState, rng: Rng, effects: Effect[]): void {
       : rng.pick(viable);
     const defenders = armiesIn(state, target.id).filter((a) => a.owner !== NEUTRAL);
     if (defenders.length === 0) {
-      // undefended: the province falls out of the realm entirely
+      // undefended: the province falls out of the realm entirely — through
+      // captureProvince, so everything a capture entails (broken seat
+      // rituals included) happens here too
       if (target.owner >= 0) {
         const prevOwner = target.owner;
-        target.owner = NEUTRAL;
+        captureProvince(state, rng, target, NEUTRAL, effects);
         target.seatOf = null;
-        target.capturedTurn = state.turn;
         target.order = 50;
         scribe(state, {
           kind: 'realm',

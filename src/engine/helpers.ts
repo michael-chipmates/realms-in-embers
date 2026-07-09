@@ -114,7 +114,10 @@ export function removeArmy(state: GameState, armyId: number): void {
   if (!army) return;
   for (const hid of army.heroIds) {
     const hero = state.heroes[hid];
-    if (hero) hero.armyId = null;
+    if (hero) {
+      hero.armyId = null;
+      hero.province = army.province; // detach WHERE the banner fell, not where it once mustered
+    }
   }
   delete state.armies[armyId];
 }
