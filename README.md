@@ -78,12 +78,15 @@ them up, and falls back to the built-in generative score if files are missing.
   A stalled online session degrades gracefully: every round autosaves, and a
   save continues by courier.
 
-## The illustrated edition (prepared)
+## The illustrated edition (shipped)
 
-Every illustrated surface asks `src/ui/art.ts` for a named slot and falls back
-to procedural heraldry. `docs/ART.md` holds the complete manifest — files,
-sizes, style guide, and generation prompts — so an image-generation pass drops
-in with zero code changes.
+Forty-three painted plates in a late-80s game-manual airbrush style — twelve
+lord portraits, four hero classes, twenty-three event vignettes, three
+ceremonies, the title hall, and the ghost-chronicler himself — all generated
+against one style anchor so the set reads as one painter's hand (~3.6 MB of
+WebP for the lot). Every surface still falls back to procedural heraldry if
+`public/art/` is emptied; `docs/ART.md` and `scripts/gen-art.mjs` document
+and regenerate everything.
 
 ## Repo map
 
@@ -91,6 +94,10 @@ in with zero code changes.
   mutation an action, seed+log replays byte-identically. `content/` holds all
   authored material (lords, units, spells, artifacts, quests, events, narrator).
 - `src/ui/` — canvas vellum map + DOM war room. `src/sim/` — the proving ground.
-- `scripts/` — Playwright drivers that replay real user flows headlessly.
+- `server/` — the blind relay for online war (Node/Docker + Cloudflare Worker,
+  one protocol). It stores ciphertext and ordinals; it can read nothing.
+- `scripts/` — Playwright drivers that replay real user flows headlessly,
+  plus the art/audio generators and the model-playtest harness (an LLM
+  plays a real seat and files a debrief).
 - `DECISIONS.md` — why things are the way they are. `FINAL_REPORT.md` — the
   honest retrospective. `STATE.md` — build log.

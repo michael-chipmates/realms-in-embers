@@ -1,12 +1,18 @@
 # Changelog
 
 All notable changes to Realms in Embers. The game's rules carry their own
-version (`RULES_VERSION` in `src/engine/state.ts`, currently v6) — bumped
+version (`RULES_VERSION` in `src/engine/state.ts`, currently v7) — bumped
 whenever engine semantics change, with a frozen replay fixture as the canary.
 
 ## [Unreleased] — the outstanding round (2026-07-09)
 
 ### Added
+- **The Illustrated Edition**: 43 painted plates in a late-80s game-manual
+  airbrush style, generated against a single approved style anchor —
+  every lord, class, event, ceremony, the title hall, and Osperan himself.
+- **Model playtesting**: `scripts/model-playtest.mjs` seats an LLM at the
+  table through the real engine; its first outing found (and we fixed) the
+  guild-loan endgame exploit and several vague rejection messages.
 - **Online multiplayer**: live wars over a blind, end-to-end-encrypted relay.
   One invite link, no accounts, turn clocks (none/relaxed/standard/blitz with
   bank + increment), self-hostable relay (Node/Docker) or Cloudflare Worker.
