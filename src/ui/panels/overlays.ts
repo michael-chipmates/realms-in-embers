@@ -14,7 +14,7 @@ import { incomeReport, upkeepOf, wagesOf, TAX_FX } from '../../engine/economy';
 import { HERO_CLASSES, xpForLevel } from '../../engine/heroes';
 import { heroDerived } from '../../engine/heroFx';
 import { riteCostFor, spellCostFor } from '../../engine/magic';
-import { sagaGate } from '../../engine/quests';
+import { questStat, sagaGate } from '../../engine/quests';
 import { armiesOf, getStance, heroesOf, provincesOf } from '../../engine/helpers';
 import type { Hero, PlayerId, SpellId } from '../../engine/types';
 import { h, mount } from '../dom';
@@ -371,7 +371,7 @@ function renderQuests(screen: GameScreen, body: HTMLElement): void {
     return h('div', { style: { display: 'flex', gap: '0.4rem', flexWrap: 'wrap' } },
       ...eligible.map((hh) => {
         const d = heroDerived(state, hh);
-        const rough = d[def.stat] + hh.level * 0.5 + d.questAdd + 4.5 - def.dc;
+        const rough = questStat(d, def.stat) + hh.level * 0.5 + d.questAdd + 4.5 - def.dc;
         const feel = rough >= 4 ? 'near-certain' : rough >= 1.5 ? 'favoured' : rough >= -1 ? 'chancy' : 'grim';
         const btn = h('button', {
           class: 'btn compact',
@@ -379,7 +379,9 @@ function renderQuests(screen: GameScreen, body: HTMLElement): void {
             if (screen.dispatch({ t: 'startQuest', heroId: hh.id, questDefId: defId, province })) refresh();
           },
         }, `${hh.name} (${feel})`);
-        tip(btn, `${hh.name}'s ${def.stat} ${d[def.stat]} + level ${hh.level} against difficulty ${def.dc}. Outcomes: triumph, success, setback, disaster.`);
+        tip(btn, questStat(d, def.stat) > d[def.stat]
+          ? `${hh.name} improvises: best other stat −4 (${questStat(d, def.stat)}) beats their ${def.stat} ${d[def.stat]} + level ${hh.level}, against difficulty ${def.dc}.`
+          : `${hh.name}'s ${def.stat} ${d[def.stat]} + level ${hh.level} against difficulty ${def.dc}. Outcomes: triumph, success, setback, disaster.`);
         return btn;
       }),
     );

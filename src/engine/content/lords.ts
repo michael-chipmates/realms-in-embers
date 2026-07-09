@@ -190,8 +190,8 @@ export const LORDS: LordDef[] = [
     color: '#2a7f7f', colorAlt: '#e2ded0', pattern: 'dots', sigil: 'reed',
     perk: {
       label: 'Fen-Cunning',
-      desc: 'Moor provinces yield +6 gold. Spells cost 20% less Emberlight. You begin knowing Scrying Smoke.',
-      fx: { incomeTerrainId: 'moor', incomeTerrainAdd: 6, spellDiscountPct: 20, startingSpell: 'scryingSmoke' },
+      desc: 'Moor provinces yield +9 gold. Spells cost 25% less Emberlight. You begin knowing Scrying Smoke.',
+      fx: { incomeTerrainId: 'moor', incomeTerrainAdd: 9, spellDiscountPct: 25, startingSpell: 'scryingSmoke' },
     },
     lines: {
       intro: 'The bog told me how this ends. I’m only here to make sure it keeps its word.',

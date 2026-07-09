@@ -15,7 +15,7 @@ import { ARTIFACTS, type ArtifactFx } from './content/artifacts';
 import { SPELLS } from './content/spells';
 import { QUESTS } from './content/quests';
 import { spellCostFor } from './magic';
-import { sagaAvailable } from './quests';
+import { questStat, sagaAvailable } from './quests';
 import { Rng } from './rng';
 import { buildingCostFor, incomeReport, unitCostFor } from './economy';
 import { BUILD_ORDER, BUILDINGS } from './content/world';
@@ -446,7 +446,7 @@ function runQuests(state: GameState, pid: PlayerId, dispatch: (a: Action) => boo
       if (def.minLevel && hero.level < def.minLevel) continue;
       if (def.tier === 3 && hero.level < 4) continue;
       const d = heroDerived(state, hero);
-      const margin = d[def.stat] + hero.level * 0.5 + d.questAdd - def.dc + 5; // + expected fortune
+      const margin = questStat(d, def.stat) + hero.level * 0.5 + d.questAdd - def.dc + 5; // + expected fortune
       if (margin < 0.5) continue; // long odds are for ballads, not policy
       const score = margin + def.tier * 1.5;
       if (!best || score > best.score) best = { defId: offer.defId, province: offer.province, score };

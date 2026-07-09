@@ -26,8 +26,10 @@ import { NEUTRAL } from './types';
  *     emberlight fervor (iteration 3).
  * v4: chronicle weariness (eroding dominion), golden age at 900 + AI
  *     merchant archetype, saga realm-gates + breakable Rekindling
- *     (iteration 4). */
-export const RULES_VERSION = 4;
+ *     (iteration 4).
+ * v5: quest stat improvisation (questStat, best-other −4), Maera perk
+ *     +9 moor gold / 25% spell discount (iteration 5, balance). */
+export const RULES_VERSION = 5;
 
 export const HANDICAPS: Record<Difficulty, PlayerHandicap> = {
   squire: { incomeMult: 0.85, label: 'Squire — AI earns 15% less gold and attacks only with clear advantage.' },

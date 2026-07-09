@@ -99,6 +99,15 @@ export function sagaGate(state: GameState, pid: PlayerId): {
   return { available: { def, venues }, def, reason: null };
 }
 
+/** The quest's stat, with improvisation: a hero may lean on their best other
+ * stat at a steep −4 — a champion CAN keep the vigil, gracelessly. Breaks the
+ * hard class-to-quest lock without erasing specialists. */
+export function questStat(derived: { might: number; lore: number; guile: number }, stat: 'might' | 'lore' | 'guile'): number {
+  const primary = derived[stat];
+  const others = (['might', 'lore', 'guile'] as const).filter((s) => s !== stat).map((s) => derived[s]);
+  return Math.max(primary, Math.max(...others) - 4);
+}
+
 export function hasBothShards(state: GameState, pid: PlayerId): boolean {
   const owned = new Set<string>();
   for (const artId of state.players[pid].vault) {
@@ -211,7 +220,7 @@ function resolveQuest(state: GameState, rng: Rng, quest: ActiveQuest, effects: E
   const derived = heroDerived(state, hero);
 
   // 2d4 fortune: quests reward preparation over prayer
-  let roll = derived[def.stat] + hero.level * 0.5 + derived.questAdd + rng.intRange(1, 4) + rng.intRange(1, 4);
+  let roll = questStat(derived, def.stat) + hero.level * 0.5 + derived.questAdd + rng.intRange(1, 4) + rng.intRange(1, 4);
   if (def.stat === 'guile') roll += lordOf(player).perk.fx.questGuileAdd ?? 0;
   const margin = roll - def.dc;
   const outcome: 'triumph' | 'success' | 'setback' | 'disaster' =
