@@ -143,7 +143,7 @@ export function applyAction(state: GameState, action: Action): ActionResult {
       if (!def) return fail('No such works.');
       if (p.buildings.includes(action.building)) return fail('Already built.');
       if (def.requires && !p.buildings.includes(def.requires)) return fail(`Requires ${BUILDINGS[def.requires].name}.`);
-      if (def.terrain && !def.terrain.includes(p.terrain)) return fail('The land does not suit it.');
+      if (def.terrain && !def.terrain.includes(p.terrain)) return fail(`The land does not suit it — it wants ${def.terrain.join(' or ')}.`);
       if (def.coastalOnly && !p.coastal) return fail('Needs a coast.');
       const { cost } = buildingCostFor(state, pid, action.building);
       if (player.gold < cost) return fail(`Needs ${cost} gold.`);
@@ -166,7 +166,7 @@ export function applyAction(state: GameState, action: Action): ActionResult {
       }
       if (gate.terrain && !gate.terrain.includes(p.terrain)) {
         const cragException = action.unit === 'cragguard' && fx.cragguardInHills && p.terrain === 'hills';
-        if (!cragException) return fail('The land does not breed them.');
+        if (!cragException) return fail(`The land does not breed them — they muster only in ${gate.terrain.join(' or ')}.`);
       }
       if (gate.creed && lordOf(player).creed !== gate.creed) return fail('Not of your creed.');
       if (action.unit === 'revenants') {

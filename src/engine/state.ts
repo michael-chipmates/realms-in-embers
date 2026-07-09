@@ -30,8 +30,10 @@ import { NEUTRAL } from './types';
  * v5: quest stat improvisation (questStat, best-other −4), Maera perk
  *     +9 moor gold / 25% spell discount (iteration 5, balance).
  * v6: ten new events incl. two chains (wolfshead return, homesick relic)
- *     (iteration 7). */
-export const RULES_VERSION = 6;
+ *     (iteration 7).
+ * v7: guild loan no longer offered when its due date would outlive the
+ *     Chronicle (model-playtest exploit finding). */
+export const RULES_VERSION = 7;
 
 export const HANDICAPS: Record<Difficulty, PlayerHandicap> = {
   squire: { incomeMult: 0.85, label: 'Squire — AI earns 15% less gold and attacks only with clear advantage.' },

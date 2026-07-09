@@ -5,3 +5,5 @@ dist/
 sim-report.json
 coverage/
 .replicate_token
+.anthropic_token
+.elevenlabs_token

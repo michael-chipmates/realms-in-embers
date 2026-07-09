@@ -41,11 +41,15 @@ export function artSlot(slot: string, fallback: HTMLElement, opts: { className?:
   void loadManifest().then(() => {
     const file = manifest?.[slot];
     if (!file) return;
+    // Always eager: a DETACHED `loading=lazy` image never fires `load`
+    // (no intersection root), which silently kept every fallback forever.
+    // Surfaces only create their slots when they actually render, and the
+    // whole shipped set is ~3.6 MB of WebP, so eager-on-create is cheap
+    // and the swap-on-load below stays flash-free.
     const img = h('img', {
       src: `art/${file}`,
       alt: opts.alt ?? '',
       class: 'art-img',
-      loading: opts.eager ? 'eager' : 'lazy',
     }) as HTMLImageElement;
     img.addEventListener('load', () => {
       wrap.replaceChildren(img);

@@ -28,6 +28,46 @@ class AudioEngine {
   private playlist: string[] = [...DEFAULT_PLAYLIST];
   private trackIdx = 0;
   private useTracks = true;
+  /** Generated-SFX ladder: audio/manifest.json maps cue -> file. Missing
+   * manifest or missing cue falls back to the synth voice below, forever. */
+  private sfxManifest: Record<string, string> | null | 'pending' = null;
+  private sfxBuffers = new Map<string, AudioBuffer | 'loading' | 'failed'>();
+
+  private loadSfxManifest(): void {
+    if (this.sfxManifest !== null) return;
+    this.sfxManifest = 'pending';
+    fetch('audio/manifest.json')
+      .then(async (res) => {
+        this.sfxManifest = res.ok ? ((await res.json()) as Record<string, string>) : {};
+      })
+      .catch(() => { this.sfxManifest = {}; });
+  }
+
+  /** True if a generated file covered this cue (played or now loading). */
+  private tryFile(cue: string): boolean {
+    if (!this.ctx || !this.started) return false;
+    if (this.sfxManifest === null || this.sfxManifest === 'pending') return false;
+    const file = this.sfxManifest[cue];
+    if (!file) return false;
+    const cached = this.sfxBuffers.get(cue);
+    if (cached instanceof AudioBuffer) {
+      const src = this.ctx.createBufferSource();
+      src.buffer = cached;
+      src.connect(this.sfx!);
+      src.start();
+      return true;
+    }
+    if (cached === 'failed') return false;
+    if (cached === undefined) {
+      this.sfxBuffers.set(cue, 'loading');
+      fetch(`audio/${file}`)
+        .then((r) => (r.ok ? r.arrayBuffer() : Promise.reject(new Error('404'))))
+        .then((buf) => this.ctx!.decodeAudioData(buf))
+        .then((decoded) => this.sfxBuffers.set(cue, decoded))
+        .catch(() => this.sfxBuffers.set(cue, 'failed'));
+    }
+    return false; // synth covers this one; the file takes over once decoded
+  }
 
   private ensure(): boolean {
     if (this.ctx) return true;
@@ -70,6 +110,7 @@ class AudioEngine {
 
   enterGame(): void {
     this.inGame = true;
+    this.loadSfxManifest();
     if (this.started) this.startMusic();
   }
 
@@ -262,39 +303,46 @@ class AudioEngine {
   }
 
   coin(): void {
+    if (this.tryFile('coin')) return;
     this.blip(880, 0.12, 'sine', 0.14);
     this.blip(1320, 0.18, 'sine', 0.1, 0.05);
   }
 
   march(): void {
+    if (this.tryFile('march')) return;
     this.noise(0.12, 0.18, 300);
     this.noise(0.1, 0.14, 250, 0.14);
   }
 
   clash(): void {
+    if (this.tryFile('clash')) return;
     this.noise(0.25, 0.3, 2400);
     this.blip(180, 0.3, 'sawtooth', 0.12);
     this.noise(0.2, 0.2, 1800, 0.12);
   }
 
   spell(): void {
+    if (this.tryFile('spell')) return;
     this.blip(520, 0.5, 'sine', 0.1);
     this.blip(780, 0.5, 'sine', 0.08, 0.08);
     this.blip(1040, 0.6, 'sine', 0.06, 0.16);
   }
 
   bell(): void {
+    if (this.tryFile('bell')) return;
     this.blip(440, 1.2, 'sine', 0.16);
     this.blip(660, 1.0, 'sine', 0.05, 0.02);
   }
 
   quillScratch(): void {
+    if (this.tryFile('quill')) return;
     this.noise(0.18, 0.06, 3200);
   }
 
   /** End-of-season horn: a low swell with a fifth. */
   horn(): void {
     if (!this.ctx || !this.started) return;
+    if (this.tryFile('horn')) return;
     const ctx = this.ctx;
     const t = ctx.currentTime;
     for (const [freq, gain] of [[146.8, 0.14], [220.2, 0.08]] as const) {
@@ -347,6 +395,7 @@ class AudioEngine {
   }
 
   fanfare(): void {
+    if (this.tryFile('fanfare')) return;
     this.blip(392, 0.25, 'triangle', 0.16);
     this.blip(523, 0.25, 'triangle', 0.16, 0.22);
     this.blip(659, 0.5, 'triangle', 0.18, 0.44);
@@ -354,6 +403,7 @@ class AudioEngine {
   }
 
   dirge(): void {
+    if (this.tryFile('dirge')) return;
     this.blip(220, 0.8, 'triangle', 0.15);
     this.blip(207, 0.9, 'triangle', 0.13, 0.5);
     this.blip(174, 1.6, 'triangle', 0.15, 1.0);

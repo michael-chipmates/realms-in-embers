@@ -526,6 +526,9 @@ export const EVENTS: EventDef[] = [
     when: (state, pid) => {
       const player = state.players[pid];
       const p = provincesOf(state, pid).find((pp) => pp.buildings.includes('market'));
+      // the Guild reads calendars: no loans whose due date outlives the Chronicle
+      // (a model playtester found the free-money exploit; the clerk did not laugh)
+      if (state.victory.maxTurns - state.turn <= 7) return null;
       return p && player.gold < 200 && !player.flags.guildLoanOut ? { province: p.id, heroId: null } : null;
     },
     text: () => `The Honourable Guild of Weights and Measures — which measures, among other things, opportunity — offers the crown a loan: 180 gold now against 240 within six seasons, secured by "reputational considerations." The clerk smiles like a closing ledger.`,
