@@ -6,6 +6,7 @@ import { h, mount } from '../dom';
 import { artSlot } from '../art';
 import { iconSvg } from '../icons';
 import { hasAnySave, listSlots, loadSlot, newestSave, deleteSlot, importSave } from '../saves';
+import { openOnlineLobby } from './lobby';
 import { openModal } from '../modal';
 import { openSettingsPanel } from '../panels/settingsPanel';
 import type { App } from '../app';
@@ -40,6 +41,7 @@ export function renderTitle(app: App): void {
           },
         }, `Continue — ${newest.lords.split(',')[0]?.trim() ?? 'the war'}, season ${newest.turn}`)
       : null,
+    h('button', { class: 'btn title-btn', onclick: () => void openOnlineLobby(app) }, 'Online War'),
     h('button', {
       class: 'btn title-btn',
       onclick: () => {

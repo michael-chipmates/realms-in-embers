@@ -1,0 +1,13 @@
+{
+  "name": "realms-in-embers-relay",
+  "private": true,
+  "type": "module",
+  "version": "1.0.0",
+  "description": "Blind E2E relay for Realms in Embers online play. It knows nothing.",
+  "scripts": {
+    "start": "node relay.mjs"
+  },
+  "dependencies": {
+    "ws": "^8.18.0"
+  }
+}

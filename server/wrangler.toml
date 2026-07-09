@@ -1,0 +1,15 @@
+name = "realms-in-embers-relay"
+main = "worker.js"
+compatibility_date = "2026-06-01"
+
+[[durable_objects.bindings]]
+name = "ROOMS"
+class_name = "RelayRoom"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["RelayRoom"]
+
+# EU data residency (optional): create the namespace with a jurisdiction, e.g.
+#   In code: env.ROOMS.idFromName(name, { jurisdiction: "eu" })
+# or pin the whole worker to the EU via Cloudflare dashboard settings.

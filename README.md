@@ -62,12 +62,21 @@ them up, and falls back to the built-in generative score if files are missing.
 
 ## Multiplayer
 
+- **Live online** (built-in): "Online War" on the title screen. One invite
+  link seats everyone — no accounts, ever. Turn clocks (bank + increment
+  presets) keep 2–4 player wars inside two hours. **The relay is blind:**
+  every action is end-to-end encrypted with a key that lives only in the
+  invite link's URL fragment; the server stores ciphertext and ordinals and
+  can read nothing. Reconnecting replays the encrypted log through the
+  deterministic engine — you rejoin exactly where the war stands.
+  Host your own relay: `node server/relay.mjs` (or the Dockerfile in
+  `server/`, or deploy `server/worker.js` to Cloudflare Workers — identical
+  protocol). Set it in-game via localStorage key `rie-relay`.
 - **Hotseat** (built-in): several mortals at one table; the map hides between turns.
 - **Courier play** (built-in): async war by letters — after your turns, "Seal &
   send" exports the chronicle file; the other player loads it and plays on.
-  The deterministic core keeps everyone honest.
-- **Live online**: not shipped; the action-log architecture is ready for a thin
-  relay server (see FINAL_REPORT.md).
+  A stalled online session degrades gracefully: every round autosaves, and a
+  save continues by courier.
 
 ## The illustrated edition (prepared)
 

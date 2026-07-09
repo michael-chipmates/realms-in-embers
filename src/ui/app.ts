@@ -10,6 +10,7 @@ import { loadSettings, saveSettings, saveToSlot, type UiSettings } from './saves
 import { renderTitle } from './screens/title';
 import { renderSetup } from './screens/setup';
 import { GameScreen } from './screens/game';
+import type { OnlineSession } from './screens/lobby';
 import { audio } from './audio';
 
 export type ScreenName = 'title' | 'setup' | 'game';
@@ -54,6 +55,17 @@ export class App {
     saveToSlot(state, 'auto');
     clear(this.root);
     this.gameScreen = new GameScreen(this, state);
+    this.gameScreen.mount(this.root);
+    this.gameScreen.presentEffects(effects);
+    audio.enterGame();
+  }
+
+  /** An online war: same deterministic engine, actions travel encrypted. */
+  startOnlineGame(settings: GameSettings, session: OnlineSession): void {
+    const { state, effects } = createGame(settings);
+    this.game = state;
+    clear(this.root);
+    this.gameScreen = new GameScreen(this, state, session);
     this.gameScreen.mount(this.root);
     this.gameScreen.presentEffects(effects);
     audio.enterGame();

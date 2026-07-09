@@ -6,6 +6,7 @@
 import { aiTakeTurn } from '../../engine/ai';
 import { applyAction, moveTargets, previewBattle } from '../../engine/engine';
 import { FERVOR_COST } from '../../engine/combat';
+import type { OnlineSession } from './lobby';
 import { emberlightIncome, incomeReport } from '../../engine/economy';
 import { LORD_BY_ID } from '../../engine/content/lords';
 import { armiesIn, armiesOf, heroesOf, seenBy } from '../../engine/helpers';
@@ -58,10 +59,102 @@ export class GameScreen {
   pendingSpell: SpellId | null = null;
   /** Mobile: the selection bottom-sheet collapsed to a slim bar. */
   sheetCollapsed = false;
+  /** Online war session; null for local/hotseat play. */
+  readonly online: OnlineSession | null;
+  private clockEl: HTMLElement | null = null;
+  private clockTimer: number | null = null;
+  /** Seconds left in each human seat's bank (client-side, honor-system). */
+  private clockBanks: Record<number, number> = {};
 
-  constructor(app: App, state: GameState) {
+  constructor(app: App, state: GameState, online: OnlineSession | null = null) {
     this.app = app;
     this.state = state;
+    this.online = online;
+    if (online) this.bindOnline();
+  }
+
+  // -------------------------------------------------------------- online
+
+  private bindOnline(): void {
+    const session = this.online!;
+    for (const p of this.state.players) {
+      if (p.kind === 'human') this.clockBanks[p.id] = session.clock.bank + session.clock.perTurn;
+    }
+    session.client.onEntry = (entry) => {
+      if (this.disposed) return;
+      this.consumeNet();
+    };
+    session.client.onBacklogReady = () => {
+      if (this.disposed) return;
+      // reconnect: rebuild from the start entry forward
+      this.consumeNet();
+    };
+    session.client.onStatus = (s) => {
+      if (this.disposed) return;
+      if (s !== 'open') this.showAiBanner('The relay is lost — reconnecting…');
+      else if (!this.aiRunning) this.hideAiBanner();
+    };
+    // any actions that raced ahead while the lobby handed off
+    window.setTimeout(() => this.consumeNet(), 0);
+    this.startClock();
+  }
+
+  /** Apply every not-yet-consumed relay action, in relay order. */
+  private consumeNet(): void {
+    const session = this.online!;
+    while (session.cursor < session.client.entries.length) {
+      const entry = session.client.entries[session.cursor];
+      session.cursor++;
+      const payload = entry.payload;
+      if (payload.kind !== 'act') continue;
+      if (this.state.phase === 'ended') continue;
+      if (payload.seat !== this.state.current) continue; // stale or dishonest: engine order rules
+      const result = applyAction(this.state, payload.action);
+      if (result.ok) {
+        this.presentEffects(result.effects);
+        if (payload.action.t === 'endTurn') this.onTurnAdvanced();
+      }
+    }
+    this.refresh();
+    // if the log left us on an AI seat (e.g. mid-reconnect), let the wheel turn
+    if (this.state.phase === 'playing' && this.current().kind === 'ai' && !this.aiRunning) {
+      void this.runAiTurns();
+    }
+  }
+
+  private onTurnAdvanced(): void {
+    const session = this.online!;
+    const cur = this.state.players[this.state.current];
+    if (cur.kind === 'human') {
+      this.clockBanks[cur.id] = (this.clockBanks[cur.id] ?? session.clock.bank) + session.clock.perTurn;
+    }
+  }
+
+  private startClock(): void {
+    const session = this.online!;
+    if (session.clock.perTurn <= 0) return;
+    this.clockTimer = window.setInterval(() => {
+      if (this.disposed || this.state.phase !== 'playing') return;
+      const cur = this.state.players[this.state.current];
+      if (cur.kind !== 'human') return;
+      this.clockBanks[cur.id] = Math.max(0, (this.clockBanks[cur.id] ?? 0) - 1);
+      this.renderClock();
+      // only ever enforce on OURSELVES — the blind relay trusts the table
+      if (cur.id === session.mySeat && this.clockBanks[cur.id] <= 0) {
+        this.dispatch({ t: 'endTurn' });
+      }
+    }, 1000);
+  }
+
+  private renderClock(): void {
+    if (!this.online || this.online.clock.perTurn <= 0 || !this.clockEl) return;
+    const cur = this.state.players[this.state.current];
+    if (cur.kind !== 'human') { this.clockEl.textContent = ''; return; }
+    const s = Math.max(0, Math.round(this.clockBanks[cur.id] ?? 0));
+    const mm = Math.floor(s / 60);
+    const ss = String(s % 60).padStart(2, '0');
+    this.clockEl.textContent = `⌛ ${mm}:${ss}`;
+    this.clockEl.classList.toggle('clock-low', s < 30 && cur.id === this.online.mySeat);
   }
 
   // -------------------------------------------------------------- mount
@@ -121,6 +214,8 @@ export class GameScreen {
     document.removeEventListener('keydown', this.keyHandler);
     hideTip();
     resetCeremonies();
+    if (this.clockTimer !== null) window.clearInterval(this.clockTimer);
+    this.online?.client.close();
     audio.leaveGame();
   }
 
@@ -134,6 +229,8 @@ export class GameScreen {
 
   /** The player whose eyes we render through (fog, private chronicle). */
   viewerId(): number {
+    // online, you are always yourself — even during a rival's turn
+    if (this.online) return this.online.mySeat;
     const cur = this.current();
     if (cur.kind === 'human') return cur.id;
     const humans = this.state.players.filter((p) => p.kind === 'human' && p.alive);
@@ -530,6 +627,12 @@ export class GameScreen {
   // ----------------------------------------------------------- dispatch
 
   dispatch(action: Action): boolean {
+    // online: your actions travel to the relay and apply when they echo
+    // back — one total order for every table, reconnection for free.
+    if (this.online && this.state.current === this.online.mySeat && this.state.phase === 'playing') {
+      void this.online.client.send({ kind: 'act', seat: this.online.mySeat, action });
+      return true;
+    }
     const result = applyAction(this.state, action);
     if (!result.ok) {
       this.toast(result.error ?? 'That cannot be done.', 'danger');
@@ -546,7 +649,8 @@ export class GameScreen {
     if (this.aiRunning || this.state.phase === 'ended') return;
     audio.horn();
     if (!this.dispatch({ t: 'endTurn' })) return;
-    await this.runAiTurns();
+    // online, the echoed endTurn drives the AI wheel via consumeNet
+    if (!this.online) await this.runAiTurns();
   }
 
   private async runAiTurns(): Promise<void> {
@@ -571,11 +675,11 @@ export class GameScreen {
     }
     // autosave at the start of every human turn
     saveToSlot(this.state, 'auto');
-    if (this.humanCount() > 1) {
-      await showHandoff(this);
+    if (!this.online && this.humanCount() > 1) {
+      await showHandoff(this); // hotseat only: online tables each see their own board
     }
     this.refresh();
-    maybeOpenEventModal(this);
+    if (!this.online || this.state.current === this.online.mySeat) maybeOpenEventModal(this);
   }
 
   private pause(ms: number): Promise<void> {
@@ -730,12 +834,21 @@ export class GameScreen {
         this.iconAction('handshake', 'The other lords', () => openDiplomacyOverlay(this)),
         this.iconAction('book', 'Ledger & victory', () => openLedgerOverlay(this)),
       ),
+      this.online && this.online.clock.perTurn > 0
+        ? (this.clockEl = h('div', { class: 'stat turn-clock', 'aria-label': 'Turn clock' }))
+        : null,
       h('button', {
         class: 'btn btn-seal end-turn',
-        disabled: this.aiRunning || this.state.phase === 'ended' || this.current().kind !== 'human',
+        disabled: this.aiRunning || this.state.phase === 'ended' || this.current().kind !== 'human'
+          || (this.online !== null && this.state.current !== this.online.mySeat),
         onclick: () => void this.endTurn(),
-      }, this.aiRunning ? 'The rivals move…' : 'End the Season'),
+      }, this.aiRunning
+        ? 'The rivals move…'
+        : this.online && this.state.current !== this.online.mySeat && this.state.phase === 'playing'
+          ? `${LORD_BY_ID[this.current().lordId].name.split(' ')[0]} moves…`
+          : 'End the Season'),
     );
+    this.renderClock();
   }
 
   private iconAction(icon: string, label: string, onClick: () => void, badge?: string): HTMLElement {
