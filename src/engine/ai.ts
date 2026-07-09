@@ -292,9 +292,7 @@ function marshalHeroes(state: GameState, pid: PlayerId, dispatch: (a: Action) =>
     const target = armies.find((a) => a.heroIds.length === 0);
     if (!target) break; // spare heroes stay at court for quests
     if (state.provinces[target.province].owner === pid || hero.province === target.province) {
-      if (dispatch({ t: 'attachHero', heroId: hero.id, armyId: target.id })) {
-        target.heroIds.length; // freshly read next loop
-      }
+      dispatch({ t: 'attachHero', heroId: hero.id, armyId: target.id });
     }
   }
 }

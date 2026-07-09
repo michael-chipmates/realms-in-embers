@@ -5,6 +5,7 @@
 import type { Effect } from '../../engine/types';
 import { h } from '../dom';
 import { iconSvg } from '../icons';
+import { artSlot } from '../art';
 import { audio } from '../audio';
 import type { GameScreen } from './game';
 
@@ -15,8 +16,21 @@ const CEREMONY_ICON: Record<string, string> = {
   sagaRitual: 'ember',
 };
 
+const CEREMONY_ART: Record<string, string> = {
+  heroDied: 'ceremony-herodeath',
+  eliminated: 'ceremony-defeat',
+};
+
 let ceremonyShowing = false;
-const queue: { icon: string; title: string; text: string }[] = [];
+const queue: { icon: string; art?: string; title: string; text: string }[] = [];
+
+/** Reset the ceremony channel when a game screen is torn down — a ceremony
+ * left up across games would wedge the module-level queue forever. */
+export function resetCeremonies(): void {
+  queue.length = 0;
+  ceremonyShowing = false;
+  document.querySelectorAll('.ceremony-overlay').forEach((el) => el.remove());
+}
 
 /** Scan effects for ceremony-grade chronicle entries and stage them. */
 export function presentCeremonies(screen: GameScreen, effects: Effect[]): void {
@@ -27,6 +41,7 @@ export function presentCeremonies(screen: GameScreen, effects: Effect[]): void {
       const entry = [...state.chronicle].reverse().find((c) => c.ceremony && c.text.includes(effect.name));
       queue.push({
         icon: CEREMONY_ICON.heroDied,
+        art: CEREMONY_ART.heroDied,
         title: `${effect.name} has fallen`,
         text: entry?.text ?? `${effect.name} died ${effect.cause}.`,
       });
@@ -34,6 +49,7 @@ export function presentCeremonies(screen: GameScreen, effects: Effect[]): void {
       const entry = [...state.chronicle].reverse().find((c) => c.ceremony && c.kind === 'ceremony');
       queue.push({
         icon: CEREMONY_ICON.eliminated,
+        art: CEREMONY_ART.eliminated,
         title: 'A banner falls',
         text: entry?.text ?? 'A claimant has passed out of the war.',
       });
@@ -54,6 +70,7 @@ function drainQueue(screen: GameScreen): void {
 
   const overlay = h('div', { class: 'ceremony-overlay', role: 'dialog', 'aria-modal': 'true', 'aria-label': item.title },
     h('div', { class: 'ceremony-center' },
+      item.art ? artSlot(item.art, h('span'), { className: 'ceremony-art', alt: '' }) : null,
       h('div', { class: 'ceremony-icon', html: iconSvg(item.icon, 44) }),
       h('h2', { class: 'title-display ceremony-title' }, item.title),
       h('div', { class: 'rule-flourish', style: { width: 'min(360px, 60vw)', margin: '0.8rem auto' } }, '❧'),

@@ -3,6 +3,15 @@
 *A turn-based fantasy strategy chronicle — an original homage to the spirit of
 SSI's 1993 classic Fantasy Empires.*
 
+*Not affiliated with, endorsed by, or containing material from SSI's
+successors, Ubisoft, Wizards of the Coast, or Hasbro. All fiction, names, and
+systems are original.*
+
+**Free forever, open source, no accounts, no tracking.** Code: AGPL-3.0 ·
+Content & art: CC BY-SA 4.0 · Music: Scott Buckley, CC-BY 4.0 — see
+`CREDITS.md`. Copyleft is deliberate: nobody can take this game closed-source
+or sell it out from under its players.
+
 The Ember Throne is forty years shattered. The realm it warmed — the Embermark —
 cools province by province, and every lord with a banner and an appetite has decided
 the ashes belong to them. One chronicler, who did not survive the Sundering but

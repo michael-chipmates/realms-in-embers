@@ -6,6 +6,7 @@ import { LORD_BY_ID } from '../../engine/content/lords';
 import { chronicleScore } from '../../engine/victory';
 import { provincesOf } from '../../engine/helpers';
 import { h, mount } from '../dom';
+import { artSlot } from '../art';
 import { sigilShield } from '../heraldry';
 import { lordDisplay, playerColors, playerPatterns } from '../format';
 import { MapRenderer } from '../mapRenderer';
@@ -62,6 +63,7 @@ export function showGameEnd(screen: GameScreen): void {
       (hh.status === 'dead' ? `; fell ${hh.deathCause ?? 'in the war'} (season ${hh.diedTurn})` : '; lives to see the peace')));
 
   const content = h('div', { class: 'gameend-body' },
+    artSlot(viewerWon ? 'ceremony-victory' : 'ceremony-defeat', h('span'), { className: 'ceremony-art', alt: '' }),
     h('p', { class: 'gameend-line italic' },
       viewerWon
         ? `The realm is yours, ${PATH_TEXT[path]}. Osperan's pen rests at last.`

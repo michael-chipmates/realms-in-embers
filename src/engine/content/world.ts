@@ -118,16 +118,15 @@ export interface BuildingDef {
   requires?: BuildingId;
   terrain?: Terrain[];
   coastalOnly?: boolean;
-  /** Engine effect data. */
+  /** Engine effect data. NOTE: buildings also grant effects that live in code,
+   * keyed by building id — roads/harbor movement in actions.ts reachableFrom(),
+   * Hearthshrine order in economy.ts orderDrift() (creed-dependent), and unit
+   * tiers via UNITS[unit].recruit.building. Tune those there, not here. */
   incomeAdd?: number;
   incomeMult?: number;
-  orderDrift?: number;
   emberlight?: number;
   /** Defender multiplier contribution (walls). */
   defense?: number;
-  unlocksTier?: 2 | 3;
-  extraMove?: boolean;
-  seaMove?: boolean;
 }
 
 export const BUILDINGS: Record<BuildingId, BuildingDef> = {
@@ -147,13 +146,13 @@ export const BUILDINGS: Record<BuildingId, BuildingDef> = {
     id: 'harbor', name: 'Harborworks', cost: 100, turns: 1, icon: 'anchor',
     desc: '+6 gold each turn. Armies may sail between your harbors along the coast.',
     flavor: 'The sea asks no creed. It drowns everyone with perfect impartiality.',
-    coastalOnly: true, incomeAdd: 6, seaMove: true,
+    coastalOnly: true, incomeAdd: 6,
   },
   roads: {
     id: 'roads', name: "King's Road", cost: 90, turns: 1, icon: 'road',
     desc: '+10% gold from this province. Armies may march one province further through your roads.',
     flavor: 'Paved with good intentions and, in the low stretches, with the previous road.',
-    incomeMult: 0.1, extraMove: true,
+    incomeMult: 0.1,
   },
   walls1: {
     id: 'walls1', name: 'Palisade', cost: 70, turns: 1, icon: 'fence',
@@ -177,7 +176,6 @@ export const BUILDINGS: Record<BuildingId, BuildingDef> = {
     id: 'temple', name: 'Hearthshrine', cost: 100, turns: 1, icon: 'flame',
     desc: '+2 order each turn (+3 for Flame lords).',
     flavor: 'A tended fire, a swept floor, somewhere to grieve. Order is mostly this.',
-    orderDrift: 2,
   },
   mageTower: {
     id: 'mageTower', name: 'Ember Spire', cost: 150, turns: 2, icon: 'spire',
@@ -189,13 +187,12 @@ export const BUILDINGS: Record<BuildingId, BuildingDef> = {
     id: 'barracks', name: 'Musterfield', cost: 110, turns: 1, icon: 'banner',
     desc: 'Allows raising trained soldiers (tier 2) here.',
     flavor: 'Where farm boys learn which end goes in the other fellow.',
-    unlocksTier: 2,
   },
   warcamp: {
     id: 'warcamp', name: 'War Foundry', cost: 200, turns: 2, icon: 'hammer',
     desc: 'Allows raising elite companies and siege engines (tier 3) here. Requires a Musterfield.',
     flavor: 'The anvils ring through the night. The neighbours have stopped complaining; they moved.',
-    requires: 'barracks', unlocksTier: 3,
+    requires: 'barracks',
   },
 };
 

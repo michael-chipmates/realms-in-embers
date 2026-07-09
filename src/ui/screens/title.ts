@@ -41,7 +41,7 @@ export function renderTitle(app: App): void {
   const screen = h(
     'div',
     { class: 'room title-screen' },
-    artSlot('title-hall', h('span'), { className: 'title-backdrop', alt: '' }),
+    artSlot('title-hall', h('span'), { className: 'title-backdrop', alt: '', eager: true }),
     h('div', { class: 'title-center' },
       h('p', { class: 'title-over muted italic' }, 'Forty years after the Sundering'),
       h('h1', { class: 'title-display title-main' }, 'Realms in Embers'),
@@ -57,7 +57,6 @@ export function renderTitle(app: App): void {
 }
 
 export function openLoadModal(app: App): void {
-  const slots = listSlots();
   const list = h('div', { class: 'slot-list' });
 
   const refresh = (): void => {
@@ -124,6 +123,5 @@ export function openLoadModal(app: App): void {
     fileInput,
   );
   const modal = openModal('The Shelf of Chronicles', content, { wide: true });
-  void slots;
   refresh();
 }

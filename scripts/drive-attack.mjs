@@ -14,6 +14,13 @@ await page.waitForTimeout(400);
 await page.getByRole('button', { name: 'Begin the Chronicle' }).click();
 await page.waitForTimeout(1500);
 
+// dismiss the first-game onboarding overlay (a fresh profile always gets it)
+const skipOnboarding = page.getByRole('button', { name: 'I have read the Chronicle before' });
+if (await skipOnboarding.isVisible().catch(() => false)) {
+  await skipOnboarding.click();
+  await page.waitForTimeout(400);
+}
+
 // select own army via the dev hook, then click a hostile target province
 const info = await page.evaluate(() => {
   const g = window.__game;

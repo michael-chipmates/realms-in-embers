@@ -114,5 +114,5 @@ export function openBattleReport(screen: GameScreen, report: BattleReport): void
     ),
   );
 
-  const modal = openModal(`The battle for ${report.provinceName}`, content, { wide: true });
+  const modal = openModal(`The battle for ${report.provinceName}`, content, { wide: true, onClose: revealAll });
 }

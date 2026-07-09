@@ -13,6 +13,7 @@ import { h, mount } from '../dom';
 import { iconSvg } from '../icons';
 import { MapRenderer } from '../mapRenderer';
 import { sigilShield } from '../heraldry';
+import { artSlot } from '../art';
 import { tip } from '../tooltip';
 
 const VICTORY_INFO: Record<VictoryPath, { name: string; desc: string }> = {
@@ -68,7 +69,7 @@ export function renderSetup(app: App, presetSeed?: string): void {
       ...settings.players.map((player, idx) => {
         const lord = player.lordId !== 'random' ? LORD_BY_ID[player.lordId] : null;
         const creedDot = lord
-          ? sigilShield(lord.id, 26)
+          ? artSlot(`lord-${lord.id}`, sigilShield(lord.id, 26), { className: 'art-portrait-sm', alt: lord.name })
           : h('span', { class: 'creed-dot creed-dot-random', 'aria-hidden': 'true' }, '?');
 
         const kindSelect = h('select', {

@@ -193,15 +193,8 @@ function buildSide(
     if (!immune) mods.push({ label: 'Terror in the ranks', mult: 0.92 });
   }
 
-  // creed grudge perks
-  if (player >= 0) {
-    const lord = lordOf(state.players[player]);
-    const enemyPlayer = enemyUnits.length > 0 ? undefined : undefined;
-    void enemyPlayer;
-    if (lord.perk.fx.atkVsCreed && role === 'attacker') {
-      // resolved by caller via ctx (needs enemy creed) — appended there
-    }
-  }
+  // creed grudge perks (atkVsCreed) are appended by the caller via
+  // addCreedGrudgeMod — it needs the enemy lord's creed, unknown here.
 
   if (arts > 0) {
     mods.push({ label: 'Banner arts of the heroes', mult: 1 + arts / 100 });

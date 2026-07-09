@@ -28,7 +28,7 @@ import { openBattleReport } from './battleReport';
 import { maybeOpenEventModal } from './eventModal';
 import { showHandoff } from './handoff';
 import { showGameEnd } from './gameEnd';
-import { presentCeremonies } from './ceremony';
+import { presentCeremonies, resetCeremonies } from './ceremony';
 import { maybeShowOnboarding } from './onboarding';
 
 export interface Selection {
@@ -114,6 +114,7 @@ export class GameScreen {
     this.disposed = true;
     document.removeEventListener('keydown', this.keyHandler);
     hideTip();
+    resetCeremonies();
     audio.leaveGame();
   }
 

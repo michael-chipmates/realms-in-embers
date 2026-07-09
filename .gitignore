@@ -4,3 +4,4 @@ dist/
 *.log
 sim-report.json
 coverage/
+.replicate_token

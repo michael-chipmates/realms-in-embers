@@ -8,6 +8,7 @@ export interface ModalHandle {
 }
 
 let openCount = 0;
+const openHandles: ModalHandle[] = [];
 
 export function openModal(
   title: string,
@@ -36,9 +37,14 @@ export function openModal(
   );
   const backdrop = h('div', { class: 'modal-backdrop' }, panel);
 
+  let closed = false;
   const close = (): void => {
+    if (closed) return;
+    closed = true;
     backdrop.remove();
     openCount--;
+    const idx = openHandles.findIndex((hd) => hd.el === panel);
+    if (idx >= 0) openHandles.splice(idx, 1);
     document.removeEventListener('keydown', onKey, true);
     opts.onClose?.();
     previouslyFocused?.focus?.();
@@ -75,14 +81,21 @@ export function openModal(
   document.addEventListener('keydown', onKey, true);
   document.body.appendChild(backdrop);
   openCount++;
+  const handle = { close, el: panel };
+  openHandles.push(handle);
   // focus the first interactive element
   requestAnimationFrame(() => {
     const focusable = panel.querySelector<HTMLElement>('button:not(.modal-close), input, select, [tabindex]');
     (focusable ?? closeBtn).focus();
   });
-  return { close, el: panel };
+  return handle;
 }
 
 export function anyModalOpen(): boolean {
   return openCount > 0;
+}
+
+/** Close every open modal through its real close path (listeners, count, onClose). */
+export function closeAllModals(): void {
+  for (const handle of [...openHandles].reverse()) handle.close();
 }

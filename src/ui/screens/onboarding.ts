@@ -6,6 +6,7 @@ import { LORD_BY_ID } from '../../engine/content/lords';
 import { CREEDS } from '../../engine/content/world';
 import { h } from '../dom';
 import { iconSvg } from '../icons';
+import { artSlot } from '../art';
 import type { GameScreen } from './game';
 
 interface Page {
@@ -66,6 +67,7 @@ export function maybeShowOnboarding(screen: GameScreen): void {
 
   const overlay = h('div', { class: 'ceremony-overlay', role: 'dialog', 'aria-modal': 'true', 'aria-label': 'The opening of the chronicle' },
     h('div', { class: 'ceremony-center' },
+      artSlot('osperan', h('span'), { className: 'art-osperan', alt: 'Osperan the Unresting' }),
       iconWrap,
       titleEl,
       h('div', { class: 'rule-flourish', style: { width: 'min(340px, 55vw)', margin: '0.7rem auto' } }, '❧'),

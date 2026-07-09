@@ -20,7 +20,7 @@ import type { Hero, PlayerId, SpellId } from '../../engine/types';
 import { h, mount } from '../dom';
 import { fmt, lordDisplay, signed } from '../format';
 import { iconSvg } from '../icons';
-import { openModal, type ModalHandle } from '../modal';
+import { openModal, closeAllModals, type ModalHandle } from '../modal';
 import { breakdown, tip } from '../tooltip';
 import { exportSave, listSlots, loadSlot, saveToSlot } from '../saves';
 import { openSettingsPanel } from './settingsPanel';
@@ -343,7 +343,7 @@ function beginTargetedCast(screen: GameScreen, spellId: SpellId): void {
     screen.dispatch({ t: 'castSpell', spell: spellId });
     return;
   }
-  document.querySelectorAll('.modal-backdrop').forEach((el) => el.remove());
+  closeAllModals();
   screen.armSpellTargeting(spellId);
 }
 

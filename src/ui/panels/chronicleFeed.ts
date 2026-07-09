@@ -39,7 +39,7 @@ export function renderChronicleFeed(screen: GameScreen, root: HTMLElement): void
   const entries = state.chronicle
     .filter((e) => e.privateTo === undefined || e.privateTo === viewer)
     .filter((e) => !(state.settings.veteranChronicle && e.kind === 'teaching'))
-    .filter((e) => filter === 'all' || e.kind === filter || (filter === 'realm' && e.kind === 'turn') || e.kind === 'ceremony')
+    .filter((e) => filter === 'all' || e.kind === filter || (filter === 'realm' && e.kind === 'turn'))
     .slice(-60);
 
   clear(root);

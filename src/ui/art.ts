@@ -36,7 +36,7 @@ export function preloadArtManifest(): void {
  * Render `fallback` now; swap in the slot's image if/when available.
  * The wrapper keeps the caller's layout either way.
  */
-export function artSlot(slot: string, fallback: HTMLElement, opts: { className?: string; alt?: string } = {}): HTMLElement {
+export function artSlot(slot: string, fallback: HTMLElement, opts: { className?: string; alt?: string; eager?: boolean } = {}): HTMLElement {
   const wrap = h('span', { class: `art-slot ${opts.className ?? ''}` }, fallback);
   void loadManifest().then(() => {
     const file = manifest?.[slot];
@@ -45,7 +45,7 @@ export function artSlot(slot: string, fallback: HTMLElement, opts: { className?:
       src: `art/${file}`,
       alt: opts.alt ?? '',
       class: 'art-img',
-      loading: 'lazy',
+      loading: opts.eager ? 'eager' : 'lazy',
     }) as HTMLImageElement;
     img.addEventListener('load', () => {
       wrap.replaceChildren(img);
@@ -56,9 +56,4 @@ export function artSlot(slot: string, fallback: HTMLElement, opts: { className?:
     });
   });
   return wrap;
-}
-
-/** True if a slot has shipped art (after manifest load; best-effort sync). */
-export function hasArt(slot: string): boolean {
-  return !!manifest?.[slot];
 }
