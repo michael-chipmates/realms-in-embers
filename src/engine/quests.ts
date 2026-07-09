@@ -11,7 +11,7 @@ import { addDeed as heroDeed, grantXp, woundHero } from './heroes';
 import {
   artifactDefIdsInPlay, clamp, grantArtifactTo, heroProvince, heroesOf, lordName, lordOf, provincesOf,
 } from './helpers';
-import { say, scribe } from './narrator';
+import { pickFresh, say, scribe } from './narrator';
 import { teach } from './teachings';
 import type { Rng } from './rng';
 import type { ActiveQuest, Effect, GameState, Hero, PlayerId } from './types';
@@ -298,7 +298,10 @@ function resolveQuest(state: GameState, rng: Rng, quest: ActiveQuest, effects: E
   // ---- the chronicle tells it
   const died = (state.heroes[hero.id]?.status ?? 'dead') === 'dead';
   const seatName = state.provinces[state.players[pid].seatProvince].name;
-  const text = def.outcomes[outcome]
+  const raw = def.outcomes[outcome];
+  const variants = Array.isArray(raw) ? raw : [raw];
+  const line = variants[pickFresh(state, rng, `quest:${def.id}:${outcome}`, variants.length, 10)];
+  const text = line
     .replaceAll('{hero}', died ? `${hero.name} (now of blessed memory)` : hero.name)
     .replaceAll('{seat}', seatName);
   const suffix = summaryBits.length > 0 ? ` (${summaryBits.join(', ')})` : '';

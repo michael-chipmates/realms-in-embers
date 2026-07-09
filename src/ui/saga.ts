@@ -3,6 +3,7 @@
  * account of the whole campaign, built from the deterministic record.
  */
 import { LORD_BY_ID } from '../engine/content/lords';
+import { ARTIFACTS } from '../engine/content/artifacts';
 import { chronicleScore } from '../engine/victory';
 import type { GameState } from '../engine/types';
 
@@ -74,6 +75,38 @@ export function buildSaga(state: GameState): string {
     lines.push(wrap(`The realm fell to ${lord.name}, ${lord.epithet}, ${how[state.victory.winPath ?? 'chronicle']}, in season ${state.turn}.`, width));
   }
   lines.push('');
+
+  // the roll of the fallen — every hero who did not live to see the peace
+  const fallen = Object.values(state.heroes)
+    .filter((hh) => hh.status === 'dead')
+    .sort((a, b) => (a.diedTurn ?? 0) - (b.diedTurn ?? 0));
+  if (fallen.length > 0) {
+    lines.push('THE ROLL OF THE FALLEN');
+    lines.push(wrap('I rule these margins wide on purpose, for names like these.', width));
+    lines.push('');
+    for (const hh of fallen) {
+      const owner = LORD_BY_ID[state.players[hh.owner].lordId];
+      lines.push(wrap(`  ${hh.name}, ${hh.epithet} — ${owner.name}'s ${hh.cls}, level ${hh.level}; fell ${hh.deathCause ?? 'in the war'}, season ${hh.diedTurn ?? '?'}.`, width));
+    }
+    lines.push('');
+  }
+
+  // the vaults of the age — where the old things ended up, and who held them
+  const artifacts = Object.values(state.artifacts).sort((a, b) => a.foundTurn - b.foundTurn);
+  if (artifacts.length > 0) {
+    lines.push('WHERE THE OLD THINGS CAME TO REST');
+    for (const inst of artifacts) {
+      const def = ARTIFACTS[inst.defId];
+      if (!def) continue;
+      const holder = artifactHolder(state, inst.id);
+      const provenance = inst.history.length > 1
+        ? `; it passed through the hands of ${inst.history.join(', then of ')}`
+        : '';
+      lines.push(wrap(`  ${def.name} — surfaced in season ${inst.foundTurn}${provenance}${holder ? `; it rests with ${holder}` : ''}.`, width));
+    }
+    lines.push('');
+  }
+
   lines.push('THE FINAL RECKONING');
   const standings = state.players
     .map((p) => ({ p, score: chronicleScore(state, p.id).total }))
@@ -83,8 +116,31 @@ export function buildSaga(state: GameState): string {
     lines.push(`  ${lord.name.padEnd(28)} ${String(score).padStart(5)} points${p.alive ? '' : '   (banner fallen)'}`);
   }
   lines.push('');
+
+  // each claimant's epitaph, in their own words
+  lines.push('THE CLAIMANTS, IN THEIR OWN WORDS');
+  for (const { p } of standings) {
+    const lord = LORD_BY_ID[p.lordId];
+    const spoke = p.id === winner ? lord.lines.victory : lord.lines.defeat;
+    lines.push(wrap(`  ${lord.name}: "${spoke}"`, width));
+  }
+  lines.push('');
   lines.push(wrap('Here the ink ends. Whoever reads this: the fire is yours now. Mind it. — O.', width));
   return lines.join('\n');
+}
+
+function artifactHolder(state: GameState, instId: number): string | null {
+  for (const p of state.players) {
+    if (p.vault.includes(instId)) return `${LORD_BY_ID[p.lordId].name}'s vault`;
+  }
+  for (const hh of Object.values(state.heroes)) {
+    if (hh.status === 'dead') continue;
+    const slots = hh.artifacts;
+    if (slots.weapon === instId || slots.armor === instId || slots.trinket === instId) {
+      return `${hh.name}, ${hh.epithet}`;
+    }
+  }
+  return null;
 }
 
 function wrap(text: string, width: number): string {

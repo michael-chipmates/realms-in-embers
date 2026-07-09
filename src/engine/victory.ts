@@ -3,7 +3,7 @@
  * All progress is public and countdowns are chronicled — nobody wins quietly.
  */
 import { incomeReport } from './economy';
-import { heroesOf, lordName, provincesOf } from './helpers';
+import { heroesOf, lordName, lordOf, provincesOf } from './helpers';
 import { say } from './narrator';
 import type { Rng } from './rng';
 import type { Effect, GameState, PlayerId, VictoryPath } from './types';
@@ -70,6 +70,10 @@ function setWinner(state: GameState, rng: Rng, pid: PlayerId, path: VictoryPath 
   } else {
     say(state, rng, 'victory', { lord: lordName(state, pid), how: how[path] }, { about: pid });
   }
+  say(state, rng, 'lordSpeech', {
+    lord: lordName(state, pid),
+    quote: lordOf(state.players[pid]).lines.victory,
+  }, { about: pid });
 }
 
 /** Run at every round end (and after eliminations). */

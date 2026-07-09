@@ -572,6 +572,8 @@ function renderDiplomacy(screen: GameScreen, body: HTMLElement, focusPlayer?: Pl
         h('div', { style: { display: 'flex', gap: '0.4rem', alignItems: 'center' } }, stanceChip, other.alive ? attEl : null),
       ),
       h('p', { class: 'small italic muted', style: { padding: '0 0.8rem' } }, lord.blurb),
+      h('p', { class: 'small lord-intro-quote', style: { padding: '0 0.8rem', margin: '0.2rem 0 0.4rem' } },
+        `“${lord.lines.intro}”`),
       other.alive && actions.length > 0
         ? h('div', { style: { padding: '0.4rem 0.8rem 0.8rem', display: 'flex', gap: '0.4rem', flexWrap: 'wrap' } }, ...actions)
         : null,

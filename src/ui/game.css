@@ -536,6 +536,7 @@ details.side-section:not([open]) > summary { border-bottom: none; }
   border-radius: 6px; margin: 0 auto 1rem;
   border: 1px solid rgba(201, 162, 39, 0.4); box-shadow: var(--shadow-deep);
 }
+.lord-intro-quote { color: var(--gold-bright); font-style: italic; }
 
 /* -------------------------------------------------- the table's frame */
 

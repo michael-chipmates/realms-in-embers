@@ -925,6 +925,10 @@ export function eliminatePlayer(state: GameState, rng: Rng, pid: PlayerId, by: s
   }
   effects.push({ e: 'eliminated', player: pid });
   say(state, rng, 'eliminated', { lord: lordName(state, pid), conqueror: by }, { about: pid });
+  say(state, rng, 'lordSpeech', {
+    lord: lordName(state, pid),
+    quote: lordOf(state.players[pid]).lines.defeat,
+  }, { about: pid });
 }
 
 function plunder(state: GameState, pid: PlayerId, effects: Effect[]): void {

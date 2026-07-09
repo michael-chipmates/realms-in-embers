@@ -111,17 +111,41 @@ const FLAVOR: Record<Terrain, string[]> = {
   ],
 };
 
-const SITE_FLAVOR: Record<SiteType, string> = {
-  embersite: 'A shard of the sundered throne smoulders here; the night never gets fully dark.',
-  ruin: 'A ruin of the old realm stands here, roofless, patient, and reputedly not empty.',
-  shrine: 'Pilgrims still climb to the shrine here, leaving candles and taking rumours.',
-  barrow: 'The barrow-mounds here predate the realm. The locals nod to them, just in case.',
-  forge: 'An ancient forge sleeps here; its anvil is warm to the touch on midwinter nights.',
-  circle: 'A ring of standing stones crowns this land. Compasses sulk inside it.',
+const SITE_FLAVOR: Record<SiteType, string[]> = {
+  embersite: [
+    'A shard of the sundered throne smoulders here; the night never gets fully dark.',
+    'The ground here holds warmth like a grudge. Farmers plant early and pray late.',
+    'Ember-light stands off the rocks at dusk. The adepts call it holy. The shepherds call it a nuisance with opinions.',
+  ],
+  ruin: [
+    'A ruin of the old realm stands here, roofless, patient, and reputedly not empty.',
+    'The old walls here have outlived their builders, their conquerors, and every plan for their removal.',
+    'Locals quarry the ruin for stone but only by daylight, and never the lintels.',
+  ],
+  shrine: [
+    'Pilgrims still climb to the shrine here, leaving candles and taking rumours.',
+    'The wayshrine here answers no prayers, which the devout consider a kind of honesty.',
+    'Offerings at the shrine double in wartime. Faith follows fear the way gulls follow plows.',
+  ],
+  barrow: [
+    'The barrow-mounds here predate the realm. The locals nod to them, just in case.',
+    'Nothing grazes on the barrows, by unspoken agreement between the sheep and whatever is under them.',
+    'The mounds keep their dead well. Grave-goods surface after hard rains, and are politely reburied.',
+  ],
+  forge: [
+    'An ancient forge sleeps here; its anvil is warm to the touch on midwinter nights.',
+    'Smiths make pilgrimage to the old forge to touch hammers to its anvil. The hammers, they insist, ring truer after.',
+    'The forge here predates the throne it armed. It is patient. Forges are always waiting for the next war.',
+  ],
+  circle: [
+    'A ring of standing stones crowns this land. Compasses sulk inside it.',
+    'The standing stones cast their shadows a heartbeat late. Surveyors refuse the commission.',
+    'Sheep will not cross the stone ring, which the shepherds call wisdom and the adepts call a waste of good grazing.',
+  ],
 };
 
 export function provinceFlavor(rng: Rng, terrain: Terrain, site: SiteType | null): string {
-  if (site) return SITE_FLAVOR[site];
+  if (site) return rng.pick(SITE_FLAVOR[site]);
   return rng.pick(FLAVOR[terrain]);
 }
 

@@ -486,6 +486,10 @@ function diplomacyAction(
         target: lordName(state, target),
         oathbroken,
       }, { about: pid });
+      say(state, rng, 'lordSpeech', {
+        lord: lordName(state, pid),
+        quote: lordOf(player).lines.taunt,
+      }, { about: pid });
       teach(state, pid, 'firstWar');
       teach(state, target, 'firstWar');
       effects.push({ e: 'diplo', kind: 'war', from: pid, to: target });
@@ -598,6 +602,10 @@ export function applyProposalResponse(
       addDeed(state, to, from, { id: 'peace', label: 'Made peace honorably', delta: 10, decay: 0.5 });
       addDeed(state, from, to, { id: 'peace', label: 'Made peace honorably', delta: 10, decay: 0.5 });
       say(state, rng, 'peaceMade', { a: lordName(state, from), b: lordName(state, to) }, { about: from });
+      say(state, rng, 'lordSpeech', {
+        lord: lordName(state, to),
+        quote: lordOf(state.players[to]).lines.gracious,
+      }, { about: to });
       effects.push({ e: 'diplo', kind: 'peace', from, to });
       break;
     }

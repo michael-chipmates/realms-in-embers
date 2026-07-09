@@ -325,7 +325,11 @@ function roundEnd(state: GameState, rng: Rng, effects: Effect[]): void {
 
   // -- the pen keeps its own counsel
   if (rng.chance(0.22)) {
-    say(state, rng, 'roundOmen', { turn: state.turn });
+    const lead = leaderId(state);
+    say(state, rng, 'roundOmen', {
+      turn: state.turn,
+      leader: lead !== null ? lordName(state, lead) : 'no one, if the innkeepers are honest',
+    });
   }
 
   checkVictory(state, rng, effects);
