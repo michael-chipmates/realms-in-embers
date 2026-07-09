@@ -9,12 +9,12 @@ import { SPELLS } from '../../engine/content/spells';
 import { CREEDS } from '../../engine/content/world';
 import { LORD_BY_ID } from '../../engine/content/lords';
 import { attitudeOf } from '../../engine/diplo';
-import { chronicleScore, DOMINION_ROUNDS, DOMINION_SHARE, GOLDEN_GOLD, GOLDEN_ORDER, GOLDEN_ROUNDS } from '../../engine/victory';
+import { chronicleScore, DOMINION_ROUNDS, dominionShareAt, GOLDEN_GOLD, GOLDEN_ORDER, GOLDEN_ROUNDS, WEARINESS_TURN } from '../../engine/victory';
 import { incomeReport, upkeepOf, wagesOf, TAX_FX } from '../../engine/economy';
 import { HERO_CLASSES, xpForLevel } from '../../engine/heroes';
 import { heroDerived } from '../../engine/heroFx';
 import { riteCostFor, spellCostFor } from '../../engine/magic';
-import { sagaAvailable } from '../../engine/quests';
+import { sagaGate } from '../../engine/quests';
 import { armiesOf, getStance, heroesOf, provincesOf } from '../../engine/helpers';
 import type { Hero, PlayerId, SpellId } from '../../engine/types';
 import { h, mount } from '../dom';
@@ -403,7 +403,8 @@ function renderQuests(screen: GameScreen, body: HTMLElement): void {
     );
   });
 
-  const saga = sagaAvailable(state, pid);
+  const gate = sagaGate(state, pid);
+  const saga = gate.available;
   const sagaBlock = h('div', { class: 'panel quest-card quest-saga' },
     h('div', { class: 'side-card-head' },
       h('div', {},
@@ -428,9 +429,7 @@ function renderQuests(screen: GameScreen, body: HTMLElement): void {
       : h('p', { class: 'small muted italic', style: { padding: '0 0.8rem 0.8rem' } },
           player.sagaChapter >= 5
             ? 'The Saga is complete. The realm is yours by legend.'
-            : player.sagaChapter === 3
-              ? 'The Forge That Remembers waits — bring both Shards into your keeping first.'
-              : 'The next chapter waits on the last, or on a site your realm can reach.'),
+            : gate.reason ?? 'The next chapter waits on the last, or on a site your realm can reach.'),
   );
 
   const active = state.activeQuests.filter((q) => q.owner === pid).map((q) => {
@@ -693,7 +692,7 @@ function renderLedger(screen: GameScreen, body: HTMLElement): void {
             h('tbody', {}, ...rows),
           ),
           h('p', { class: 'small muted', style: { marginTop: '0.5rem' } },
-            `Dominion: hold ${Math.round(DOMINION_SHARE * 100)}% for ${DOMINION_ROUNDS} seasons. Golden Age: richest treasury over ${GOLDEN_GOLD} with order ${GOLDEN_ORDER}+, ${GOLDEN_ROUNDS} seasons running. The Chronicle closes at season ${state.victory.maxTurns}.`),
+            `Dominion: hold ${Math.round(dominionShareAt(state) * 100)}%${state.turn > WEARINESS_TURN ? ' (the Chronicle wearies — it shrinks each season)' : ''} for ${DOMINION_ROUNDS} seasons. Golden Age: richest treasury over ${GOLDEN_GOLD} with order ${GOLDEN_ORDER}+, ${GOLDEN_ROUNDS} seasons running. The Chronicle closes at season ${state.victory.maxTurns}.`),
         ),
       ),
     ),

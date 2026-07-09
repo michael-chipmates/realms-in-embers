@@ -10,9 +10,20 @@ import type { Effect, GameState, PlayerId, VictoryPath } from './types';
 
 export const DOMINION_SHARE = 0.55;
 export const DOMINION_ROUNDS = 3;
-export const GOLDEN_GOLD = 1200;
+export const GOLDEN_GOLD = 900;
 export const GOLDEN_ORDER = 65;
 export const GOLDEN_ROUNDS = 4;
+
+/** The Chronicle wearies: from this season the dominion threshold erodes
+ * half a point per season, down to its floor — late games end in thrones,
+ * not points. Visible in the ledger; announced when it begins. */
+export const WEARINESS_TURN = 38;
+export const DOMINION_FLOOR = 0.38;
+
+export function dominionShareAt(state: GameState): number {
+  const eroded = DOMINION_SHARE - Math.max(0, state.turn - WEARINESS_TURN) * 0.008;
+  return Math.max(DOMINION_FLOOR, eroded);
+}
 
 export interface ScoreLine {
   label: string;
@@ -95,12 +106,13 @@ export function checkVictory(state: GameState, rng: Rng, effects: Effect[]): voi
 
   const total = state.provinces.length;
 
-  // dominion
+  // dominion — the required share erodes late (dominionShareAt)
   if (paths.includes('dominion')) {
+    const needed = dominionShareAt(state);
     for (const player of alive) {
       const share = provincesOf(state, player.id).length / total;
       const prev = state.victory.dominionStreak[player.id] ?? 0;
-      if (share >= DOMINION_SHARE) {
+      if (share >= needed) {
         const streak = prev + 1;
         state.victory.dominionStreak[player.id] = streak;
         if (streak >= DOMINION_ROUNDS) {

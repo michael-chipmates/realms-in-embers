@@ -23,8 +23,11 @@ import { NEUTRAL } from './types';
  * guaranteed to replay byte-identically under the version that wrote them.
  * v1: launch rules. v2: lordSpeech chronicle entries (iteration 2).
  * v3: coalitions, joinWar, defensive alliances, combined assaults,
- *     emberlight fervor (iteration 3). */
-export const RULES_VERSION = 3;
+ *     emberlight fervor (iteration 3).
+ * v4: chronicle weariness (eroding dominion), golden age at 900 + AI
+ *     merchant archetype, saga realm-gates + breakable Rekindling
+ *     (iteration 4). */
+export const RULES_VERSION = 4;
 
 export const HANDICAPS: Record<Difficulty, PlayerHandicap> = {
   squire: { incomeMult: 0.85, label: 'Squire — AI earns 15% less gold and attacks only with clear advantage.' },

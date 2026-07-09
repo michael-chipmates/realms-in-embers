@@ -142,6 +142,8 @@ function setTaxPolicy(state: GameState, pid: PlayerId, dispatch: (a: Action) => 
   if (avgOrder < 42) want = 'light';
   else if (report.net < 0 || (persona.greed > 0.7 && avgOrder > 62)) want = 'harsh';
   else if (avgOrder > 75 && persona.greed > 0.4) want = 'harsh';
+  // golden-age pursuit needs order above the threshold more than it needs coin
+  if (pursuesGoldenAge(state, pid) && avgOrder < 72 && report.net > 8) want = 'light';
   if (want !== player.tax) dispatch({ t: 'setTax', level: want });
 }
 
@@ -174,6 +176,8 @@ function hireFromCourt(state: GameState, pid: PlayerId, dispatch: (a: Action) =>
 
 function buildSomething(state: GameState, pid: PlayerId, dispatch: (a: Action) => boolean): void {
   const player = state.players[pid];
+  // late golden-age pursuit: the hoard itself is the project
+  if (pursuesGoldenAge(state, pid) && player.gold > 600) return;
   const report = incomeReport(state, pid);
   const reserve = Math.max(80, (report.upkeep + report.wages) * 1.2);
   if (player.gold < reserve + 70) return;
@@ -231,6 +235,12 @@ function isFrontier(state: GameState, p: Province): boolean {
 
 function recruitTroops(state: GameState, pid: PlayerId, dispatch: (a: Action) => boolean): void {
   const player = state.players[pid];
+  // a golden-age hoard grows in coffers, not in barracks — muster only
+  // if genuinely menaced
+  if (pursuesGoldenAge(state, pid) && player.gold > 350) {
+    const menace = strongestThreat(state, pid);
+    if (menace < totalPower(state, pid) * 1.1) return;
+  }
   const report = incomeReport(state, pid);
   const persona = lordOf(player).personality;
   const myPower = totalPower(state, pid);
@@ -521,6 +531,21 @@ function riteWeight(state: GameState, pid: PlayerId, id: (typeof SPELLS)[keyof t
 
 // ----------------------------------------------------------------- armies
 
+/** The merchant's road to the throne: low-aggression, high-greed lords with
+ * a quiet realm start playing for the Golden Age — hoarding, defending,
+ * declining wars. This makes the economic ending a real presence at the
+ * table instead of an advertised impossibility. */
+export function pursuesGoldenAge(state: GameState, pid: PlayerId): boolean {
+  if (!state.victory.paths.includes('goldenAge')) return false;
+  const player = state.players[pid];
+  if (player.kind !== 'ai' || !player.alive) return false;
+  const persona = lordOf(player).personality;
+  if (!(persona.greed >= 0.55 && persona.aggression <= 0.5)) return false;
+  if (state.turn < 18) return false;
+  if (provincesOf(state, pid).length < 3) return false;
+  return !state.players.some((o) => o.alive && o.id !== pid && atWar(state, pid, o.id));
+}
+
 function attackNerve(state: GameState, pid: PlayerId): number {
   const player = state.players[pid];
   const persona = lordOf(player).personality;
@@ -641,6 +666,10 @@ function actWithArmy(state: GameState, pid: PlayerId, army: Army, nerve: number,
     if (p.seatOf !== null && p.seatOf !== pid) prize += 18;
     if (p.owner === lead && lead !== pid) prize += 8; // clip the leader's wings
     if (p.owner >= 0 && creedOf(state.players[p.owner]) === 'umbra' && creedOf(state.players[pid]) === 'flame') prize += 4;
+    // a rival's Rekindling burns on that ground: breaking it is worth blood
+    const ritualThere = state.activeQuests.some((q) =>
+      q.province === p.id && q.owner !== pid && QUESTS[q.defId]?.saga === 5);
+    if (ritualThere) prize += 40;
     let score = preview.winChance * prize - preview.aExpectedLoss * 20 * (1 - persona.aggression * 0.5);
     if (support.length > 0) score -= 3; // committing several banners costs tempo
     if (!bestAttack || score > bestAttack.score) bestAttack = { to: t.to, viaSea: t.viaSea, score, support };
@@ -774,8 +803,9 @@ function proactiveDiplomacy(
     }
   }
 
-  // pick a war deliberately (one at a time, neighbors only)
-  if (atWarWith.length === 0 && state.turn > 5) {
+  // pick a war deliberately (one at a time, neighbors only) — unless the
+  // realm is playing for the Golden Age, in which case war is bad business
+  if (atWarWith.length === 0 && state.turn > 5 && !pursuesGoldenAge(state, pid)) {
     let bestTarget: PlayerId | null = null;
     let bestScore = 0;
     for (const other of state.players) {

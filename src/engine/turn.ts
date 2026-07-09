@@ -19,7 +19,7 @@ import { say, scribe } from './narrator';
 import type { Rng } from './rng';
 import type { Effect, GameState, PlayerId, Province } from './types';
 import { NEUTRAL } from './types';
-import { checkVictory } from './victory';
+import { checkVictory, WEARINESS_TURN } from './victory';
 
 /** Everything that happens when a player's turn begins. */
 export function beginTurn(state: GameState, rng: Rng, effects: Effect[]): void {
@@ -348,6 +348,14 @@ function roundEnd(state: GameState, rng: Rng, effects: Effect[]): void {
       };
     }),
   });
+
+  // -- the Chronicle wearies: announce the erosion once, the season it begins
+  if (state.turn === WEARINESS_TURN + 1) {
+    scribe(state, {
+      kind: 'ceremony', about: null, ceremony: true,
+      text: 'Hear this, all claimants: the Chronicle wearies of your caution. From this season the realm asks less and less of whoever would hold it — the demanded share of the land shrinks each turn until somebody takes what the rest keep failing to. Endings come. I prefer them written on purpose.',
+    });
+  }
 
   // -- the pen keeps its own counsel
   if (rng.chance(0.22)) {

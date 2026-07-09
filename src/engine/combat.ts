@@ -20,7 +20,8 @@ import { addDeed as heroDeed } from './heroes';
 import {
   addDeed, armiesIn, atWar, clamp, creedOf, getStance, lordName, lordOf, removeArmy,
 } from './helpers';
-import { say } from './narrator';
+import { say, scribe } from './narrator';
+import { QUESTS } from './content/quests';
 import { teach } from './teachings';
 import { Rng } from './rng';
 import type {
@@ -886,6 +887,29 @@ export function captureProvince(
   province.buildQueue = null;
   province.recruitQueue = null;
   effects.push({ e: 'captured', province: province.id, by: newOwner, from: previous });
+
+  // storming the ground breaks any seat-ritual being held on it: the
+  // Rekindling is a public promise, and promises can be interrupted.
+  const broken = state.activeQuests.filter((q) => {
+    if (q.owner !== previous || q.province !== province.id) return false;
+    const def = QUESTS[q.defId];
+    return def?.site === 'ownSeat';
+  });
+  for (const q of broken) {
+    state.activeQuests = state.activeQuests.filter((aq) => aq !== q);
+    const hero = state.heroes[q.heroId];
+    const def = QUESTS[q.defId];
+    if (hero && hero.status !== 'dead') {
+      hero.status = 'wounded';
+      hero.woundedTurns = 2;
+      hero.questId = null;
+      hero.province = homeProvince(state, hero.owner);
+    }
+    scribe(state, {
+      kind: 'ceremony', about: previous, ceremony: true,
+      text: `THE ${def.saga === 5 ? 'REKINDLING' : 'RITUAL'} IS BROKEN. ${lordName(state, newOwner)} stormed ${province.name} mid-rite; the gathered fire scattered like startled birds${hero ? `, and ${hero.name} was dragged from the circle, alive and furious` : ''}. The realm exhaled. Some in relief. Some in disappointment. I made a note of which.`,
+    });
+  }
 
   // seeing is believing
   if (newOwner >= 0) {

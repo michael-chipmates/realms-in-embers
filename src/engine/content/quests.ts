@@ -33,6 +33,9 @@ export interface QuestDef {
   dc: number;
   duration: number;
   minLevel?: number;
+  /** Realm-strength gate: the Saga's later chapters demand a realm behind
+   * the legend, so the fastest path cannot also be the smallest. */
+  minProvinces?: number;
   saga?: 1 | 2 | 3 | 4 | 5;
   rewards: QuestRewards;
   desc: string;
@@ -350,7 +353,7 @@ export const QUESTS: Record<string, QuestDef> = {
   },
   sagaBarrowToll: {
     id: 'sagaBarrowToll', name: 'Saga III — The Barrow-King\'s Toll', tier: 3, site: 'barrow', stat: 'might', dc: 13, duration: 3,
-    saga: 3, minLevel: 4,
+    saga: 3, minLevel: 4, minProvinces: 4,
     rewards: { xp: 100, grantArtifact: 'shardOfNoon' },
     desc: 'The second shard was paid to the barrow-king as toll, generations ago, by salvagers who wanted to cross his valley alive. He honours bargains. He will want a new one.',
     outcomes: {
@@ -362,7 +365,7 @@ export const QUESTS: Record<string, QuestDef> = {
   },
   sagaForge: {
     id: 'sagaForge', name: 'Saga IV — The Forge That Remembers', tier: 3, site: 'forge', stat: 'lore', dc: 14, duration: 3,
-    saga: 4, minLevel: 5,
+    saga: 4, minLevel: 5, minProvinces: 4,
     rewards: { xp: 120, grantArtifact: 'emberheart' },
     desc: 'Two shards, one ancient forge, and the oldest smithing-song in the realm. Reforge the heart of the throne. The forge remembers how; it requires only hands worth trusting and both shards on the anvil.',
     outcomes: {
@@ -374,7 +377,7 @@ export const QUESTS: Record<string, QuestDef> = {
   },
   sagaRekindling: {
     id: 'sagaRekindling', name: 'Saga V — The Rekindling', tier: 3, site: 'ownSeat', stat: 'lore', dc: 14, duration: 3,
-    saga: 5, minLevel: 7,
+    saga: 5, minLevel: 7, minProvinces: 5,
     rewards: { xp: 200 },
     desc: 'Carry the Emberheart to your own high seat and hold the three-night ritual of Rekindling. Every lord in the realm will see the glow on the horizon and know exactly what it means. Hold the seat. Finish the fire.',
     outcomes: {

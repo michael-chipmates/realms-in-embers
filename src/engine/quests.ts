@@ -70,14 +70,33 @@ export function refreshQuestOffers(state: GameState, rng: Rng, pid: PlayerId): v
 
 /** The next saga chapter available to this player, with its venue(s). */
 export function sagaAvailable(state: GameState, pid: PlayerId): { def: QuestDef; venues: number[] } | null {
+  const gate = sagaGate(state, pid);
+  return gate.available;
+}
+
+/** Saga availability WITH the reason it is closed — the UI shows the why. */
+export function sagaGate(state: GameState, pid: PlayerId): {
+  available: { def: QuestDef; venues: number[] } | null;
+  def: QuestDef | null;
+  reason: string | null;
+} {
   const player = state.players[pid];
-  if (player.sagaChapter >= 5) return null;
+  if (player.sagaChapter >= 5) return { available: null, def: null, reason: null };
   const nextId = SAGA_QUESTS[player.sagaChapter];
   const def = QUESTS[nextId];
+  // later chapters demand a realm behind the legend
+  if (def.minProvinces && provincesOf(state, pid).length < def.minProvinces) {
+    return { available: null, def, reason: `The realm must believe: this chapter asks a claimant of at least ${def.minProvinces} provinces.` };
+  }
   // chapter 4 needs both shards in this realm's possession
-  if (def.saga === 4 && !hasBothShards(state, pid)) return null;
+  if (def.saga === 4 && !hasBothShards(state, pid)) {
+    return { available: null, def, reason: 'Both shards — Morning and Noon — must rest in your keeping.' };
+  }
   const venues = questVenues(state, pid, def);
-  return venues.length > 0 ? { def, venues } : null;
+  if (venues.length === 0) {
+    return { available: null, def, reason: 'No fitting venue lies within reach this season.' };
+  }
+  return { available: { def, venues }, def, reason: null };
 }
 
 export function hasBothShards(state: GameState, pid: PlayerId): boolean {
