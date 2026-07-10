@@ -36,7 +36,7 @@ export function maybeShowOnboarding(screen: GameScreen): void {
     {
       icon: 'gold',
       title: 'The realm runs on three things',
-      body: `Gold, order, and Emberlight — all in the bar above, all inspectable. Rest your eyes (or your finger) on ANY number in my margins and I will itemize exactly where it comes from and where it goes. If a number in this realm cannot explain itself, I have failed, and I do not intend to fail twice in one age.`,
+      body: `Gold and Emberlight sit in the bar above; order lives on every province you select — all of it inspectable. Rest your eyes (or your finger) on ANY number in my margins and I will itemize exactly where it comes from and where it goes. If a number in this realm cannot explain itself, I have failed, and I do not intend to fail twice in one age.`,
     },
     {
       icon: 'swords',
@@ -68,7 +68,7 @@ export function maybeShowOnboarding(screen: GameScreen): void {
 
   const overlay = h('div', { class: 'ceremony-overlay', role: 'dialog', 'aria-modal': 'true', 'aria-label': 'The opening of the chronicle' },
     h('div', { class: 'ceremony-center' },
-      artSlot('osperan', h('span'), { className: 'art-osperan', alt: 'Osperan the Unresting' }),
+      artSlot('osperan', h('span'), { className: 'art-osperan-hero', alt: 'Osperan the Unresting' }),
       iconWrap,
       titleEl,
       h('div', { class: 'rule-flourish', style: { width: 'min(340px, 55vw)', margin: '0.7rem auto' } }, '❧'),

@@ -19,7 +19,7 @@ import { tip } from '../tooltip';
 const VICTORY_INFO: Record<VictoryPath, { name: string; desc: string }> = {
   conquest: { name: 'Conquest', desc: 'Be the last banner standing.' },
   dominion: { name: 'Dominion', desc: 'Hold 55% of the realm for 3 consecutive seasons. Everyone sees the countdown.' },
-  goldenAge: { name: 'Golden Age', desc: 'Hold the realm’s richest treasury above 1200 gold with average order 65+, for 4 seasons.' },
+  goldenAge: { name: 'Golden Age', desc: 'Be the realm’s richest lord, holding 900+ gold with average order 65+, for 4 consecutive seasons.' },
   legend: { name: 'Legend', desc: 'Complete the five chapters of the Grand Saga and rekindle the throne.' },
 };
 
@@ -156,7 +156,7 @@ export function renderSetup(app: App, presetSeed?: string): void {
           }, '+ Another claimant')
         : null,
       h('p', { class: 'small muted', style: { padding: '0 0.9rem 0.6rem' } },
-        'Two or more mortals at one table plays as hotseat — the map hides between turns.'),
+        'Two or more mortals at one table means hotseat — the map hides between seasons.'),
     );
   }
 
@@ -232,7 +232,7 @@ export function renderSetup(app: App, presetSeed?: string): void {
 
   const screen = h('div', { class: 'room setup-screen' },
     h('header', { class: 'setup-head' },
-      h('button', { class: 'btn btn-quiet', onclick: () => app.toTitle() }, '‹ The title'),
+      h('button', { class: 'btn btn-quiet', onclick: () => app.toTitle() }, '‹ To the title'),
       h('h1', { class: 'title-display', style: { fontSize: '1.3rem' } }, 'Muster the Age'),
       startBtn,
     ),

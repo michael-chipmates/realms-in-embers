@@ -52,7 +52,7 @@ export function applyAdvancedAction(
       if (!inst) return fail('No such artifact.');
       if (!player.vault.includes(action.artifactId)) return fail('That piece is not in your vault.');
       const def = ARTIFACTS[inst.defId];
-      if (!def) return fail('The piece defies cataloguing.');
+      if (!def) return fail('The piece defies cataloging.');
       if (def.slot !== action.slot) return fail(`It is ${def.slot === 'weapon' ? 'a weapon' : def.slot === 'armor' ? 'armor' : 'a trinket'}.`);
       // swap out whatever's there
       const current = hero.artifacts[action.slot];

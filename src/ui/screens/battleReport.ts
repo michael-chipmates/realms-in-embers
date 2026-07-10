@@ -116,7 +116,7 @@ export function openBattleReport(screen: GameScreen, report: BattleReport): void
     capturedEl,
     h('div', { style: { display: 'flex', justifyContent: 'space-between', marginTop: '0.6rem' } },
       skipBtn,
-      h('button', { class: 'btn', onclick: () => { revealAll(); modal.close(); } }, 'Close the account'),
+      h('button', { class: 'btn', onclick: () => { revealAll(); modal.close(); } }, 'Close the report'),
     ),
   );
 

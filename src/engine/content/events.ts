@@ -108,7 +108,7 @@ export const EVENTS: EventDef[] = [
         apply: (ctx) => {
           player(ctx).flags.warStores = true;
           player(ctx).flags.warStoresCount3 = true;
-          return 'The surplus went into salt, barrels, and quartermasters\' ledgers. Armies march on exactly this. (next 3 recruitments −20%)';
+          return 'The surplus went into salt, barrels, and quartermasters’ ledgers. Armies march on exactly this. (next 3 recruitments −20%)';
         },
       },
     ],
@@ -132,7 +132,7 @@ export const EVENTS: EventDef[] = [
           player(ctx).gold -= 120;
           const units = [...makeUnits('spears', 2, 1), ...makeUnits('archers', 1, 1)];
           newArmy(ctx.state, ctx.pid, ctx.province!, units);
-          return 'The Broken Wheel took the coin and the colours. They drill like men who intend to be on the winning side for once. (+3 seasoned companies)';
+          return 'The Broken Wheel took the coin and the colors. They drill like men who intend to be on the winning side for once. (+3 seasoned companies)';
         },
       },
       {
@@ -141,7 +141,7 @@ export const EVENTS: EventDef[] = [
         aiScore: (p) => 3 + (1 - p.aggression) * 3,
         apply: (ctx) => {
           void ctx;
-          return 'The captain shrugged his one-eared shrug and led the Wheel back into the weather, toward somebody else\'s war.';
+          return 'The captain shrugged his one-eared shrug and led the Wheel back into the weather, toward somebody else’s war.';
         },
       },
     ],
@@ -159,16 +159,16 @@ export const EVENTS: EventDef[] = [
     choices: [
       {
         label: 'Quarantine the harbor',
-        preview: 'This province: −6 gold income for 2 turns. No plague risk.',
+        preview: 'This province: −6 gold income for 2 seasons. No plague risk.',
         aiScore: (p) => 5 + p.loyalty * 3,
         apply: (ctx) => {
           prov(ctx).mods.push({ label: 'Harbor quarantine', income: -6, turnsLeft: 2 });
-          return 'The harbor chain went up and the ship sat in the roads until the rustling stopped. Trade grumbled; the granaries slept safe. (−6 gold for 2 turns)';
+          return 'The harbor chain went up and the ship sat in the roads until the rustling stopped. Trade grumbled; the granaries slept safe. (−6 gold for 2 seasons)';
         },
       },
       {
         label: 'Unload her fast',
-        preview: '+70 gold now. Risk: plague (−10 order, −0.1 prosperity here) — the odds are even.',
+        preview: '+70 gold now. Risk: 50% chance of plague (−10 order, −0.1 prosperity here).',
         aiScore: (p) => 2 + p.greed * 6,
         apply: (ctx) => {
           player(ctx).gold += 70;
@@ -204,7 +204,7 @@ export const EVENTS: EventDef[] = [
         },
       },
       {
-        label: 'The old realm\'s debts died with it',
+        label: 'The old realm’s debts died with it',
         preview: 'No cost. −4 order in every province you rule.',
         aiScore: (p) => 2 + p.greed * 3 + p.pride * 2,
         apply: (ctx) => {
@@ -313,7 +313,7 @@ export const EVENTS: EventDef[] = [
       },
       {
         label: 'Confiscate the cart',
-        preview: '+25 gold in brass; your heroes gain no respect for it. −3 order here (merchants take note).',
+        preview: '+25 gold in brass; −3 order here (the merchants take note).',
         aiScore: (p) => 1 + p.greed * 3 + (1 - p.loyalty) * 2,
         apply: (ctx) => {
           player(ctx).gold += 25;
@@ -325,7 +325,7 @@ export const EVENTS: EventDef[] = [
         label: 'Send him on his way',
         preview: 'No cost, no risk, no hum.',
         aiScore: () => 3,
-        apply: () => 'The peddler bowed himself out, complimenting the guards\' boots individually. The hum went with him. Some doors are best left on their hinges.',
+        apply: () => 'The peddler bowed himself out, complimenting the guards’ boots individually. The hum went with him. Some doors are best left on their hinges.',
       },
     ],
   },
@@ -369,7 +369,7 @@ export const EVENTS: EventDef[] = [
               break;
             }
           }
-          return 'The straw crown came back with the messenger\'s refusal pinned to it — and by week\'s end, new recruits under it. Defiance, it turns out, advertises. (+1 rebel company)';
+          return 'The straw crown came back with the messenger’s refusal pinned to it — and by week’s end, new recruits under it. Defiance, it turns out, advertises. (+1 rebel company)';
         },
       },
     ],
@@ -441,7 +441,7 @@ export const EVENTS: EventDef[] = [
         aiScore: (p) => 2 + p.pride * 4,
         apply: (ctx) => {
           player(ctx).gold += 40;
-          return '"Ah," said the cold spot, in the tone of a man underlining something. By morning, a forgotten royal cache had been "found" behind the map-room panelling, with a bookmark in it. (+40 gold)';
+          return '"Ah," said the cold spot, in the tone of a man underlining something. By morning, a forgotten royal cache had been "found" behind the map-room paneling, with a bookmark in it. (+40 gold)';
         },
       },
       {
@@ -483,7 +483,7 @@ export const EVENTS: EventDef[] = [
       },
       {
         label: 'Answer with a bounty',
-        preview: 'No cost now. The band grows bolder (+1 company) but every lord\'s hunters know their lair.',
+        preview: 'No cost now. The band grows bolder (+1 company) but every lord’s hunters know their lair.',
         aiScore: (p) => 3 + p.pride * 3 + p.aggression * 2,
         apply: (ctx) => {
           for (const a of Object.values(ctx.state.armies)) {
@@ -543,24 +543,24 @@ export const EVENTS: EventDef[] = [
       if (state.victory.maxTurns - state.turn <= 7) return null;
       return p && player.gold < 200 && !player.flags.guildLoanOut ? { province: p.id, heroId: null } : null;
     },
-    text: () => `The Honourable Guild of Weights and Measures — which measures, among other things, opportunity — offers the crown a loan: 180 gold now against 240 within six seasons, secured by "reputational considerations." The clerk smiles like a closing ledger.`,
+    text: () => `The Honorable Guild of Weights and Measures — which measures, among other things, opportunity — offers the crown a loan: 180 gold now against 240 within six seasons, secured by "reputational considerations." The clerk smiles like a closing ledger.`,
     choices: [
       {
         label: 'Take the loan',
-        preview: '+180 gold now; owe 240 in 6 rounds or every province loses 5 order (default marked).',
+        preview: '+180 gold now; owe 240 gold within 6 seasons, or every province loses 5 order.',
         aiScore: (p, ctx) => (player(ctx).gold < 100 ? 4 + p.greed * 3 : 1),
         apply: (ctx) => {
           player(ctx).gold += 180;
           player(ctx).flags.guildLoanOut = true;
           player(ctx).flags[`guildLoanDue:${ctx.state.turn + 6}`] = true;
-          return 'The gold arrived in guild-sealed chests before the ink dried. Six seasons. The clerk\'s smile said he knew wars run long. (+180 gold, 240 due)';
+          return 'The gold arrived in guild-sealed chests before the ink dried. Six seasons. The clerk’s smile said he knew wars run long. (+180 gold, 240 due)';
         },
       },
       {
         label: 'Decline politely',
         preview: 'No loan, no debt, no smile.',
         aiScore: () => 3,
-        apply: () => 'The clerk bowed, unsurprised — declined offers are also entered in the guild\'s books, under a column nobody outside has read.',
+        apply: () => 'The clerk bowed, unsurprised — declined offers are also entered in the guild’s books, under a column nobody outside has read.',
       },
     ],
   },
@@ -602,7 +602,7 @@ export const EVENTS: EventDef[] = [
       },
       {
         label: 'Refuse and hunt them',
-        preview: 'A marauder band appears in a border province; the toll ends for good either way.',
+        preview: 'A marauder band appears in a border province; the toll arrangement ends for good.',
         aiScore: (p) => 3 + p.aggression * 4 + p.pride * 3,
         apply: (ctx) => {
           for (const key of Object.keys(player(ctx).flags)) {
@@ -627,7 +627,7 @@ export const EVENTS: EventDef[] = [
           const units = makeUnits('spears', 2);
           for (const u of units) u.vet = 1;
           newArmy(ctx.state, ctx.pid, seat.id, units);
-          return 'The crown made the band an offer with a seal on it. They read it twice, laughed once, and mustered under your banner by month\'s end — veterans, every one, of robbing you. (+2 veteran companies)';
+          return 'The crown made the band an offer with a seal on it. They read it twice, laughed once, and mustered under your banner by month’s end — veterans, every one, of robbing you. (+2 veteran companies)';
         },
       },
     ],
@@ -656,7 +656,7 @@ export const EVENTS: EventDef[] = [
           if (prov(ctx).site === 'embersite' && prov(ctx).owner === ctx.pid) {
             prov(ctx).order = clamp(prov(ctx).order + 4, 0, 100);
           }
-          return 'The relic was carried home in procession and set on the warm ground, where it sang one long note and went quiet, satisfied. The site glows steadier for it, and the light lingers on your adepts\' hands. (+10 Emberlight)';
+          return 'The relic was carried home in procession and set on the warm ground, where it sang one long note and went quiet, satisfied. The site glows steadier for it, and the light lingers on your adepts’ hands. (+10 Emberlight)';
         },
       },
       {
@@ -785,7 +785,7 @@ export const EVENTS: EventDef[] = [
         aiScore: (p) => 3 + p.loyalty * 4,
         apply: (ctx) => {
           prov(ctx).order = clamp(prov(ctx).order + 7, 0, 100);
-          return 'The dead were raised, named where names survived, and buried under one long barrow with the honors of both their armies — nobody now recalls which side which bone held. The province plants over peace this spring. (+7 order)';
+          return 'The dead were raised, named where names survived, and buried under one long barrow with the honors of both their armies — nobody now recalls which bone fought for which side. The province plants over peace this spring. (+7 order)';
         },
       },
       {
@@ -799,8 +799,8 @@ export const EVENTS: EventDef[] = [
         },
       },
       {
-        label: 'Call for the old banners\' kin',
-        preview: 'Gain 1 militia company here — descendants come to claim their grandfathers\' war.',
+        label: 'Call for the old banners’ kin',
+        preview: 'Gain 1 militia company here — descendants come to claim their grandfathers’ war.',
         aiScore: (p) => 2 + p.aggression * 3,
         apply: (ctx) => {
           newArmy(ctx.state, ctx.pid, prov(ctx).id, makeUnits('militia', 1));
@@ -850,7 +850,7 @@ export const EVENTS: EventDef[] = [
         apply: (ctx) => {
           player(ctx).gold = Math.max(0, player(ctx).gold - 10);
           prov(ctx).order = clamp(prov(ctx).order + 2, 0, 100);
-          return 'A silver cup went in the crown\'s name, with a note read aloud between courses. Adequate, said the village, which is the border\'s highest grade for lords. (+2 order)';
+          return 'A silver cup went in the crown’s name, with a note read aloud between courses. Adequate, said the village, which is the border’s highest grade for lords. (+2 order)';
         },
       },
       {
@@ -887,7 +887,7 @@ export const EVENTS: EventDef[] = [
         apply: (ctx) => {
           player(ctx).gold += 70;
           prov(ctx).order = clamp(prov(ctx).order - 4, 0, 100);
-          return 'An understanding was reached on the beach at low tide, sealed with a chest of unminted opinion. The excisemen have taken up night-fishing, at the crown\'s suggestion. (+70 gold, −4 order)';
+          return 'An understanding was reached on the beach at low tide, sealed with a chest of unminted opinion. The excisemen have taken up night-fishing, at the crown’s suggestion. (+70 gold, −4 order)';
         },
       },
       {
@@ -900,8 +900,8 @@ export const EVENTS: EventDef[] = [
         },
       },
       {
-        label: 'License them as \'night ferrymen\'',
-        preview: '+35 gold now; +5% gold from this province hereafter is already in your tithes — call it formalized.',
+        label: 'License them as "night ferrymen"',
+        preview: '+35 gold now; this province permanently yields about 5% more gold.',
         aiScore: (p) => 3 + p.greed * 2,
         apply: (ctx) => {
           player(ctx).gold += 35;
@@ -962,7 +962,7 @@ export const EVENTS: EventDef[] = [
     choices: [
       {
         label: 'Take their oath',
-        preview: 'Gain 2 veteran spearguard companies; −3 order at your seat (the folk mistrust turned coats).',
+        preview: 'Gain 2 veteran spearguard companies; −3 order at your seat (the folk mistrust turncoats).',
         aiScore: (p) => 3 + p.aggression * 3,
         apply: (ctx) => {
           const seat = ctx.state.provinces[player(ctx).seatProvince];

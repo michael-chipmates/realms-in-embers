@@ -105,7 +105,7 @@ export const QUESTS: Record<string, QuestDef> = {
       disaster: [
         'The thieves were better connected than expected — and expecting {hero}. It went badly in a cellar.',
         'The theft had patrons, and the patrons had knives. {hero} learned both facts in the same cellar and was fortunate to leave with only the lesson.',
-        '{hero} named the thief at market and was answered by the thief\'s cousins — all of them, at once. The tithes remain a local joke with a body count.',
+        '{hero} named the thief at market and was answered by the thief’s cousins — all of them, at once. The tithes remain a local joke with a body count.',
       ],
     },
   },
@@ -148,7 +148,7 @@ export const QUESTS: Record<string, QuestDef> = {
       ],
       success: [
         '{hero} walked the bounds and set them right. Grumbling continues at the customary background level.',
-        'The marches are walked, the stones reset, the worst liars fined a sheep apiece. {hero} calls it a fair season\'s work; the sheep reserve judgment.',
+        'The marches are walked, the stones reset, the worst liars fined a sheep apiece. {hero} calls it a fair season’s work; the sheep reserve judgment.',
         '{hero} settled the bounds with chain, charter, and a firm look. The frost will move the stones again; the neighbors, for a while, will not.',
       ],
       setback: [
@@ -171,7 +171,7 @@ export const QUESTS: Record<string, QuestDef> = {
     outcomes: {
       triumph: [
         '{hero} went down three stairs history forgot and came back with treasure and every finger. The lights on the stairs have stopped; possibly out of respect.',
-        'Three levels down, past the liars\' mosaic and the stair that counts, {hero} found the old realm\'s strongroom still locked. It is not locked now.',
+        'Three levels down, past the liars’ mosaic and the stair that counts, {hero} found the old realm’s strongroom still locked. It is not locked now.',
       ],
       success: [
         '{hero} mapped the upper halls, dodged what hunts there, and returned with a find worth the naming.',
@@ -202,7 +202,7 @@ export const QUESTS: Record<string, QuestDef> = {
       ],
       setback: [
         'The barrow answered the rites with a counter-offer. {hero} declined it, expensively.',
-        'The barrow accepted the rites and kept {hero}\'s sword as a deposit against future noise. The humming has stopped. Mostly.',
+        'The barrow accepted the rites and kept {hero}’s sword as a deposit against future noise. The humming has stopped. Mostly.',
       ],
       disaster: [
         'The mound opened. What {hero} fought under the earth kept its toll — the valley is quiet now, at a price nobody will say aloud.',
@@ -217,18 +217,18 @@ export const QUESTS: Record<string, QuestDef> = {
     outcomes: {
       triumph: [
         '{hero} banked the shard-fire like a master smith and it settled into a steady, giving warmth. The nearby village reports pleasant dreams and softer winters.',
-        '{hero} spoke to the shard-fire the way smiths speak to iron — firmly, respectfully, with gloves. It banked itself to a loyal glow that follows visitors to the lane\'s end, like a dog.',
+        '{hero} spoke to the shard-fire the way smiths speak to iron — firmly, respectfully, with gloves. It banked itself to a loyal glow that follows visitors to the lane’s end, like a dog.',
       ],
       success: [
         '{hero} calmed the flare and carried home jars of caught light, only slightly singed.',
-        'The flare yielded to {hero}\'s tending over three careful nights. The caught light travels home in sealed jars, humming faintly against the straw.',
+        'The flare yielded to {hero}’s tending over three careful nights. The caught light travels home in sealed jars, humming faintly against the straw.',
       ],
       setback: [
         'The shard spat. {hero} saved the village and lost their eyebrows and the harvest of light.',
         'The shard flared once more as {hero} turned to go — spite or farewell, the adepts still argue. The light-harvest was lost; the village was not, which is the better ledger.',
       ],
       disaster: [
-        'The flare ran up {hero}\'s arm like a living thing arguing for a new tenant. It was put out. Not easily.',
+        'The flare ran up {hero}’s arm like a living thing arguing for a new tenant. It was put out. Not easily.',
         'The fire wanted a keeper and auditioned {hero} without consent. The burns will heal. The dreams, the adepts say, take longer.',
       ],
     },
@@ -248,10 +248,10 @@ export const QUESTS: Record<string, QuestDef> = {
       ],
       setback: [
         '{hero} answered wrong and the circle showed them, at length, exactly how wrong. They walked home wiser and limping.',
-        'The stones found {hero}\'s answer honest, wrong, and funny. They kept the working and left the limp as a memorandum.',
+        'The stones found {hero}’s answer honest, wrong, and funny. They kept the working and left the limp as a memorandum.',
       ],
       disaster: [
-        'The stones judged the answer an insult. The circle is patient; {hero}\'s recovery will be too.',
+        'The stones judged the answer an insult. The circle is patient; {hero}’s recovery will be too.',
         'Some answers offend by being close. The circle held {hero} until moonset, and what it said in that time is not in any rite-book anyone will open.',
       ],
     },
@@ -262,16 +262,16 @@ export const QUESTS: Record<string, QuestDef> = {
     desc: 'The ancient forge has one chamber never reopened since the Sundering. The door is warm. Doors should not be warm.',
     outcomes: {
       triumph: [
-        '{hero} forced the warm door and found the smith\'s last work laid out as if awaiting collection. Collected.',
-        'The warm door opened for {hero} as if expected. On the anvil: the smith\'s last commission, finished, signed in cooled fire, and addressed — the adepts swear — to the bearer.',
+        '{hero} forced the warm door and found the smith’s last work laid out as if awaiting collection. Collected.',
+        'The warm door opened for {hero} as if expected. On the anvil: the smith’s last commission, finished, signed in cooled fire, and addressed — the adepts swear — to the bearer.',
       ],
       success: [
         '{hero} cleared the chamber of what had moved in and salvaged fine old work from the racks.',
         'What nested in the chamber objected to eviction; {hero} out-argued it with a shield-edge. The racks yielded fine steel and one hammer nobody lifts casually.',
       ],
       setback: [
-        'The chamber\'s keeper — all cinders and grudge — threw {hero} out through a wall. The door is shut again. Warmer.',
-        'The chamber\'s keeper accepted neither rite nor reason, and {hero} left through the second-best exit. The door has grown warmer. The village smith has grown religious.',
+        'The chamber’s keeper — all cinders and grudge — threw {hero} out through a wall. The door is shut again. Warmer.',
+        'The chamber’s keeper accepted neither rite nor reason, and {hero} left through the second-best exit. The door has grown warmer. The village smith has grown religious.',
       ],
       disaster: [
         'The forge remembered being betrayed and made its case with fire. {hero} was carried out by the boots.',
@@ -310,8 +310,8 @@ export const QUESTS: Record<string, QuestDef> = {
     outcomes: {
       triumph: '{hero} unmasked the pretender at his own coronation feast, mid-toast, with his real ledgers. The crowd kept the feast and lost the faith.',
       success: '{hero} traced the brass crown to its smith and paraded the receipts. The movement dissolved into embarrassed farming.',
-      setback: 'The pretender talked his way out of {hero}\'s trap and into greater fame. He sends his regards, insufferably.',
-      disaster: 'The pretender\'s oath-sworn turned on {hero} with the sincerity of the recently converted. It took knives to leave.',
+      setback: 'The pretender talked his way out of {hero}’s trap and into greater fame. He sends his regards, insufferably.',
+      disaster: 'The pretender’s oath-sworn turned on {hero} with the sincerity of the recently converted. It took knives to leave.',
     },
   },
   starfallIron: {
@@ -321,7 +321,7 @@ export const QUESTS: Record<string, QuestDef> = {
     desc: 'A star came down in the high country and everything lawless within fifty miles is converging on the crater. Whatever cooled in that hole will be spoken for by nightfall. Speak first.',
     outcomes: {
       triumph: '{hero} held the crater rim alone until the moon set, then walked out with star-iron on their back and legend at their heels.',
-      success: '{hero} won the scramble for the crater and came home with iron worth a province\'s taxes.',
+      success: '{hero} won the scramble for the crater and came home with iron worth a province’s taxes.',
       setback: 'Three bands reached the crater together and {hero} left the mathematics early, bleeding.',
       disaster: 'The crater was a lodestone for every blade in the marches. {hero} was carried off it.',
     },
@@ -331,19 +331,19 @@ export const QUESTS: Record<string, QuestDef> = {
     id: 'sagaColdTrail', name: 'Saga I — The Cold Trail', tier: 2, site: 'ruin', stat: 'guile', dc: 11, duration: 3,
     saga: 1, minLevel: 2,
     rewards: { xp: 70 },
-    desc: 'The Chronicle holds that the Ember Throne broke into shards, and the shards into rumours. The oldest rumour sleeps in these ruins: the ledger of the palace salvagers, who looted the throne room before the ash settled.',
+    desc: 'The Chronicle holds that the Ember Throne broke into shards, and the shards into rumors. The oldest rumor sleeps in these ruins: the ledger of the palace salvagers, who looted the throne room before the ash settled.',
     outcomes: {
-      triumph: '{hero} found the salvagers\' ledger sealed in wax beneath a fallen lintel — names, routes, and the fates of the shards, written in a dead clerk\'s beautiful hand. The Saga has begun.',
-      success: '{hero} pieced the salvagers\' trail from scratched tally-marks and one skeleton\'s pocketbook. The shards are real, and findable. The Saga has begun.',
+      triumph: '{hero} found the salvagers’ ledger sealed in wax beneath a fallen lintel — names, routes, and the fates of the shards, written in a dead clerk’s beautiful hand. The Saga has begun.',
+      success: '{hero} pieced the salvagers’ trail from scratched tally-marks and one skeleton’s pocketbook. The shards are real, and findable. The Saga has begun.',
       setback: 'The ruin gave up nothing but false floors and old bones. The trail is here; it wants more patience or more blood.',
-      disaster: 'Someone else guards the salvagers\' secret still, and they met {hero} in the dark below. The trail stays cold; the wounds do not.',
+      disaster: 'Someone else guards the salvagers’ secret still, and they met {hero} in the dark below. The trail stays cold; the wounds do not.',
     },
   },
   sagaFirstShard: {
     id: 'sagaFirstShard', name: 'Saga II — The Morning Shard', tier: 2, site: 'embersite', stat: 'lore', dc: 12, duration: 3,
     saga: 2, minLevel: 3,
     rewards: { xp: 85, grantArtifact: 'shardOfMorning' },
-    desc: 'The ledger names this burning ground: here a salvager buried what he could not bear to sell — a shard of the throne itself, still keeping the first fire. It has been feeding the land\'s heat for forty years. It will not want to be dug up.',
+    desc: 'The ledger names this burning ground: here a salvager buried what he could not bear to sell — a shard of the throne itself, still keeping the first fire. It has been feeding the land’s heat for forty years. It will not want to be dug up.',
     outcomes: {
       triumph: '{hero} sang the old kindling-songs while digging and the shard came up warm and willing, like a cat changing laps. The Morning Shard is found.',
       success: '{hero} took the Morning Shard from the burning earth with scorched gloves and a level head. It glows when carried. It approves of being carried.',
@@ -352,13 +352,13 @@ export const QUESTS: Record<string, QuestDef> = {
     },
   },
   sagaBarrowToll: {
-    id: 'sagaBarrowToll', name: 'Saga III — The Barrow-King\'s Toll', tier: 3, site: 'barrow', stat: 'might', dc: 13, duration: 3,
+    id: 'sagaBarrowToll', name: 'Saga III — The Barrow-King’s Toll', tier: 3, site: 'barrow', stat: 'might', dc: 13, duration: 3,
     saga: 3, minLevel: 4, minProvinces: 4,
     rewards: { xp: 100, grantArtifact: 'shardOfNoon' },
-    desc: 'The second shard was paid to the barrow-king as toll, generations ago, by salvagers who wanted to cross his valley alive. He honours bargains. He will want a new one.',
+    desc: 'The second shard was paid to the barrow-king as toll, generations ago, by salvagers who wanted to cross his valley alive. He honors bargains. He will want a new one.',
     outcomes: {
       triumph: '{hero} offered the barrow-king a story he had never heard — the truth about the Sundering — and the old dead laughed like rockfall and paid the shard over gladly. The Noon Shard is found.',
-      success: '{hero} met the barrow-king\'s champion at the threshold stone and won the shard by the old rules: loudly, bloodily, respectfully. The Noon Shard is found.',
+      success: '{hero} met the barrow-king’s champion at the threshold stone and won the shard by the old rules: loudly, bloodily, respectfully. The Noon Shard is found.',
       setback: 'The barrow-king demanded a toll {hero} would not pay. The door stands open. The offer stands. The bruises, also.',
       disaster: 'The bargaining turned to battle in the dark under the mound, and the dead do not tire. {hero} was dragged out by the heels, shardless.',
     },
@@ -382,7 +382,7 @@ export const QUESTS: Record<string, QuestDef> = {
     desc: 'Carry the Emberheart to your own high seat and hold the three-night ritual of Rekindling. Every lord in the realm will see the glow on the horizon and know exactly what it means. Hold the seat. Finish the fire.',
     outcomes: {
       triumph: 'On the third night the Emberheart took to the hearth of {seat} like a sun coming home. The age of embers is over. The realm has a throne again — and it is yours.',
-      success: 'The ritual held through storm, sabotage, and the third night\'s long doubt. The fire stands. The war is over — everything after this is coronation.',
+      success: 'The ritual held through storm, sabotage, and the third night’s long doubt. The fire stands. The war is over — everything after this is coronation.',
       setback: 'The second night faltered — the fire wants more of its keeper than was given. The Emberheart is safe. The ritual can be attempted again.',
       disaster: 'The rekindling collapsed on the final night, and the backlash scoured the hall. The Emberheart endures, patient as ever. {hero} may not be.',
     },

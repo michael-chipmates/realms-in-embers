@@ -33,7 +33,7 @@ export function openSettingsPanel(app: App): void {
       s.colorblind = v;
       app.applySettings();
       app.gameScreen?.redrawMap();
-    }, 'Overlays each realm with its own pattern, beyond color.'),
+    }, 'Overlays each lord’s lands with a distinct pattern, beyond color.'),
     toggle('Reduced motion', s.reducedMotion, (v) => {
       s.reducedMotion = v;
       app.applySettings();

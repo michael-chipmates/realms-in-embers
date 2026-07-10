@@ -48,7 +48,7 @@ export const SKILLS: Record<string, SkillDef> = {
   },
   kindledVeins: {
     id: 'kindledVeins', name: 'Kindled Veins', cls: 'magus', fx: { emberlight: 2 },
-    desc: '+2 Emberlight each turn.', flavor: 'Sleeps warm, dreams in orange, pays for nothing by candle.',
+    desc: '+2 Emberlight each season.', flavor: 'Sleeps warm, dreams in orange, has not bought a candle in years.',
   },
   frugalRites: {
     id: 'frugalRites', name: 'Frugal Rites', cls: 'magus', fx: { spellDiscountPct: 15 },
@@ -99,7 +99,7 @@ export const SKILLS: Record<string, SkillDef> = {
   },
   secondShadow: {
     id: 'secondShadow', name: 'Second Shadow', cls: 'shade', fx: { deathSave: 0.2 },
-    desc: '20% less likely to die of wounds.', flavor: 'Witnesses reliably kill the wrong one.',
+    desc: '20% less likely to die of wounds.', flavor: 'Assassins reliably kill the wrong one.',
   },
   poisonedLedger: {
     id: 'poisonedLedger', name: 'Poisoned Ledger', cls: 'shade', fx: { questAdd: 2, guile: 1 },
@@ -111,7 +111,7 @@ export const SKILLS: Record<string, SkillDef> = {
   },
   terrorByCandlelight: {
     id: 'terrorByCandlelight', name: 'Terror by Candlelight', cls: 'shade', fx: { armyPowerPct: 5, dreadAura: -1 },
-    desc: 'Army +5%, but −1 order where they stand.', flavor: 'Rumour marches ahead of the column, clearing the way.',
+    desc: 'Army +5%, but −1 order where they stand.', flavor: 'Rumor marches ahead of the column, clearing the way.',
   },
   faceless: {
     id: 'faceless', name: 'Faceless', cls: 'shade', fx: { guile: 3, leadership: -1 },

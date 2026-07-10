@@ -52,7 +52,7 @@ function renderCourt(screen: GameScreen, body: HTMLElement, modal: ModalHandle, 
       h('div', { class: 'side-card-head' },
         h('div', {},
           h('div', { class: 'side-card-title' }, `${offer.name}, ${offer.epithet}`),
-          h('div', { class: 'small muted' }, `${cls.name}, level ${offer.level} · leaves in ${Math.max(0, offer.expiresTurn - state.turn)} ${offer.expiresTurn - state.turn === 1 ? 'season' : 'seasons'}`),
+          h('div', { class: 'small muted' }, `${cls.name}, level ${offer.level} · ${offer.expiresTurn - state.turn <= 0 ? 'leaves this season' : `leaves in ${offer.expiresTurn - state.turn} ${offer.expiresTurn - state.turn === 1 ? 'season' : 'seasons'}`}`),
         ),
         artSlot(`class-${offer.cls}`, h('span', { html: iconSvg(cls.icon, 22), style: { color: 'var(--gold)' } }), { className: 'art-class', alt: cls.name }),
       ),
@@ -197,7 +197,7 @@ function renderHeroCard(screen: GameScreen, hero: Hero, canAct: boolean, refresh
                   const armies = armiesOf(state, hero.owner).filter((a) => a.heroIds.length < 3);
                   const target = armies.find((a) => state.provinces[a.province].owner === hero.owner || a.province === hero.province);
                   if (target && screen.dispatch({ t: 'attachHero', heroId: hero.id, armyId: target.id })) refresh();
-                  else screen.toast('No banner within safe reach.', 'info');
+                  else screen.toast('No banner within safe reach. Move an army into your own lands, or to the hero.', 'info');
                 },
               }, 'Join the army')
             : h('button', {
@@ -297,7 +297,7 @@ function renderMagic(screen: GameScreen, body: HTMLElement): void {
     : h('div', { class: 'panel spell-card' },
         h('div', { class: 'panel-title' }, 'Begin a rite'),
         player.riteOffers.length === 0
-          ? h('p', { class: 'small muted italic', style: { padding: '0.8rem' } }, 'Your court knows every working it has found. New threads surface in time — or on quests.')
+          ? h('p', { class: 'small muted italic', style: { padding: '0.8rem' } }, 'No undiscovered workings remain to begin. New threads surface in time — or on quests.')
           : h('div', { style: { padding: '0.6rem 0.8rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' } },
               ...player.riteOffers.map((id) => {
                 const def = SPELLS[id];
@@ -309,7 +309,7 @@ function renderMagic(screen: GameScreen, body: HTMLElement): void {
                   onclick: () => {
                     if (screen.dispatch({ t: 'startRite', spellId: id })) refresh();
                   },
-                }, h('span', { html: `${iconSvg(def.icon, 16)} ${def.name}` }), h('span', { class: 'small muted' }, `${cost} EL`));
+                }, h('span', { html: `${iconSvg(def.icon, 16)} ${def.name}` }), h('span', { class: 'small muted' }, `${cost} Emberlight`));
                 tip(btn, () => h('div', { class: 'tip-plain' },
                   h('b', {}, `${def.name} (${def.kind === 'battle' ? 'battle' : 'realm'})`),
                   h('p', { class: 'small' }, def.desc),
@@ -372,7 +372,7 @@ function renderQuests(screen: GameScreen, body: HTMLElement): void {
       ...eligible.map((hh) => {
         const d = heroDerived(state, hh);
         const rough = questStat(d, def.stat) + hh.level * 0.5 + d.questAdd + 4.5 - def.dc;
-        const feel = rough >= 4 ? 'near-certain' : rough >= 1.5 ? 'favoured' : rough >= -1 ? 'chancy' : 'grim';
+        const feel = rough >= 4 ? 'near-certain' : rough >= 1.5 ? 'favored' : rough >= -1 ? 'chancy' : 'grim';
         const btn = h('button', {
           class: 'btn compact',
           onclick: () => {
@@ -498,7 +498,7 @@ function renderDiplomacy(screen: GameScreen, body: HTMLElement, focusPlayer?: Pl
               },
             }, 'Refuse'),
           )
-        : h('p', { class: 'small muted', style: { padding: '0 0.8rem 0.8rem' } }, 'Answer on your own turn.'),
+        : h('p', { class: 'small muted', style: { padding: '0 0.8rem 0.8rem' } }, 'Answer when your season comes.'),
     );
   });
 
@@ -603,7 +603,7 @@ function renderDiplomacy(screen: GameScreen, body: HTMLElement, focusPlayer?: Pl
 }
 
 function openGoldPrompt(screen: GameScreen, title: string, onConfirm: (gold: number) => void): void {
-  const input = h('input', { class: 'input', type: 'number', min: '0', step: '10', value: '50', style: { width: '10ch' } }) as HTMLInputElement;
+  const input = h('input', { class: 'input', type: 'number', min: '0', step: '10', value: '50', 'aria-label': 'Gold amount', style: { width: '10ch' } }) as HTMLInputElement;
   const content = h('div', { style: { padding: '1rem', display: 'flex', gap: '0.6rem', alignItems: 'center' } },
     input,
     h('button', {
@@ -694,7 +694,7 @@ function renderLedger(screen: GameScreen, body: HTMLElement): void {
             h('tbody', {}, ...rows),
           ),
           h('p', { class: 'small muted', style: { marginTop: '0.5rem' } },
-            `Dominion: hold ${Math.round(dominionShareAt(state) * 100)}%${state.turn > WEARINESS_TURN ? ' (the Chronicle wearies — it shrinks each season)' : ''} for ${DOMINION_ROUNDS} seasons. Golden Age: richest treasury over ${GOLDEN_GOLD} with order ${GOLDEN_ORDER}+, ${GOLDEN_ROUNDS} seasons running. The Chronicle closes at season ${state.victory.maxTurns}.`),
+            `Dominion: hold ${Math.round(dominionShareAt(state) * 100)}%${state.turn > WEARINESS_TURN ? ' (the Chronicle wearies — it shrinks each season)' : ''} for ${DOMINION_ROUNDS} seasons. Golden Age: richest treasury over ${GOLDEN_GOLD} with average order ${GOLDEN_ORDER}+, ${GOLDEN_ROUNDS} seasons running. The Chronicle closes at season ${state.victory.maxTurns}.`),
         ),
       ),
     ),
@@ -723,7 +723,7 @@ export function openMenuOverlay(screen: GameScreen): void {
         modal.close();
         screen.app.toTitle();
       },
-    }, 'To the title (autosaved)'),
+    }, 'To the title'),
     screen.current().kind === 'human' && state.phase === 'playing'
       ? h('button', {
           class: 'btn btn-quiet',

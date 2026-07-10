@@ -43,7 +43,7 @@ export function presentCeremonies(screen: GameScreen, effects: Effect[]): void {
         icon: CEREMONY_ICON.heroDied,
         art: CEREMONY_ART.heroDied,
         title: `${effect.name} has fallen`,
-        text: entry?.text ?? `${effect.name} died ${effect.cause}.`,
+        text: entry?.text ?? `${effect.name} fell — ${effect.cause}.`,
       });
     } else if (effect.e === 'eliminated') {
       const entry = [...state.chronicle].reverse().find((c) => c.ceremony && c.kind === 'ceremony');

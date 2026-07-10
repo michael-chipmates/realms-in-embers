@@ -86,7 +86,7 @@ export function buildSaga(state: GameState): string {
     lines.push('');
     for (const hh of fallen) {
       const owner = LORD_BY_ID[state.players[hh.owner].lordId];
-      lines.push(wrap(`  ${hh.name}, ${hh.epithet} — ${owner.name}'s ${hh.cls}, level ${hh.level}; fell ${hh.deathCause ?? 'in the war'}, season ${hh.diedTurn ?? '?'}.`, width));
+      lines.push(wrap(`  ${hh.name}, ${hh.epithet} — ${owner.name}'s ${hh.cls}, level ${hh.level}; fell — ${hh.deathCause ?? 'in the war'}, season ${hh.diedTurn ?? '?'}.`, width));
     }
     lines.push('');
   }

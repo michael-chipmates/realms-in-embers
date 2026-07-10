@@ -357,7 +357,7 @@ function roundEnd(state: GameState, rng: Rng, effects: Effect[]): void {
   if (state.turn === WEARINESS_TURN + 1) {
     scribe(state, {
       kind: 'ceremony', about: null, ceremony: true,
-      text: 'Hear this, all claimants: the Chronicle wearies of your caution. From this season the realm asks less and less of whoever would hold it — the demanded share of the land shrinks each turn until somebody takes what the rest keep failing to. Endings come. I prefer them written on purpose.',
+      text: 'Hear this, all claimants: the Chronicle wearies of your caution. From this season the realm asks less and less of whoever would hold it — the demanded share of the land shrinks each season until somebody takes what the rest keep failing to. Endings come. I prefer them written on purpose.',
     });
   }
 

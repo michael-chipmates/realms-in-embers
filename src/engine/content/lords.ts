@@ -79,7 +79,7 @@ export const LORDS: LordDef[] = [
     color: '#9e2b25', colorAlt: '#e8c8a8', pattern: 'plain', sigil: 'rose',
     perk: {
       label: 'Keeper of Hearths',
-      desc: 'Hearthshrines cost half. All your provinces gain +1 order each turn.',
+      desc: 'Hearthshrines cost half. All your provinces gain +1 order each season.',
       fx: { buildingDiscountId: 'temple', buildingDiscountPct: 50, orderAll: 1 },
     },
     lines: {
@@ -117,7 +117,7 @@ export const LORDS: LordDef[] = [
     name: 'Ser Halvard Dane',
     epithet: 'the Oathwall',
     creed: 'flame',
-    blurb: 'The last marshal of the old palace guard, who held the Cinder Gate for three days after the Sundering. He fights defensive wars by preference and finishing wars by principle.',
+    blurb: 'The last marshal of the old palace guard, who held the Cinder Gate for three days after the Sundering. He fights defensive wars by preference and finishes them by principle.',
     personality: { aggression: 0.3, greed: 0.2, mysticism: 0.25, loyalty: 0.95, pride: 0.6 },
     favoredTerrain: 'hills',
     color: '#5b6472', colorAlt: '#d8d2c2', pattern: 'stripes', sigil: 'gate',
@@ -216,7 +216,7 @@ export const LORDS: LordDef[] = [
       fx: { defenseTerrainId: 'forest', defenseTerrainPct: 15, unitDiscountId: 'wardens', unitDiscountPct: 20 },
     },
     lines: {
-      intro: 'I have buried three of these wars under leaf-mould. Shall we begin the fourth?',
+      intro: 'I have buried three of these wars under leaf-mold. Shall we begin the fourth?',
       taunt: 'The wood is patient. I, regrettably for you, am the wood.',
       gracious: 'Plant a thing and keep it alive. Then we may talk of ruling.',
       defeat: 'Cut the tree; the roots remain. Mind where you build.',

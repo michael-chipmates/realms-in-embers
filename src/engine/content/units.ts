@@ -81,15 +81,15 @@ export const UNITS: Record<UnitTypeId, UnitDef> = {
     atk: 7, def: 5, hits: 5, cost: 150, upkeep: 4, traits: ['charge', 'armored'],
     recruit: { building: 'barracks', terrain: ['meadow', 'hills'] },
     icon: 'knight',
-    desc: 'Heavy cavalry. Charges on open ground; armor turns aside 15% of hits. Needs a Musterfield.',
-    flavor: 'A tonne of oath, iron, and horse. The oath is the dangerous part.',
+    desc: 'Heavy cavalry. Charges on open ground; armor turns aside 15% of hits. Needs a Musterfield in meadow or hills.',
+    flavor: 'A ton of oath, iron, and horse. The oath is the dangerous part.',
   },
   wardens: {
     id: 'wardens', name: 'Greenwood Wardens', namePlural: 'Greenwood Wardens', tier: 2,
     atk: 5, def: 4, hits: 4, cost: 100, upkeep: 3, traits: ['ranged', 'forestborn'],
     recruit: { building: 'barracks', terrain: ['forest'] },
     icon: 'leaf',
-    desc: 'Forest skirmishers. Volley before melee; +25% strength among trees. Raised in deepwood.',
+    desc: 'Forest skirmishers. Volley before melee; +25% strength among trees. Needs a Musterfield in forest.',
     flavor: 'You will not see them. That is rather the point of them.',
   },
   cragguard: {
@@ -97,7 +97,7 @@ export const UNITS: Record<UnitTypeId, UnitDef> = {
     atk: 4, def: 7, hits: 5, cost: 105, upkeep: 3, traits: ['brace', 'mountainborn'],
     recruit: { building: 'barracks', terrain: ['mountain'] },
     icon: 'peak',
-    desc: 'Mountain heavy foot. Braces charges; +25% strength in the crags. Raised in mountains.',
+    desc: 'Mountain heavy foot. Braces charges; +25% strength in the crags. Needs a Musterfield in mountains.',
     flavor: 'They count a battle lost if they had to take a step backward to win it.',
   },
   adepts: {
@@ -105,7 +105,7 @@ export const UNITS: Record<UnitTypeId, UnitDef> = {
     atk: 3, def: 3, hits: 3, cost: 120, upkeep: 3, traits: ['caster'],
     recruit: { building: 'mageTower' },
     icon: 'staff',
-    desc: 'Battle-casters. Add magical weight to combat and kindle +1 Emberlight each turn. Need an Ember Spire.',
+    desc: 'Battle-casters. Add magical weight to combat and kindle +1 Emberlight each season. Needs an Ember Spire.',
     flavor: 'Graduates of the Spires: singed eyebrows, steady hands, alarming confidence.',
   },
   siegeworks: {
@@ -113,7 +113,7 @@ export const UNITS: Record<UnitTypeId, UnitDef> = {
     atk: 3, def: 1, hits: 4, cost: 140, upkeep: 3, traits: ['siege'],
     recruit: { building: 'warcamp' },
     icon: 'trebuchet',
-    desc: 'Engines and engineers. Negates wall bonuses when attacking. Nearly helpless alone.',
+    desc: 'Engines and engineers. Negates wall bonuses when attacking; nearly helpless alone. Needs a War Foundry.',
     flavor: 'Mathematics, timber, and spite, assembled into a machine for ending sieges.',
   },
   ashwings: {
@@ -145,7 +145,7 @@ export const UNITS: Record<UnitTypeId, UnitDef> = {
     atk: 8, def: 3, hits: 4, cost: 210, upkeep: 4, traits: ['ambush', 'terror'],
     recruit: { building: 'warcamp', creed: 'umbra' },
     icon: 'hood',
-    desc: 'Umbra elite. +25% attack when striking first; spreads terror (-8% enemy strength). Umbra lords only, at a War Foundry.',
+    desc: 'Umbra elite. +25% attack when striking first; spreads terror (−8% enemy strength). Umbra lords only, at a War Foundry.',
     flavor: 'Paid in silver, silence, and the first pick of the dead men’s boots.',
   },
   // ----------------------------------------------------------- neutral-only
@@ -155,7 +155,7 @@ export const UNITS: Record<UnitTypeId, UnitDef> = {
     recruit: null,
     icon: 'torch',
     desc: 'Angry subjects under a burned banner. They know the ground and nothing about drill.',
-    flavor: 'Every rebellion begins as an itemized list of grievances with pitchforks attached.',
+    flavor: 'Grievances, organized. The pitchforks are mostly punctuation.',
   },
   marauders: {
     id: 'marauders', name: 'Wolfshead Band', namePlural: 'Wolfshead Bands', tier: 1,

@@ -170,7 +170,7 @@ export function applyAction(state: GameState, action: Action): ActionResult {
       }
       if (gate.creed && lordOf(player).creed !== gate.creed) return fail('Not of your creed.');
       if (action.unit === 'revenants') {
-        if (!fx.revenantsAtBarrows) return fail('The dead do not answer you.');
+        if (!fx.revenantsAtBarrows) return fail('The dead answer only Morrikan the Thrice-Buried.');
         if (p.site !== 'barrow') return fail('Only at a barrow.');
       }
       const { cost } = unitCostFor(state, pid, action.unit);
@@ -286,7 +286,7 @@ export function applyAction(state: GameState, action: Action): ActionResult {
       const from = state.armies[action.from];
       const into = state.armies[action.into];
       if (!from || !into || from.owner !== pid || into.owner !== pid) return fail('Not your armies.');
-      if (from.id === into.id) return fail('That is one army.');
+      if (from.id === into.id) return fail('Those are the same army.');
       if (from.province !== into.province) return fail('They stand in different provinces.');
       if (from.units.length + into.units.length > 12) return fail('A banner holds twelve companies at most.');
       if (from.heroIds.length + into.heroIds.length > 3) return fail('Three heroes to a banner at most.');
@@ -691,7 +691,7 @@ export function applyProposalResponse(
       scribe(state, {
         kind: 'diplomacy',
         about: from,
-        text: `${lordName(state, from)} and ${lordName(state, to)} sealed a pact of non-aggression. Wax, ribbon, witnesses — the full theatre of trust.`,
+        text: `${lordName(state, from)} and ${lordName(state, to)} sealed a pact of non-aggression. Wax, ribbon, witnesses — the full theater of trust.`,
       });
       effects.push({ e: 'diplo', kind: 'pact', from, to });
       break;

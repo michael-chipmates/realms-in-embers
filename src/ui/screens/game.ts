@@ -459,6 +459,10 @@ export class GameScreen {
       return;
     }
     // a working is armed: this click is its target
+    if (this.pendingSpell !== null && pid === null) {
+      this.clearSpellTargeting(); // tapping open water lets the light fade (touch has no Esc)
+      return;
+    }
     if (this.pendingSpell !== null && pid !== null) {
       const spell = this.pendingSpell;
       this.clearSpellTargeting();
@@ -806,7 +810,7 @@ export class GameScreen {
 
   toast(text: string, kind: 'info' | 'war' | 'danger' | 'gold' = 'info', onClick?: () => void): void {
     const el = onClick
-      ? h('button', { class: `toast toast-${kind} toast-click`, onclick: () => { el.remove(); onClick(); } }, text, h('span', { class: 'small muted', style: { display: 'block' } }, 'tap for the account'))
+      ? h('button', { class: `toast toast-${kind} toast-click`, onclick: () => { el.remove(); onClick(); } }, text, h('span', { class: 'small muted', style: { display: 'block' } }, 'tap for the full report'))
       : h('div', { class: `toast toast-${kind}` }, text);
     this.toastsEl.appendChild(el);
     window.setTimeout(() => {
@@ -821,7 +825,7 @@ export class GameScreen {
   armSpellTargeting(spell: SpellId): void {
     this.pendingSpell = spell;
     const def = SPELLS[spell];
-    this.showAiBanner(`Choose a province for ${def.name} — Esc to let the light fade.`);
+    this.showAiBanner(`Choose a province for ${def.name} — Esc, or a tap on open water, lets the light fade.`);
   }
 
   private clearSpellTargeting(): void {
@@ -878,7 +882,7 @@ export class GameScreen {
         this.iconAction('book', 'Ledger & victory', () => openLedgerOverlay(this)),
       ),
       this.online && this.online.clock.perTurn > 0
-        ? (this.clockEl = h('div', { class: 'stat turn-clock', 'aria-label': 'Turn clock' }))
+        ? (this.clockEl = h('div', { class: 'stat turn-clock', 'aria-label': 'Season clock' }))
         : null,
       h('button', {
         class: 'btn btn-seal end-turn',
@@ -937,7 +941,7 @@ export class GameScreen {
     if (idleArmies.length > 0) {
       alerts.push({
         icon: 'flag',
-        text: `${idleArmies.length} ${idleArmies.length === 1 ? 'army has' : 'armies have'} marching orders to give`,
+        text: `${idleArmies.length} ${idleArmies.length === 1 ? 'army awaits' : 'armies await'} marching orders`,
         onClick: () => this.selectArmy(idleArmies[0].id),
       });
     }

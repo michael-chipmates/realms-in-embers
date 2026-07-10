@@ -22,7 +22,7 @@ export const CREEDS: Record<Creed, CreedDef> = {
     name: 'The Flame',
     tagline: 'Relight the throne. Whatever it costs.',
     desc: 'Creed of order and zeal. Flame lords trust each other, despise the Umbra, and take broken oaths very personally.',
-    passive: 'Hearthshrines grant +1 extra order each turn.',
+    passive: 'Hearthshrines grant +1 extra order each season.',
   },
   ash: {
     id: 'ash',
@@ -52,7 +52,7 @@ export function creedAffinity(a: Creed, b: Creed): number {
 export interface TerrainDef {
   id: Terrain;
   name: string;
-  /** Base gold per turn at prosperity 1.0, fair tax. */
+  /** Base gold per season at prosperity 1.0, fair tax. */
   income: number;
   /** Defender strength multiplier when fighting here. */
   defense: number;
@@ -66,7 +66,7 @@ export const TERRAIN: Record<Terrain, TerrainDef> = {
     name: 'Meadowlands',
     income: 14,
     defense: 1.0,
-    desc: 'Rich income. No defensive ground. Riders and knights may be raised here; granaries thrive.',
+    desc: 'Rich income. No defensive ground. Riders and knights may be raised here; Granaries may be built.',
     flavor: 'Bread, levies, and nowhere to hide. Every war is finally about the meadows.',
   },
   forest: {
@@ -82,7 +82,7 @@ export const TERRAIN: Record<Terrain, TerrainDef> = {
     name: 'Highdowns',
     income: 10,
     defense: 1.15,
-    desc: 'Fair income. Defenders +15%. Riders may be raised here; granaries thrive on the terraces.',
+    desc: 'Fair income. Defenders +15%. Riders may be raised here; Granaries may be built on the terraces.',
     flavor: 'Sheep country. The shepherds watch armies pass and raise their prices accordingly.',
   },
   mountain: {
@@ -90,7 +90,7 @@ export const TERRAIN: Record<Terrain, TerrainDef> = {
     name: 'Crags',
     income: 7,
     defense: 1.3,
-    desc: 'Poor income. Defenders +30%. Cragguard may be raised here; ember-sites favour the peaks.',
+    desc: 'Poor income. Defenders +30%. Cragguard may be raised here; ember-sites favor the peaks.',
     flavor: 'Stone remembers the Sundering better than men do. It is still warm in places.',
   },
   moor: {
@@ -132,25 +132,25 @@ export interface BuildingDef {
 export const BUILDINGS: Record<BuildingId, BuildingDef> = {
   farm: {
     id: 'farm', name: 'Granaries', cost: 80, turns: 1, icon: 'wheat',
-    desc: '+5 gold each turn. Meadow and hill provinces only.',
+    desc: '+5 gold each season. Meadow and hill provinces only.',
     flavor: 'Full stores make loyal villages and attractive targets, usually in that order.',
     terrain: ['meadow', 'hills'], incomeAdd: 5,
   },
   market: {
     id: 'market', name: 'Market Rows', cost: 120, turns: 2, icon: 'scale',
     desc: '+25% gold from this province.',
-    flavor: 'Where wool becomes silver and rumour becomes fact by the third stall.',
+    flavor: 'Where wool becomes silver and rumor becomes fact by the third stall.',
     incomeMult: 0.25,
   },
   harbor: {
     id: 'harbor', name: 'Harborworks', cost: 100, turns: 1, icon: 'anchor',
-    desc: '+6 gold each turn. Armies may sail between your harbors along the coast.',
+    desc: '+6 gold each season. Armies may sail between your harbors along the coast.',
     flavor: 'The sea asks no creed. It drowns everyone with perfect impartiality.',
     coastalOnly: true, incomeAdd: 6,
   },
   roads: {
     id: 'roads', name: "King's Road", cost: 90, turns: 1, icon: 'road',
-    desc: '+10% gold from this province. Armies may march one province further through your roads.',
+    desc: '+10% gold from this province. Armies may march one province further along your roads.',
     flavor: 'Paved with good intentions and, in the low stretches, with the previous road.',
     incomeMult: 0.1,
   },
@@ -174,12 +174,12 @@ export const BUILDINGS: Record<BuildingId, BuildingDef> = {
   },
   temple: {
     id: 'temple', name: 'Hearthshrine', cost: 100, turns: 1, icon: 'flame',
-    desc: '+2 order each turn (+3 for Flame lords).',
+    desc: '+2 order each season (+3 for Flame lords).',
     flavor: 'A tended fire, a swept floor, somewhere to grieve. Order is mostly this.',
   },
   mageTower: {
     id: 'mageTower', name: 'Ember Spire', cost: 150, turns: 2, icon: 'spire',
-    desc: '+2 Emberlight each turn (+2 more on an ember-site). Allows raising Adepts.',
+    desc: '+2 Emberlight each season (+2 more on an ember-site). Allows raising Adepts.',
     flavor: 'The masons build them tall not for majesty but because the wizards keep singeing the ceilings.',
     emberlight: 2,
   },
@@ -191,7 +191,7 @@ export const BUILDINGS: Record<BuildingId, BuildingDef> = {
   warcamp: {
     id: 'warcamp', name: 'War Foundry', cost: 200, turns: 2, icon: 'hammer',
     desc: 'Allows raising elite companies and siege engines (tier 3) here. Requires a Musterfield.',
-    flavor: 'The anvils ring through the night. The neighbours have stopped complaining; they moved.',
+    flavor: 'The anvils ring through the night. The neighbors have stopped complaining; they moved.',
     requires: 'barracks',
   },
 };

@@ -28,7 +28,7 @@ under the same license. No closed-source paid forks.
 
 ## Everything else
 
-The fiction — the Embermark, the Sundering, the creeds of Flame, Ash and Umbra,
+The fiction — the Embermark, the Sundering, the creeds of Flame, Ash, and Umbra,
 Osperan the Unresting, all lords, provinces, events, and prose — is original to
 this project.
 

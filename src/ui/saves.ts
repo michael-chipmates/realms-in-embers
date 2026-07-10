@@ -107,7 +107,7 @@ export function exportSave(state: GameState): void {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `realms-in-embers-${state.seed}-turn${state.turn}.json`;
+  a.download = `realms-in-embers-${state.seed}-season${state.turn}.json`;
   a.click();
   URL.revokeObjectURL(url);
 }

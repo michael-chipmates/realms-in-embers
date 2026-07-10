@@ -73,7 +73,7 @@ const FLAVOR: Record<Terrain, string[]> = {
     'Feeds three provinces and complains for six.',
     'The barley here grows tall enough to hide a modest cavalry ambush. It has.',
     'Its markets sell everything, including, twice now, the deed to itself.',
-    'Peaceful, prosperous, and utterly indefensible — the tax collector’s favourite words.',
+    'Peaceful, prosperous, and utterly indefensible — the tax collector’s favorite words.',
     'The bell in the granary tower rings for weddings, harvests, and approaching armies, in the same cheerful tone.',
     'Local proverb: a full barn has many heirs.',
   ],
@@ -113,7 +113,7 @@ const FLAVOR: Record<Terrain, string[]> = {
 
 const SITE_FLAVOR: Record<SiteType, string[]> = {
   embersite: [
-    'A shard of the sundered throne smoulders here; the night never gets fully dark.',
+    'A shard of the sundered throne smolders here; the night never gets fully dark.',
     'The ground here holds warmth like a grudge. Farmers plant early and pray late.',
     'Ember-light stands off the rocks at dusk. The adepts call it holy. The shepherds call it a nuisance with opinions.',
   ],
@@ -123,7 +123,7 @@ const SITE_FLAVOR: Record<SiteType, string[]> = {
     'Locals quarry the ruin for stone but only by daylight, and never the lintels.',
   ],
   shrine: [
-    'Pilgrims still climb to the shrine here, leaving candles and taking rumours.',
+    'Pilgrims still climb to the shrine here, leaving candles and taking rumors.',
     'The wayshrine here answers no prayers, which the devout consider a kind of honesty.',
     'Offerings at the shrine double in wartime. Faith follows fear the way gulls follow plows.',
   ],
@@ -177,7 +177,7 @@ const EPITHETS: Record<HeroClass, string[]> = {
   champion: ['the Unbowed', 'Oakbreaker', 'the Red Gale', 'Shieldless', 'the Lion of the Ford', 'Twice-Scarred', 'the Anvil', 'Bannerbright'],
   magus: ['the Kindled', 'Ashreader', 'the Patient Flame', 'Sparrow-Wise', 'the Half-Lit', 'Cinderquick', 'the Unburnt', 'Lanternbearer'],
   warden: ['the Far-Eyed', 'Thornwalker', 'the Grey Arrow', 'Wolf-Friend', 'the Quiet Bow', 'Mistwader', 'the Pathless', 'Owlkeeper'],
-  shade: ['the Unseen', 'Softstep', 'the Smiling Debt', 'Knifewhisper', 'the Second Shadow', 'Lockless', 'the Kind Poison', 'Half-Rumour'],
+  shade: ['the Unseen', 'Softstep', 'the Smiling Debt', 'Knifewhisper', 'the Second Shadow', 'Lockless', 'the Kind Poison', 'Half-Rumor'],
 };
 
 export function makePersonName(rng: Rng, cls: HeroClass): { name: string; epithet: string } {

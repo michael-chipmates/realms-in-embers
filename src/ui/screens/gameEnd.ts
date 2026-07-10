@@ -60,8 +60,8 @@ export function showGameEnd(screen: GameScreen): void {
     .sort((a, b) => b.level - a.level)
     .slice(0, 6)
     .map((hh) => h('p', { class: 'small' },
-      `${hh.name}, ${hh.epithet} — level ${hh.level} ${lordDisplay(state, hh.owner).name.split(' ')[0]}'s ${hh.cls}` +
-      (hh.status === 'dead' ? `; fell ${hh.deathCause ?? 'in the war'} (season ${hh.diedTurn})` : '; lives to see the peace')));
+      `${hh.name}, ${hh.epithet} — ${lordDisplay(state, hh.owner).name.split(' ')[0]}'s ${hh.cls}, level ${hh.level}` +
+      (hh.status === 'dead' ? `; fell — ${hh.deathCause ?? 'in the war'} (season ${hh.diedTurn})` : '; lives to see the peace')));
 
   const content = h('div', { class: 'gameend-body' },
     artSlot(viewerWon ? 'ceremony-victory' : 'ceremony-defeat', h('span'), { className: 'ceremony-art', alt: '' }),

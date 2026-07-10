@@ -78,7 +78,7 @@ export async function openOnlineLobby(app: App, invite?: { roomId: string; key: 
   const tableEl = h('div', { class: 'lobby-table' });
   const controls = h('div', { class: 'lobby-controls' });
   const nameInput = h('input', {
-    class: 'input', type: 'text', maxlength: '24', placeholder: 'Your name at the table',
+    class: 'input', type: 'text', maxlength: '24', placeholder: 'Your name at the table', 'aria-label': 'Your name at the table',
     value: myName(),
   }) as HTMLInputElement;
 
@@ -189,7 +189,7 @@ export async function openOnlineLobby(app: App, invite?: { roomId: string; key: 
 
     mount(tableEl,
       h('h3', { class: 'settings-head' }, `At the table (${seated.length} of ${MAX_SEATS})`),
-      ...(seated.length === 0 ? [h('p', { class: 'small muted italic' }, 'Nobody seated yet. Take a chair.')] : []),
+      ...(seated.length === 0 ? [h('p', { class: 'small muted italic' }, 'Nobody seated yet. Take a seat.')] : []),
       ...seated.map((p) => h('div', { class: 'lobby-row' },
         sigilShield(LORDS[(p.seat ?? 0) % LORDS.length].id, 22),
         h('b', {}, p.name),
@@ -220,14 +220,14 @@ export async function openOnlineLobby(app: App, invite?: { roomId: string; key: 
             h('h3', { class: 'settings-head' }, 'The terms (host)'),
             labeled('Realm', select(['small', 'medium', 'large'], mapSize, (v) => { mapSize = v as GameSettings['mapSize']; })),
             labeled('Seasons', select(['28', '36', '48', '60'], String(seasons), (v) => { seasons = parseInt(v, 10); })),
-            labeled('Turn clock', select(CLOCK_PRESETS.map((c) => c.label), CLOCK_PRESETS[clockIdx].label, (v) => {
+            labeled('Season clock', select(CLOCK_PRESETS.map((c) => c.label), CLOCK_PRESETS[clockIdx].label, (v) => {
               clockIdx = Math.max(0, CLOCK_PRESETS.findIndex((c) => c.label === v));
             })),
             labeled('AI rivals', select(['0', '1', '2', '3'], String(aiFill), (v) => { aiFill = parseInt(v, 10); })),
             labeled('Fog of war', select(['on', 'off'], fog ? 'on' : 'off', (v) => { fog = v === 'on'; })),
             h('button', { class: 'btn btn-seal', style: { marginTop: '0.6rem' }, onclick: tryStart },
               'Begin the war'),
-            h('p', { class: 'small muted' }, 'Lords are dealt by fate at the first season — argue about them in person.'),
+            h('p', { class: 'small muted' }, 'Lords are dealt by fate when the war begins — argue about them in person.'),
           )
         : (mySeatNow !== null ? h('p', { class: 'small muted italic', style: { marginTop: '0.6rem' } }, 'The host sets the terms and begins the war.') : null),
     );

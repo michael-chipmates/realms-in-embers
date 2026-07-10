@@ -1,103 +1,87 @@
-# Realms in Embers
+<p align="center"><img src="public/favicon.svg" width="96" alt="Realms in Embers mark: an ember flame over a dark seal"></p>
 
-*A turn-based fantasy strategy chronicle — an original homage to the spirit of
-SSI's 1993 classic Fantasy Empires.*
+<h1 align="center">Realms in Embers</h1>
 
-*Not affiliated with, endorsed by, or containing material from SSI's
-successors, Ubisoft, Wizards of the Coast, or Hasbro. All fiction, names, and
-systems are original.*
+<p align="center"><b>A turn-based fantasy strategy chronicle for the browser.</b></p>
 
-**Free forever, open source, no accounts, no tracking.** Code: AGPL-3.0 ·
-Content & art: CC BY-SA 4.0 · Music: Scott Buckley, CC-BY 4.0 — see
-`CREDITS.md`. Copyleft is deliberate: nobody can take this game closed-source
-or sell it out from under its players.
+<p align="center">Twelve lords · one cold throne · a narrator who refuses to stay dead</p>
 
-The Ember Throne is forty years shattered. The realm it warmed — the Embermark —
-cools province by province, and every lord with a banner and an appetite has decided
-the ashes belong to them. One chronicler, who did not survive the Sundering but
-declines to let that stop him, records the war you are about to start.
+<p align="center">
+<a href=".github/workflows/ci.yml"><img src="https://img.shields.io/badge/CI-typecheck_·_41_tests_·_sim-2ea44f" alt="CI"></a>
+<a href="LICENSE"><img src="https://img.shields.io/badge/code-AGPL--3.0-8a4d00" alt="Code: AGPL-3.0"></a>
+<a href="LICENSE-CONTENT"><img src="https://img.shields.io/badge/content_&_art-CC_BY--SA_4.0-8a4d00" alt="Content: CC BY-SA 4.0"></a>
+<img src="https://img.shields.io/badge/accounts-none,_ever-1c1e21" alt="No accounts, no tracking">
+</p>
 
-## Run it
+<p align="center"><a href="#play">Play</a> · <a href="#the-game-in-one-paragraph">What is this</a> · <a href="#three-ways-to-war">Multiplayer</a> · <a href="#run-it-yourself">Run it</a> · <a href="#the-making-of">The making of</a> · <a href="CREDITS.md">Credits</a></p>
 
-```bash
-npm install
-npm run dev
-```
+> A side project that got gloriously out of hand: a love letter to the *spirit* of SSI's 1993 classic Fantasy Empires — original fiction, original rules, zero runtime dependencies, and a dead chronicler who still meets his deadlines.
 
-Open the printed URL (default http://localhost:5173). Works on desktop and phone;
-mouse, keyboard, and touch.
+![One tour of Realms in Embers: the hall, the war table, an honest battle, the painted lords](docs/media/playthrough.gif)
+
+## Play
+
+**[realms-in-embers.pages.dev](https://realms-in-embers.pages.dev)** — free, no account, nothing to install. Works on phones, installs from the browser as an app, and the whole game keeps working offline after the first load. A full campaign fills an evening; a short chronicle fits a lunch break.
 
 ## The game in one paragraph
 
-Pick a lord (twelve, in three creeds, each with a real temperament the AI plays).
-Expand across a procedurally forged realm — every seed is shareable and reforges
-identically. Raise works and companies, mind your order (every number itemizes its
-causes on hover), send heroes on quests, learn workings of Emberlight, read your
-rivals' grudges in plain lines, and reach one of five endings: conquest, dominion,
-a golden age, the Legend of the rekindled throne — or the judgment of the Chronicle
-when the page runs out. Every game ends. The saga export hands you the whole war
-as a story when it's over.
+Pick a lord (twelve, in three creeds, each with a real temperament the AI genuinely plays). Expand across a procedurally forged realm — every seed is shareable and reforges identically. Raise works and companies, mind your order (every number itemizes its causes on hover), send heroes on quests, learn workings of Emberlight, read your rivals' grudges in plain lines, and reach one of five endings: conquest, dominion, a golden age, the Legend of the rekindled throne — or the judgment of the Chronicle when the page runs out. Every game ends. The saga export hands you the whole war as a story when it's over.
 
-## Keys
+## What a season feels like
 
-`arrows` roam provinces · `enter` select the army there · `E` end season ·
-`H` court & heroes · `M` magic · `Q` quests & saga · `D` the other lords ·
-`L` ledger & victory race · `Esc` close/deselect
+<table>
+<tr>
+<td width="50%"><img src="docs/media/title.png" alt="The title screen: a candlelit hall, the wordmark glowing over a war table"></td>
+<td width="50%"><img src="docs/media/war-table.png" alt="The war table: a painted map of provinces, the chronicle feed on the right"></td>
+</tr>
+<tr>
+<td><img src="docs/media/odds.png" alt="A battle preview: win chance, expected losses, and every modifier for both sides in plain language"></td>
+<td><img src="docs/media/diplomacy.png" alt="The other lords: painted portraits, their words, and exactly why they feel the way they do"></td>
+</tr>
+</table>
 
-## Verify it
+- **Every number explains itself.** Income, order, attitude, victory standing — hover anything and Osperan itemizes where it comes from. If a number in this realm cannot explain itself, he has failed, and he does not intend to fail twice in one age.
+- **Battles are honest.** Before any blood, a Monte-Carlo preview shows both sides' full modifiers in plain words — run on a forked RNG, so checking your odds can never change your fate. Combine banners from several provinces for one assault, or burn raw Emberlight for fervor. All previewed.
+- **Rivals scheme in the open.** Attitude is an itemized ledger of remembered deeds. Alliances defend and share maps. Lords call allies into their wars with gold. Grow past forty percent of the realm and the rest of the table forms a league about it.
+- **The narrator is the game.** Tutorial, chronicle, and endgame export are one system — Osperan's book. Big moments stop the room; small ones get a dry line in the margin. He is voiced, painted, and behind schedule.
+- **It ends.** Five distinct endings, all reachable, all raced in public. From season 38 the Chronicle wearies and the dominion bar erodes — late games finish in thrones, not timeouts.
+
+## Three ways to war
+
+- **Online** — "Online War" on the title screen. One invite link seats up to six; turn clocks (relaxed / standard / blitz, bank + increment) keep a full war inside two hours. **The relay is blind:** every action is end-to-end encrypted with a key that lives only in the invite link's URL fragment. The server stores ciphertext and ordinals; it cannot read a single move. Reconnecting replays the encrypted log through the deterministic engine — you rejoin exactly where the war stands. Self-host the relay with `node server/relay.mjs`, the Dockerfile in `server/`, or the included Cloudflare Worker.
+- **Hotseat** — several mortals, one device; the map hides between turns.
+- **Courier** — war by letters: export the chronicle file after your turns, the other side loads it and plays on. A stalled online session degrades gracefully into this.
+
+## Run it yourself
 
 ```bash
-npm test        # 35 tests: rng, mapgen, economy, combat, replay determinism, saves, AI smoke
-npm run sim     # headless harness: full AI-vs-AI games, invariants every round
-npm run build   # typecheck + production build (~97 KB gzipped, zero runtime deps)
+npm install
+npm run dev        # http://localhost:5173 — desktop and phone
 ```
 
-## Music & credits
+```bash
+npm test           # 41 tests: engine, replay determinism, the rules-version canary
+npm run sim        # headless AI-vs-AI sweep with invariants checked every round
+npm run build      # typecheck + production build (~110 KB gzipped, zero runtime deps)
+```
 
-The score is **Scott Buckley** — *Penumbra* and *Song Of The Forge* — released
-under CC-BY 4.0 (www.scottbuckley.com.au), bundled in `public/music/` and
-credited in-game (Settings → Credits). Prefer your own soundtrack? Drop MP3s in
-`public/music/` and list them in `public/music/playlist.json`; the mixer picks
-them up, and falls back to the built-in generative score if files are missing.
+## The making of
 
-## Multiplayer
+Some of the machinery is half the fun:
 
-- **Live online** (built-in): "Online War" on the title screen. One invite
-  link seats everyone — no accounts, ever. Turn clocks (bank + increment
-  presets) keep 2–4 player wars inside two hours. **The relay is blind:**
-  every action is end-to-end encrypted with a key that lives only in the
-  invite link's URL fragment; the server stores ciphertext and ordinals and
-  can read nothing. Reconnecting replays the encrypted log through the
-  deterministic engine — you rejoin exactly where the war stands.
-  Host your own relay: `node server/relay.mjs` (or the Dockerfile in
-  `server/`, or deploy `server/worker.js` to Cloudflare Workers — identical
-  protocol). Set it in-game via localStorage key `rie-relay`.
-- **Hotseat** (built-in): several mortals at one table; the map hides between turns.
-- **Courier play** (built-in): async war by letters — after your turns, "Seal &
-  send" exports the chronicle file; the other player loads it and plays on.
-  A stalled online session degrades gracefully: every round autosaves, and a
-  save continues by courier.
+- **A deterministic core.** One seeded RNG lives inside a single serializable state object; every mutation — human and AI — is an action in a log. Seed + log replays byte-identically, a frozen fixture guards the rules version, and that determinism is also the multiplayer netcode.
+- **A model playtester.** `scripts/model-playtest.mjs` seats a language model at the table through the real engine. On its first outing it found a real exploit (the counting-house was lending gold it could never collect before the game ended) and filed a structured complaint about our error messages. Both fixed.
+- **The Illustrated Edition, one command.** Forty-three painted plates in a late-80s game-manual style, generated against a single approved style anchor so the whole set reads as one painter's hand (`scripts/gen-art.mjs`). The procedural heraldry remains as the eternal fallback.
+- **A ghost with a voice.** The chronicler's ceremonies are spoken (`scripts/gen-audio.mjs`); the synth engine still covers every sound offline.
 
-## The illustrated edition (shipped)
+Deeper reading: [`DECISIONS.md`](DECISIONS.md) (why things are the way they are), [`docs/ART.md`](docs/ART.md) (the whole art pipeline), [`CHANGELOG.md`](CHANGELOG.md), and [`STATE.md`](STATE.md) (the honest build log).
 
-Forty-three painted plates in a late-80s game-manual airbrush style — twelve
-lord portraits, four hero classes, twenty-three event vignettes, three
-ceremonies, the title hall, and the ghost-chronicler himself — all generated
-against one style anchor so the set reads as one painter's hand (~3.6 MB of
-WebP for the lot). Every surface still falls back to procedural heraldry if
-`public/art/` is emptied; `docs/ART.md` and `scripts/gen-art.mjs` document
-and regenerate everything.
+## Credits & licenses
 
-## Repo map
+**Free forever, open source, no accounts, no tracking.** Code: [AGPL-3.0](LICENSE) — nobody can take this game closed-source or sell it out from under its players. Fiction & art: [CC BY-SA 4.0](LICENSE-CONTENT). Music: Scott Buckley, CC-BY 4.0. Full attribution in [`CREDITS.md`](CREDITS.md).
 
-- `src/engine/` — the deterministic core. No DOM. One seeded RNG in-state, every
-  mutation an action, seed+log replays byte-identically. `content/` holds all
-  authored material (lords, units, spells, artifacts, quests, events, narrator).
-- `src/ui/` — canvas vellum map + DOM war room. `src/sim/` — the proving ground.
-- `server/` — the blind relay for online war (Node/Docker + Cloudflare Worker,
-  one protocol). It stores ciphertext and ordinals; it can read nothing.
-- `scripts/` — Playwright drivers that replay real user flows headlessly,
-  plus the art/audio generators and the model-playtest harness (an LLM
-  plays a real seat and files a debrief).
-- `DECISIONS.md` — why things are the way they are. `FINAL_REPORT.md` — the
-  honest retrospective. `STATE.md` — build log.
+*Not affiliated with, endorsed by, or containing material from SSI's successors, Ubisoft, Wizards of the Coast, or Hasbro. All fiction, names, and systems are original.*
+
+---
+
+<p align="center"><i>The fire is yours now. Mind it. — O.</i></p>

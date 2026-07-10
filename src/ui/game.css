@@ -520,30 +520,47 @@ body.reduced-motion .battle-round-live .battle-round-losses .neg { animation: no
 .art-img { display: block; }
 /* Fixed-size variants reserve their box up front so the procedural fallback
    and the loaded image occupy identical space (no layout shift on art load). */
-.art-portrait { width: 46px; height: 58px; align-items: center; justify-content: center; flex: none; }
-.art-portrait-sm { width: 26px; height: 32px; align-items: center; justify-content: center; flex: none; }
+.art-portrait { width: 76px; height: 95px; align-items: center; justify-content: center; flex: none; }
+.art-portrait-sm { width: 34px; height: 42px; align-items: center; justify-content: center; flex: none; }
 .art-portrait-sm .art-img {
-  width: 26px; height: 32px; object-fit: cover; border-radius: 3px;
+  width: 34px; height: 42px; object-fit: cover; border-radius: 3px;
   border: 1px solid rgba(201, 162, 39, 0.5);
 }
 .art-portrait .art-img {
-  width: 46px; height: 58px; object-fit: cover; border-radius: 4px;
-  border: 1px solid rgba(201, 162, 39, 0.5); box-shadow: 0 2px 6px rgba(0,0,0,0.5);
+  width: 76px; height: 95px; object-fit: cover; border-radius: 5px;
+  border: 1px solid rgba(201, 162, 39, 0.5); box-shadow: 0 2px 8px rgba(0,0,0,0.55);
 }
-.art-portrait-lg { width: 96px; height: 120px; align-items: center; justify-content: center; flex: none; }
+.art-portrait-lg { width: 132px; height: 165px; align-items: center; justify-content: center; flex: none; }
 .art-portrait-lg .art-img {
-  width: 96px; height: 120px; object-fit: cover; border-radius: 6px;
+  width: 132px; height: 165px; object-fit: cover; border-radius: 6px;
   border: 1px solid rgba(201, 162, 39, 0.5); box-shadow: var(--shadow-deep);
 }
-.art-class { width: 44px; height: 44px; align-items: center; justify-content: center; flex: none; }
+.art-class { width: 64px; height: 64px; align-items: center; justify-content: center; flex: none; }
 .art-class .art-img {
-  width: 44px; height: 44px; object-fit: cover; border-radius: 50%;
-  border: 1px solid rgba(201, 162, 39, 0.5);
+  width: 64px; height: 64px; object-fit: cover; border-radius: 8px;
+  border: 1px solid rgba(201, 162, 39, 0.5); box-shadow: 0 2px 6px rgba(0,0,0,0.5);
 }
-.art-osperan { display: flex; justify-content: center; margin-bottom: 0.3rem; min-height: 88px; align-items: center; }
+@media (max-width: 480px) {
+  /* phones: still generous, never crowding the name block */
+  .art-portrait { width: 60px; height: 75px; }
+  .art-portrait .art-img { width: 60px; height: 75px; }
+  .art-class { width: 52px; height: 52px; }
+  .art-class .art-img { width: 52px; height: 52px; }
+}
+.art-osperan { display: flex; justify-content: center; margin-bottom: 0.3rem; min-height: 110px; align-items: center; }
 .art-osperan .art-img {
-  width: 72px; height: 88px; object-fit: cover; border-radius: 4px;
-  border: 1px solid rgba(58, 46, 28, 0.6); filter: sepia(0.2);
+  width: 88px; height: 110px; object-fit: cover; border-radius: 5px;
+  border: 1px solid rgba(58, 46, 28, 0.6); filter: sepia(0.15);
+}
+/* the chronicler at full presence: the onboarding overlay's opening plate */
+.art-osperan-hero { display: flex; justify-content: center; margin-bottom: 0.6rem; min-height: 210px; align-items: center; }
+.art-osperan-hero .art-img {
+  width: 168px; height: 210px; object-fit: cover; border-radius: 6px;
+  border: 1px solid rgba(201, 162, 39, 0.45); box-shadow: var(--shadow-deep);
+}
+@media (max-height: 720px) {
+  .art-osperan-hero { min-height: 150px; }
+  .art-osperan-hero .art-img { width: 120px; height: 150px; }
 }
 .osperan-emblem {
   display: inline-flex; align-items: center; justify-content: center;

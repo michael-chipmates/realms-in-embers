@@ -30,9 +30,9 @@ export interface ClockConfig {
 
 export const CLOCK_PRESETS: ClockConfig[] = [
   { perTurn: 0, bank: 0, label: 'No clock — take your seasons' },
-  { perTurn: 240, bank: 480, label: 'Relaxed — 4 min a turn, 8 min reserve' },
-  { perTurn: 90, bank: 360, label: 'Standard — 90s a turn, 6 min reserve' },
-  { perTurn: 45, bank: 300, label: 'Blitz — 45s a turn, 5 min reserve' },
+  { perTurn: 240, bank: 480, label: 'Relaxed — 4 min a season, 8 min reserve' },
+  { perTurn: 90, bank: 360, label: 'Standard — 90s a season, 6 min reserve' },
+  { perTurn: 45, bank: 300, label: 'Blitz — 45s a season, 5 min reserve' },
 ];
 
 export type NetPayload =
@@ -46,7 +46,12 @@ export interface NetEntry {
   payload: NetPayload;
 }
 
-const DEFAULT_RELAY = 'ws://localhost:8787';
+/** Production default: the deployed blind relay (Cloudflare worker).
+ * Local dev talks to `node server/relay.mjs`; either is overridable via
+ * the `rie-relay` localStorage key (and `rie-relay-mode` for addressing). */
+const DEFAULT_RELAY = location.protocol === 'https:'
+  ? 'wss://realms-in-embers-relay.strasserm.workers.dev'
+  : 'ws://localhost:8787';
 
 export function relayUrl(): string {
   return localStorage.getItem('rie-relay') ?? DEFAULT_RELAY;

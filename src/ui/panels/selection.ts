@@ -33,7 +33,7 @@ export function renderSelectionPanel(screen: GameScreen, root: HTMLElement): voi
     mount(root, h('div', { class: 'panel side-card' },
       h('div', { class: 'panel-title' }, 'Uncharted'),
       h('p', { class: 'small muted', style: { padding: '0.8rem' } },
-        'No survey, no spies, no stories. The vellum is blank here until someone of yours sees it.'),
+        'No survey, no spies, no stories. The vellum is blank here until one of yours sees it.'),
     ));
     return;
   }
@@ -217,7 +217,7 @@ function renderArmyCard(screen: GameScreen, army: Army, selected: boolean): HTML
     stanceRow,
     mine && !army.moved && screen.targets.length > 0 && selected
       ? h('p', { class: 'small muted', style: { padding: '0.2rem 0.8rem 0.6rem' } },
-          'Click a glowing province to march. Crossed swords mean a fight.')
+          'Choose a glowing province to march. Crossed swords mean a fight.')
       : null,
   );
 }

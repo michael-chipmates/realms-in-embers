@@ -167,7 +167,7 @@ export function openLoadModal(app: App): void {
         modal.close();
         app.continueGame(state);
       } catch {
-        alertLine.textContent = 'That file is not a readable chronicle.';
+        alertLine.textContent = 'That file is not a readable chronicle. Choose a .json exported from this game.';
       }
     },
   }) as HTMLInputElement;

@@ -95,25 +95,25 @@ export const SPELLS: Record<SpellId, SpellDef> = {
   blessHarvest: {
     id: 'blessHarvest', name: 'Bless the Harvest', kind: 'realm', cost: 10, cooldown: 3, riteCost: 24,
     target: 'ownProvince', icon: 'sheaf',
-    desc: 'A province of yours gains +6 gold and +3 order each turn, for 3 turns.',
+    desc: 'A province of yours gains +6 gold and +3 order each season, for 3 seasons.',
     flavor: 'The wheat stands taller. The tithe-reeve smiles. Suspicion drops to a five-year low.',
   },
   sowDiscord: {
     id: 'sowDiscord', name: 'Sow Discord', kind: 'realm', cost: 12, cooldown: 3, riteCost: 30,
     target: 'enemyProvince', creedAffinity: 'umbra', icon: 'discord',
-    desc: 'An enemy province suffers −6 order each turn for 3 turns.',
-    flavor: 'Three rumours, one forged letter, and a shortage of good ale. Kingdoms have fallen to less.',
+    desc: 'An enemy province suffers −6 order each season for 3 seasons.',
+    flavor: 'Three rumors, one forged letter, and a shortage of good ale. Kingdoms have fallen to less.',
   },
   wardOfEmbers: {
     id: 'wardOfEmbers', name: 'Ward of Embers', kind: 'realm', cost: 8, cooldown: 2, riteCost: 22,
     target: 'ownProvince', icon: 'ward',
-    desc: 'A province of yours defends +20% for 3 turns.',
+    desc: 'A province of yours defends +20% for 3 seasons.',
     flavor: 'Attackers describe a heat-shimmer, a wrongness, a strong preference for being elsewhere.',
   },
   beaconMarch: {
     id: 'beaconMarch', name: 'Beacon March', kind: 'realm', cost: 14, cooldown: 4, riteCost: 34,
     target: 'ownArmy', creedAffinity: 'flame', icon: 'beacon',
-    desc: 'One of your armies that has already marched may march again this turn.',
+    desc: 'One of your armies that has already marched may march again this season.',
     flavor: 'Light the high fires and the road walks with you.',
   },
   barrowCall: {
@@ -125,7 +125,7 @@ export const SPELLS: Record<SpellId, SpellDef> = {
   seersFlame: {
     id: 'seersFlame', name: "Seer's Flame", kind: 'realm', cost: 10, cooldown: 4, riteCost: 26,
     target: 'none', icon: 'seer',
-    desc: 'A private report: every rival\'s treasury, income, armies and heroes, as they stand today.',
+    desc: 'A private report: every rival’s treasury, income, armies, and heroes, as they stand today.',
     flavor: 'Stare into the flame long enough and it starts doing the accounting for you.',
   },
   quenchling: {
@@ -143,7 +143,7 @@ export const SPELLS: Record<SpellId, SpellDef> = {
   veilOfNight: {
     id: 'veilOfNight', name: 'Veil of Night', kind: 'realm', cost: 15, cooldown: 5, riteCost: 32,
     target: 'none', creedAffinity: 'umbra', icon: 'nightveil',
-    desc: 'For 2 turns, every province you rule counts +8% harder to attack (confusion in the dark).',
+    desc: 'For 2 seasons, every province you rule is +8% harder to attack (confusion in the dark).',
     flavor: 'The realm does not vanish. It simply stops answering to its name.',
   },
 };

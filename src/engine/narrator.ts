@@ -41,7 +41,7 @@ const BANKS = {
       (c) => `${c.province} fell to ${c.lord} with little ceremony. The locals took down one banner, hung another, and hid the good silver as their grandparents taught them.`,
       (c) => `${c.lord} added ${c.province} to the realm-in-progress. The province's records list the year's chief exports as wool, barley, and independence.`,
       (c) => `The free province of ${c.province} was liberated by ${c.lord} — from its freedom, chiefly.`,
-      (c) => `${c.lord}'s banner now flies over ${c.province}. The elders signed the submission with the pen they signed the last three, kept sharpened for the purpose.`,
+      (c) => `${c.lord}'s banner now flies over ${c.province}. The elders signed the submission with the same pen that signed the last three, kept sharpened for the purpose.`,
       (c) => `${c.province} joined ${c.lord}'s realm the way sheep join a larger flock: with noise, with dust, and with no vote recorded.`,
     ],
   ),
@@ -92,9 +92,9 @@ const BANKS = {
   heroDied: defineBank<{ hero: string; epithet: string; cause: string; lord: string }>(
     'ceremony',
     [
-      (c) => `Here the chronicle slows, as it must. ${c.hero}, called ${c.epithet}, died ${c.cause}. I have written ten thousand names in this book. Some of them insist on mattering.`,
+      (c) => `Here the chronicle slows, as it must. ${c.hero}, called ${c.epithet}, fell — ${c.cause}. I have written ten thousand names in this book. Some of them insist on mattering.`,
       (c) => `${c.hero} ${c.epithet} is dead — ${c.cause}. ${c.lord} has lost a sword, a counselor, and the particular silence that follows a name no one is ready to say in the past tense. I say it for them. That is my office.`,
-      (c) => `Let the record state plainly: ${c.hero}, ${c.epithet}, fell ${c.cause}. The margin of this page is wide. I rule them wide on purpose, for names like this one.`,
+      (c) => `Let the record state plainly: ${c.hero}, ${c.epithet}, fell — ${c.cause}. The margin of this page is wide. I rule them wide on purpose, for names like this one.`,
     ],
     true,
   ),
@@ -119,7 +119,7 @@ const BANKS = {
     'ceremony',
     [
       (c) => `It is done. ${c.lord} has won the realm — ${c.how}. The Chronicle of the Sundered Age ends here, and I... I find my pen is out of ink, and my debt out of years. Whoever reads this: the fire is yours. Mind it.`,
-      (c) => `${c.lord} stands where the Ember Throne stood, victorious — ${c.how}. Forty years I have waited to write a final sentence. Here it is. It was worth the wait, and the war, I leave to your judgment.`,
+      (c) => `${c.lord} stands where the Ember Throne stood, victorious — ${c.how}. Forty years I have waited to write a final sentence. Here it is. It was worth the wait; whether it was worth the war I leave to your judgment.`,
     ],
     true,
   ),
@@ -207,7 +207,7 @@ const BANKS = {
     'realm',
     [
       (c) => `${c.lord} now holds the greater part of the realm. ${c.rounds} more ${c.rounds === 1 ? 'season' : 'seasons'} unbroken and the matter is settled — the rest of you may wish to discuss that. Urgently. Together.`,
-      (c) => `The map is turning one colour, and it is ${c.lord}'s. ${c.rounds} ${c.rounds === 1 ? 'season' : 'seasons'} remain before the realm simply... belongs to them.`,
+      (c) => `The map is turning one color, and it is ${c.lord}'s. ${c.rounds} ${c.rounds === 1 ? 'season' : 'seasons'} remain before the realm simply... belongs to them.`,
       (c) => `Couriers now cross ${c.lord}'s lands for days without changing maps. ${c.rounds} more ${c.rounds === 1 ? 'season' : 'seasons'} and the map is the realm.`,
       (c) => `The realm is becoming a single household with ${c.lord} at the head of its table. ${c.rounds} ${c.rounds === 1 ? 'season' : 'seasons'} remain in which to object; after that, objection is called treason.`,
       (c) => `${c.lord} holds more of the realm than the last three kings managed together. If nothing moves within ${c.rounds} ${c.rounds === 1 ? 'season' : 'seasons'}, I write the ending.`,
@@ -219,7 +219,7 @@ const BANKS = {
       () => `Rain on the passes this season. Armies hate rain; chroniclers love it — it keeps the casualty lists short and the ink long.`,
       () => `A comet stood over the realm for three nights. Half the wise called it an omen of ruin, half of triumph. Comets, in my experience, portend chiefly comets.`,
       () => `The granary mice are fat this year. Old campaigners will tell you what that means; they will be wrong, but affectingly certain.`,
-      () => `Peddlers now sell 'shards of the Ember Throne' at every crossroads fair. By my arithmetic the throne has been sold eleven times over. Business is grief with a stall.`,
+      () => `Peddlers now sell "shards of the Ember Throne" at every crossroads fair. By my arithmetic the throne has been sold eleven times over. Business is grief with a stall.`,
       () => `An abbot wrote asking whether the war would end by harvest. I replied that wars end at one of two harvests, and he should hope for the wheat.`,
       () => `The ravens have learned the marching songs and whistle them at funerals now. Nobody taught them. Nobody needed to.`,
       () => `The price of iron is up again. Bread follows iron, as it always does, and the price of promises has collapsed entirely.`,
