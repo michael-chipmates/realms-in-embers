@@ -24,6 +24,7 @@ interface GameRecord {
   winnerLord: string | null;
   winnerDifficulty: string | null;
   seatDifficulties: string[];
+  seatLords: string[];
   path: string | null;
   battles: number;
   rebellions: number;
@@ -117,6 +118,7 @@ function playGame(i: number): GameRecord {
     winnerLord: winner !== null ? state.players[winner].lordId : null,
     winnerDifficulty: winner !== null ? (state.players[winner].difficulty ?? 'knight') : null,
     seatDifficulties: settings.players.map((p) => p.difficulty),
+    seatLords: state.players.map((p) => p.lordId),
     path: state.victory.winPath,
     battles,
     rebellions,
@@ -165,17 +167,16 @@ function main(): void {
     }
     const byLordWins = new Map<string, number>();
     const byLordGames = new Map<string, number>();
-    for (let i = 0; i < records.length; i++) {
-      const settings = settingsFor(parseInt(records[i].seed.split('-').pop()!, 10));
-      void settings;
-      if (records[i].winnerLord) byLordWins.set(records[i].winnerLord!, (byLordWins.get(records[i].winnerLord!) ?? 0) + 1);
+    for (const r of records) {
+      if (r.winnerLord) byLordWins.set(r.winnerLord, (byLordWins.get(r.winnerLord) ?? 0) + 1);
+      for (const lord of r.seatLords) byLordGames.set(lord, (byLordGames.get(lord) ?? 0) + 1);
     }
-    console.log('Wins by lord (of games completed):');
-    const lords = [...byLordWins.entries()].sort((a, b) => b[1] - a[1]);
-    for (const [lord, n] of lords) {
-      console.log(`  ${(LORD_BY_ID[lord]?.name ?? lord).padEnd(24)} ${String(n).padStart(3)}`);
+    console.log('Wins by lord (wins / seats at the table):');
+    const lords = [...byLordGames.entries()].sort((a, b) => (byLordWins.get(b[0]) ?? 0) - (byLordWins.get(a[0]) ?? 0));
+    for (const [lord, games] of lords) {
+      const wins = byLordWins.get(lord) ?? 0;
+      console.log(`  ${(LORD_BY_ID[lord]?.name ?? lord).padEnd(24)} ${String(wins).padStart(3)} / ${String(games).padStart(3)}  ${pct(wins, games)}`);
     }
-    void byLordGames;
     // difficulty fairness: wins per seat at each handicap tier
     const diffSeats = new Map<string, number>();
     const diffWins = new Map<string, number>();

@@ -67,7 +67,8 @@ export function completeRite(state: GameState, rng: Rng, pid: PlayerId, effects:
   const player = state.players[pid];
   if (!player.rite) return;
   const spell = player.rite.spellId;
-  player.spells.push(spell);
+  // a quest reward can teach the rited spell mid-rite; never double-learn
+  if (!player.spells.includes(spell)) player.spells.push(spell);
   player.rite = null;
   refreshRiteOffers(state, rng, pid);
   effects.push({ e: 'riteComplete', spell, by: pid });
@@ -181,7 +182,7 @@ export function castRealmSpell(
         : garrisons.map((a) => `${a.units.length} ${a.units.length === 1 ? 'company' : 'companies'} under ${a.owner < 0 ? 'no banner' : lordName(state, a.owner)}`).join('; ');
       scribe(state, {
         kind: 'magic', about: pid, privateTo: pid,
-        text: `The smoke over ${p.name} showed true: ${report}. Order stands near ${Math.round(p.order)}, the land yields roughly ${Math.round(p.prosperity * 100)} parts in a hundred.`,
+        text: `The smoke over ${p.name} showed true: ${report}. Order stands near ${Math.round(p.order)}, and the land yields ${p.prosperity >= 1.02 ? 'better than' : p.prosperity <= 0.98 ? 'poorer than' : 'about'} the old norm — near ${Math.round(p.prosperity * 100)} coins where a hundred once grew.`,
       });
       break;
     }

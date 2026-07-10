@@ -63,7 +63,7 @@ export const SPELLS: Record<SpellId, SpellDef> = {
   },
   rousingFlame: {
     id: 'rousingFlame', name: 'Rousing Flame', kind: 'battle', cost: 7, cooldown: 0, riteCost: 24,
-    target: 'none', creedAffinity: 'flame', battle: { powerMult: 1.1, calmGround: false }, icon: 'rouse',
+    target: 'none', creedAffinity: 'flame', battle: { powerMult: 1.1 }, icon: 'rouse',
     desc: 'Battle: your side fights +10% stronger.',
     flavor: 'It does not make soldiers braver. It reminds them they already were.',
   },

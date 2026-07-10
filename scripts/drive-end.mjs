@@ -48,4 +48,5 @@ if (await sagaBtn.isVisible().catch(() => false)) {
   await page.screenshot({ path: `${outdir}/e3-saga.png` });
 }
 console.log(errors.length ? 'ERRORS:\n' + errors.join('\n') : 'no page errors', '| event seen:', eventShot);
+if (errors.length) process.exitCode = 1;
 await browser.close();

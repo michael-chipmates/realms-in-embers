@@ -144,7 +144,20 @@ export function openLoadModal(app: App): void {
                 h('button', {
                   class: 'btn btn-quiet',
                   'aria-label': `Delete ${slot.label}`,
-                  onclick: () => {
+                  onclick: (e: Event) => {
+                    // two clicks to burn a chronicle — one is an accident
+                    const btn = e.currentTarget as HTMLButtonElement;
+                    if (btn.dataset.armed !== '1') {
+                      btn.dataset.armed = '1';
+                      btn.textContent = 'Burn — sure?';
+                      window.setTimeout(() => {
+                        if (btn.isConnected) {
+                          btn.dataset.armed = '';
+                          btn.textContent = 'Burn';
+                        }
+                      }, 3000);
+                      return;
+                    }
                     deleteSlot(slot.key);
                     refresh();
                   },
@@ -160,7 +173,9 @@ export function openLoadModal(app: App): void {
     accept: '.json,application/json',
     style: { display: 'none' },
     onchange: async (e: Event) => {
-      const file = (e.target as HTMLInputElement).files?.[0];
+      const input = e.target as HTMLInputElement;
+      const file = input.files?.[0];
+      input.value = ''; // re-choosing the same file must fire change again
       if (!file) return;
       try {
         const state = await importSave(file);

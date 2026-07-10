@@ -8,3 +8,5 @@ coverage/
 .anthropic_token
 .elevenlabs_token
 audio-audition/
+.art-originals/
+.wrangler/

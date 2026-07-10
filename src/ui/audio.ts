@@ -20,6 +20,8 @@ class AudioEngine {
   private music: GainNode | null = null;
   private sfx: GainNode | null = null;
   private musicTimer: number | null = null;
+  private droneOscs: OscillatorNode[] = [];
+  private droneNodes: AudioNode[] = [];
   private started = false;
   private vols = { master: 0.8, music: 0.6, sfx: 0.8 };
   private inGame = false;
@@ -55,17 +57,24 @@ class AudioEngine {
       }
       const file = this.sfxManifest[`voice-${cue}`];
       if (!file || !this.ctx) return;
+      const speak = (decoded: AudioBuffer): void => {
+        if (!this.started) return;
+        const src = this.ctx!.createBufferSource();
+        src.buffer = decoded;
+        src.connect(this.sfx!);
+        src.start();
+      };
+      const cached = this.sfxBuffers.get(`voice-${cue}`);
+      if (cached instanceof AudioBuffer) { speak(cached); return; }
+      if (cached === 'failed') return;
       fetch(`audio/${file}`)
         .then((r) => (r.ok ? r.arrayBuffer() : Promise.reject(new Error('404'))))
         .then((buf) => this.ctx!.decodeAudioData(buf))
         .then((decoded) => {
-          if (!this.started) return;
-          const src = this.ctx!.createBufferSource();
-          src.buffer = decoded;
-          src.connect(this.sfx!);
-          src.start();
+          this.sfxBuffers.set(`voice-${cue}`, decoded);
+          speak(decoded);
         })
-        .catch(() => { /* the chronicler declines to speak; text carries it */ });
+        .catch(() => { this.sfxBuffers.set(`voice-${cue}`, 'failed'); /* text carries it */ });
     };
     attempt(8);
   }
@@ -144,8 +153,8 @@ class AudioEngine {
   /** Attribution lines for the Settings credits block. */
   credits(): string[] {
     return [
-      "'Penumbra' by Scott Buckley — released under CC-BY 4.0. www.scottbuckley.com.au",
-      "'Song Of The Forge' by Scott Buckley — released under CC-BY 4.0. www.scottbuckley.com.au",
+      "Music: 'Penumbra' by Scott Buckley — released under CC-BY 4.0. www.scottbuckley.com.au",
+      "Music: 'Song Of The Forge' by Scott Buckley — released under CC-BY 4.0. www.scottbuckley.com.au",
     ];
   }
 
@@ -233,12 +242,14 @@ class AudioEngine {
     filter.frequency.value = 220;
     filter.connect(drone);
     drone.connect(this.music!);
+    this.droneNodes = [drone, filter];
     for (const freq of [55, 55.7, 110.3]) {
       const osc = ctx.createOscillator();
       osc.type = 'triangle';
       osc.frequency.value = freq;
       osc.connect(filter);
       osc.start();
+      this.droneOscs.push(osc);
     }
     // slow modal harp: schedule sparse plucks
     const scale = [220, 246.9, 261.6, 293.7, 329.6, 392, 440]; // A dorian-ish
@@ -282,6 +293,14 @@ class AudioEngine {
       window.clearTimeout(this.musicTimer);
       this.musicTimer = null;
     }
+    // the hearth drone never stops on its own — put it out with the rest
+    for (const osc of this.droneOscs) {
+      try { osc.stop(); } catch { /* already stopped */ }
+      osc.disconnect();
+    }
+    this.droneOscs = [];
+    for (const node of this.droneNodes) node.disconnect();
+    this.droneNodes = [];
     if (this.trackEl) this.trackEl.pause();
   }
 
@@ -326,6 +345,7 @@ class AudioEngine {
   }
 
   click(): void {
+    if (this.tryFile('click')) return;
     this.blip(660, 0.06, 'triangle', 0.12);
   }
 
@@ -394,6 +414,7 @@ class AudioEngine {
 
   /** Mason's hammer for laying works. */
   hammer(): void {
+    if (this.tryFile('hammer')) return;
     this.blip(90, 0.16, 'sine', 0.22);
     this.noise(0.08, 0.16, 1400, 0.01);
     this.blip(72, 0.2, 'sine', 0.12, 0.16);
@@ -402,6 +423,7 @@ class AudioEngine {
 
   /** Muster drum for raising companies. */
   drum(): void {
+    if (this.tryFile('drum')) return;
     if (!this.ctx || !this.started) return;
     const ctx = this.ctx;
     for (const when of [0, 0.16, 0.32]) {

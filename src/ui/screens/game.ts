@@ -25,7 +25,7 @@ import { breakdown, tip, hideTip } from '../tooltip';
 import { renderSelectionPanel } from '../panels/selection';
 import { renderChronicleFeed } from '../panels/chronicleFeed';
 import { openCourtOverlay, openDiplomacyOverlay, openLedgerOverlay, openMagicOverlay, openQuestsOverlay, openMenuOverlay } from '../panels/overlays';
-import { anyModalOpen, openModal } from '../modal';
+import { anyModalOpen, closeAllModals, openModal } from '../modal';
 import { openBattleReport } from './battleReport';
 import { maybeOpenEventModal } from './eventModal';
 import { showHandoff } from './handoff';
@@ -65,6 +65,15 @@ export class GameScreen {
   private clockTimer: number | null = null;
   /** Seconds left in each human seat's bank (client-side, honor-system). */
   private clockBanks: Record<number, number> = {};
+  /** The zero-bank endTurn fired for this turn (don't spam the relay). */
+  private clockExpiredSent = false;
+  /** Replaying a relay backlog: present its effects quietly (no modal storms). */
+  private catchingUp = false;
+  private resizeHandler = (): void => {
+    if (this.disposed) return;
+    this.renderer.resize();
+    this.redrawMap();
+  };
 
   constructor(app: App, state: GameState, online: OnlineSession | null = null) {
     this.app = app;
@@ -92,10 +101,15 @@ export class GameScreen {
     session.client.onStatus = (s) => {
       if (this.disposed) return;
       if (s !== 'open') this.showAiBanner('The relay is lost — reconnecting…');
+      else if (this.pendingSpell !== null) this.armSpellTargeting(this.pendingSpell);
       else if (!this.aiRunning) this.hideAiBanner();
     };
+    session.client.onError = (msg) => {
+      if (this.disposed) return;
+      this.toast(msg, 'danger');
+    };
     // any actions that raced ahead while the lobby handed off
-    window.setTimeout(() => this.consumeNet(), 0);
+    window.setTimeout(() => { if (!this.disposed) this.consumeNet(); }, 0);
     this.startClock();
   }
 
@@ -106,6 +120,7 @@ export class GameScreen {
    * entry array (blobs still decrypting) also pause; the pump will call
    * us again. */
   consumeNet(): void {
+    if (this.disposed) return;
     const session = this.online!;
     for (;;) {
       const entry = session.client.entries[session.cursor];
@@ -115,6 +130,9 @@ export class GameScreen {
       if (this.state.phase === 'ended') { session.cursor++; continue; }
       if (this.aiRunning || this.current().kind === 'ai') break; // wait for the wheel
       if (payload.seat !== this.state.current) { session.cursor++; continue; } // stale/dishonest
+      // replaying history (a join or rejoin mid-war): keep the room quiet —
+      // no battle-report stacks, no ceremony parade for old news
+      this.catchingUp = session.client.entries.length - 1 - session.cursor > 2;
       session.cursor++;
       const result = applyAction(this.state, payload.action);
       if (result.ok) {
@@ -122,6 +140,7 @@ export class GameScreen {
         if (payload.action.t === 'endTurn') this.onTurnAdvanced();
       }
     }
+    this.catchingUp = false;
     this.refresh();
     if (this.state.phase === 'ended') {
       this.showEndOnce();
@@ -131,6 +150,11 @@ export class GameScreen {
     // consumeNet when it finishes)
     if (this.current().kind === 'ai' && !this.aiRunning) {
       void this.runAiTurns();
+      return;
+    }
+    // the log left us on OUR season: the realm may be waiting on an answer
+    if (session.mySeat >= 0 && this.state.current === session.mySeat && !this.aiRunning) {
+      maybeOpenEventModal(this);
     }
   }
 
@@ -145,6 +169,7 @@ export class GameScreen {
 
   private onTurnAdvanced(): void {
     const session = this.online!;
+    this.clockExpiredSent = false;
     const cur = this.state.players[this.state.current];
     if (cur.kind === 'human') {
       this.clockBanks[cur.id] = (this.clockBanks[cur.id] ?? session.clock.bank) + session.clock.perTurn;
@@ -160,8 +185,10 @@ export class GameScreen {
       if (cur.kind !== 'human') return;
       this.clockBanks[cur.id] = Math.max(0, (this.clockBanks[cur.id] ?? 0) - 1);
       this.renderClock();
-      // only ever enforce on OURSELVES — the blind relay trusts the table
-      if (cur.id === session.mySeat && this.clockBanks[cur.id] <= 0) {
+      // only ever enforce on OURSELVES — the blind relay trusts the table.
+      // Send once and wait for the echo; no spamming while it travels.
+      if (cur.id === session.mySeat && this.clockBanks[cur.id] <= 0 && !this.clockExpiredSent) {
+        this.clockExpiredSent = true;
         this.dispatch({ t: 'endTurn' });
       }
     }, 1000);
@@ -235,11 +262,15 @@ export class GameScreen {
   dispose(): void {
     this.disposed = true;
     document.removeEventListener('keydown', this.keyHandler);
+    window.removeEventListener('resize', this.resizeHandler);
+    closeAllModals();
     hideTip();
     resetCeremonies();
     if (this.clockTimer !== null) window.clearInterval(this.clockTimer);
     this.online?.client.close();
     audio.leaveGame();
+    const w = window as unknown as { __game?: GameScreen };
+    if (w.__game === this) delete w.__game;
   }
 
   current() {
@@ -281,11 +312,7 @@ export class GameScreen {
       this.renderer.fit();
       this.redrawMap();
     });
-    window.addEventListener('resize', () => {
-      if (this.disposed) return;
-      this.renderer.resize();
-      this.redrawMap();
-    });
+    window.addEventListener('resize', this.resizeHandler);
   }
 
   redrawMap(): void {
@@ -689,8 +716,8 @@ export class GameScreen {
 
   async endTurn(): Promise<void> {
     if (this.aiRunning || this.state.phase === 'ended') return;
-    audio.horn();
     if (!this.dispatch({ t: 'endTurn' })) return;
+    audio.horn();
     // online, the echoed endTurn drives the AI wheel via consumeNet
     if (!this.online) await this.runAiTurns();
   }
@@ -709,13 +736,15 @@ export class GameScreen {
     }
     this.hideAiBanner();
     this.aiRunning = false;
+    if (this.disposed) return; // the player left mid-wheel
 
     if (this.state.phase === 'ended') {
       this.showEndOnce();
       return;
     }
-    // autosave at the start of every human turn
-    saveToSlot(this.state, 'auto');
+    // autosave at the start of every human turn — local chronicles only;
+    // an online war lives in the relay log, not the local shelf
+    if (!this.online) saveToSlot(this.state, 'auto');
     if (!this.online && this.humanCount() > 1) {
       await showHandoff(this); // hotseat only: online tables each see their own board
     }
@@ -760,7 +789,7 @@ export class GameScreen {
           const humanInvolved =
             this.state.players[effect.report.attacker.player]?.kind === 'human' ||
             this.state.players[effect.report.defender.player]?.kind === 'human';
-          if (humanInvolved) {
+          if (humanInvolved && !this.catchingUp) {
             openBattleReport(this, effect.report);
           } else {
             const atk = lordDisplay(this.state, effect.report.attacker.player);
@@ -775,36 +804,36 @@ export class GameScreen {
           break;
         }
         case 'heroDied': {
-          if (effect.owner === viewer) audio.dirge();
+          if (effect.owner === viewer && !this.catchingUp) audio.dirge();
           break;
         }
         case 'captured': {
-          if (effect.by === viewer || effect.from === viewer) audio.march();
+          if ((effect.by === viewer || effect.from === viewer) && !this.catchingUp) audio.march();
           this.addCaptureRipple(effect.province, effect.by);
           this.redrawMap();
           break;
         }
         case 'riteComplete': {
-          if (effect.by === viewer) audio.spell();
+          if (effect.by === viewer && !this.catchingUp) audio.spell();
           break;
         }
         case 'spellCast': {
-          if (effect.by === viewer) audio.spell();
+          if (effect.by === viewer && !this.catchingUp) audio.spell();
           break;
         }
         case 'eliminated': {
-          audio.bell();
+          if (!this.catchingUp) audio.bell();
           break;
         }
         case 'roundEnd': {
-          saveToSlot(this.state, 'auto');
+          if (!this.online) saveToSlot(this.state, 'auto');
           break;
         }
         default:
           break;
       }
     }
-    presentCeremonies(this, effects);
+    if (!this.catchingUp) presentCeremonies(this, effects);
     this.renderChronicle();
   }
 
@@ -956,6 +985,9 @@ export class GameScreen {
   private onKey(e: KeyboardEvent): void {
     if (this.disposed || this.state.phase === 'ended') return;
     if (anyModalOpen()) return;
+    // full-screen moments own the keyboard too: the hotseat blackout must
+    // not leak "end turn" or open another player's court behind the curtain
+    if (document.querySelector('.handoff-screen, .ceremony-overlay')) return;
     const tag = (document.activeElement?.tagName ?? '').toLowerCase();
     if (tag === 'input' || tag === 'select' || tag === 'textarea') return;
     switch (e.key.toLowerCase()) {

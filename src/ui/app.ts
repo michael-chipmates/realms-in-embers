@@ -50,6 +50,8 @@ export class App {
   }
 
   startGame(settings: GameSettings): void {
+    this.gameScreen?.dispose();
+    this.gameScreen = null;
     const { state, effects } = createGame(settings);
     this.game = state;
     saveToSlot(state, 'auto');
@@ -62,6 +64,8 @@ export class App {
 
   /** An online war: same deterministic engine, actions travel encrypted. */
   startOnlineGame(settings: GameSettings, session: OnlineSession): void {
+    this.gameScreen?.dispose();
+    this.gameScreen = null;
     const { state, effects } = createGame(settings);
     this.game = state;
     clear(this.root);
@@ -72,6 +76,8 @@ export class App {
   }
 
   continueGame(state: GameState): void {
+    this.gameScreen?.dispose();
+    this.gameScreen = null;
     this.game = state;
     clear(this.root);
     this.gameScreen = new GameScreen(this, state);

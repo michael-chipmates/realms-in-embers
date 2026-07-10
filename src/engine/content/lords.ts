@@ -40,6 +40,8 @@ export interface LordPerkEffects {
   discordDiscountPct?: number;
   cragguardInHills?: boolean;
   revenantsAtBarrows?: boolean;
+  terrorImmune?: boolean;
+  wolfsheadSafe?: boolean;
   seaMoveFree?: boolean;
 }
 
@@ -302,7 +304,7 @@ export const LORDS: LordDef[] = [
     perk: {
       label: 'The Open Door',
       desc: 'You may raise Barrow Revenants in provinces with a barrow. Your armies are immune to terror.',
-      fx: { revenantsAtBarrows: true },
+      fx: { revenantsAtBarrows: true, terrorImmune: true },
     },
     lines: {
       intro: 'Three graves could not hold me. One throne should manage nicely.',
@@ -324,7 +326,7 @@ export const LORDS: LordDef[] = [
     perk: {
       label: 'War Feeds Her',
       desc: 'Winning any battle plunders +15 extra gold. Wolfshead bands never raid your lands.',
-      fx: { plunderWinGold: 15 },
+      fx: { plunderWinGold: 15, wolfsheadSafe: true },
     },
     lines: {
       intro: 'The realm broke itself, sweetlings. I’m only here for the marrow.',

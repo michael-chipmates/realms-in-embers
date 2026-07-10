@@ -64,4 +64,5 @@ await page.getByRole('button', { name: 'I take the table' }).click();
 await page.waitForTimeout(800);
 await page.screenshot({ path: `${outdir}/v7-second-human.png` });
 console.log(errors.length ? 'ERRORS:\n' + errors.join('\n') : 'no page errors');
+if (errors.length) process.exitCode = 1;
 await browser.close();

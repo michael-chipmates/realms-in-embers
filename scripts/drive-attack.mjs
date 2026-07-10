@@ -29,11 +29,17 @@ const info = await page.evaluate(() => {
   g.selectArmy(army.id);
   const targets = g.targets;
   const hostile = targets.find((t) => t.hostile);
+  if (!hostile) return null;
   const p = state.provinces[hostile.to];
   const [x, y] = g.renderer.worldToScreen(p.cx + 0.5, p.cy + 0.5);
   const rect = g.renderer.canvas.getBoundingClientRect();
   return { x: x + rect.left, y: y + rect.top, name: p.name };
 });
+if (!info) {
+  console.error(`no hostile neighbor from the first army on this seed — a rules change moved the map; pick a new seed for this drive`);
+  await browser.close();
+  process.exit(1);
+}
 await page.waitForTimeout(400);
 await page.screenshot({ path: `${outdir}/a1-army-selected.png` });
 await page.mouse.click(info.x, info.y);
@@ -43,4 +49,5 @@ await page.getByRole('button', { name: 'Give battle' }).click();
 await page.waitForTimeout(900);
 await page.screenshot({ path: `${outdir}/a3-battle.png` });
 console.log(errors.length ? 'ERRORS:\n' + [...new Set(errors)].join('\n') : 'no console errors');
+if (errors.length) process.exitCode = 1;
 await browser.close();

@@ -30,7 +30,10 @@ export function showGameEnd(screen: GameScreen): void {
   const winner = state.victory.winner;
   if (winner === null) return;
   const winnerLord = LORD_BY_ID[state.players[winner].lordId];
-  const viewerWon = state.players[winner].kind === 'human';
+  // online, "you" is exactly one seat — losers and spectators get the dirge
+  const viewerWon = screen.online
+    ? winner === screen.online.mySeat
+    : state.players[winner].kind === 'human';
   const path = state.victory.winPath ?? 'chronicle';
 
   if (viewerWon) audio.fanfare();
@@ -146,8 +149,9 @@ export function openWarReplay(screen: GameScreen): void {
   const body = h('div', { style: { padding: '0.4rem 0.6rem 0.8rem', width: 'min(760px, 92vw)' } },
     h('p', { class: 'small muted italic' }, 'Osperan rereads his notes…'),
   );
-  const modal = openModal('The war, replayed', body, { wide: true });
-  void modal;
+  // closing the modal must stop the playback interval with it
+  const modal = openModal('The war, replayed', body, { wide: true, onClose: () => stopOnClose() });
+  let stopOnClose: () => void = () => {};
   window.setTimeout(() => {
     const timeline = buildWarTimeline(state);
     const provinces = state.provinces.map((p) => ({ ...p }));
@@ -178,6 +182,7 @@ export function openWarReplay(screen: GameScreen): void {
         playBtn.textContent = '▶ Play';
       }
     };
+    stopOnClose = stop;
     const slider = h('input', {
       type: 'range', class: 'slider', style: { flex: '1' },
       min: '0', max: String(timeline.owners.length - 1), step: '1', value: '0',

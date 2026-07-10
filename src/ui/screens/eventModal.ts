@@ -30,8 +30,11 @@ export function maybeOpenEventModal(screen: GameScreen): void {
             modal.close();
             eventModalOpen = false;
             screen.dispatch({ t: 'eventChoice', eventId: pending.id, choiceIdx: idx });
-            // chain to the next event if one is queued
-            maybeOpenEventModal(screen);
+            // chain to the next queued event — locally only. Online, the
+            // choice is still travelling to the relay; consumeNet opens the
+            // next event once the echo lands (reopening now would show the
+            // same unresolved event again).
+            if (!screen.online) maybeOpenEventModal(screen);
           },
         },
           h('span', { class: 'event-choice-label' }, choice.label),

@@ -51,14 +51,16 @@ export function openModal(
   };
 
   const onKey = (e: KeyboardEvent): void => {
+    // stacked modals: only the topmost one listens
+    if (openHandles[openHandles.length - 1]?.el !== panel) return;
     if (e.key === 'Escape' && dismissable) {
-      e.stopPropagation();
+      e.stopImmediatePropagation(); // one Escape, one modal — never the whole stack
       close();
     } else if (e.key === 'Tab') {
-      // simple focus trap
-      const focusables = panel.querySelectorAll<HTMLElement>(
-        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
-      );
+      // simple focus trap (disabled controls can't take focus — skip them)
+      const focusables = [...panel.querySelectorAll<HTMLElement>(
+        'button:not(:disabled), [href], input:not(:disabled), select:not(:disabled), textarea:not(:disabled), [tabindex]:not([tabindex="-1"])',
+      )];
       if (focusables.length === 0) return;
       const first = focusables[0];
       const last = focusables[focusables.length - 1];
@@ -85,10 +87,36 @@ export function openModal(
   openHandles.push(handle);
   // focus the first interactive element
   requestAnimationFrame(() => {
-    const focusable = panel.querySelector<HTMLElement>('button:not(.modal-close), input, select, [tabindex]');
+    const focusable = panel.querySelector<HTMLElement>(
+      'button:not(.modal-close):not(:disabled), input:not(:disabled), select:not(:disabled), [tabindex]',
+    );
     (focusable ?? closeBtn).focus();
   });
   return handle;
+}
+
+/** Focus containment for full-screen overlays that are not modals (the
+ * hotseat blackout, ceremonies, the opening of the chronicle). Keeps Tab
+ * inside `container` and focuses its first control. Returns a cleanup. */
+export function trapFocus(container: HTMLElement): () => void {
+  const onKey = (e: KeyboardEvent): void => {
+    if (e.key !== 'Tab' || !container.isConnected) return;
+    const focusables = [...container.querySelectorAll<HTMLElement>(
+      'button:not(:disabled), [href], input:not(:disabled), select:not(:disabled), textarea:not(:disabled), [tabindex]:not([tabindex="-1"])',
+    )];
+    if (focusables.length === 0) { e.preventDefault(); return; }
+    const first = focusables[0];
+    const last = focusables[focusables.length - 1];
+    const active = document.activeElement;
+    if (!container.contains(active)) { e.preventDefault(); first.focus(); return; }
+    if (e.shiftKey && active === first) { e.preventDefault(); last.focus(); }
+    else if (!e.shiftKey && active === last) { e.preventDefault(); first.focus(); }
+  };
+  document.addEventListener('keydown', onKey, true);
+  requestAnimationFrame(() => {
+    container.querySelector<HTMLElement>('button:not(:disabled), [tabindex]')?.focus();
+  });
+  return () => document.removeEventListener('keydown', onKey, true);
 }
 
 export function anyModalOpen(): boolean {

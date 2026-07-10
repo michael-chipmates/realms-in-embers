@@ -277,6 +277,7 @@ select.input {
   *::before,
   *::after {
     animation-duration: 0.001s !important;
+    animation-iteration-count: 1 !important; /* infinite loops strobe at 0.001s — run once and rest */
     transition-duration: 0.001s !important;
   }
 }
@@ -285,5 +286,6 @@ body.reduced-motion *,
 body.reduced-motion *::before,
 body.reduced-motion *::after {
   animation-duration: 0.001s !important;
+  animation-iteration-count: 1 !important;
   transition-duration: 0.001s !important;
 }

@@ -5,11 +5,12 @@
 /* --------------------------------------------------------------- title */
 
 .title-screen {
-  display: grid;
-  place-items: center;
+  display: flex;
+  overflow-y: auto;
 }
 
 .title-center {
+  margin: auto; /* centered when it fits, scrollable from the top when it doesn't */
   text-align: center;
   position: relative;
   z-index: 1;
@@ -71,8 +72,9 @@ body:not(.reduced-motion) .title-main {
 .setup-config .input { min-height: 40px; }
 .setup-right { min-height: 240px; }
 @media (max-width: 1000px) {
-  .setup-screen { overflow: auto; height: auto; min-height: 100dvh; }
-  .setup-grid { grid-template-columns: 1fr; }
+  /* the screen itself scrolls; body stays clipped, so height must remain fixed */
+  .setup-screen { overflow-y: auto; }
+  .setup-grid { grid-template-columns: 1fr; flex: none; }
   .setup-left { overflow: visible; }
   .setup-right { min-height: 300px; height: 46vh; }
 }
@@ -245,8 +247,8 @@ details.side-section:not([open]) > summary { border-bottom: none; }
 .chronicle-filter {
   display: inline-flex; align-items: center; gap: 0.25em;
   font-size: 0.68rem; padding: 0.18rem 0.5rem; border-radius: 999px;
-  border: 1px solid rgba(58, 46, 28, 0.35); color: #5c4c34; background: transparent;
-  min-height: 28px;
+  border: 1px solid rgba(58, 46, 28, 0.35); color: #4a3d28; background: transparent;
+  min-height: 36px;
 }
 .chronicle-filter.active { background: rgba(58, 46, 28, 0.82); color: #ead9b0; }
 .sigil-wrap { display: inline-flex; flex-shrink: 0; filter: drop-shadow(0 1px 2px rgba(0,0,0,0.5)); }
@@ -254,7 +256,8 @@ details.side-section:not([open]) > summary { border-bottom: none; }
 .toast-click:hover { border-color: var(--gold-bright); }
 .small-caps { letter-spacing: 0.14em; text-transform: uppercase; font-size: 0.72rem; font-weight: 700; }
 .chronicle-entry { padding: 0.35rem 0; border-bottom: 1px dotted rgba(58, 46, 28, 0.25); }
-.chronicle-meta { display: flex; gap: 0.35rem; align-items: center; color: #6d5c40; }
+.chronicle-meta { display: flex; gap: 0.35rem; align-items: center; color: #4a3d28; }
+.chronicle-byline { color: #4a3d28; opacity: 0.9; } /* ink, not the dark-wood .muted — invisible on vellum */
 .chronicle-text { font-size: 0.88rem; line-height: 1.4; margin-top: 0.1rem; }
 .chronicle-ceremony .chronicle-text { font-weight: 700; }
 .chronicle-ceremony { background: rgba(224, 120, 48, 0.08); margin: 0 -0.4rem; padding: 0.35rem 0.4rem; border-radius: 3px; }
@@ -300,7 +303,7 @@ details.side-section:not([open]) > summary { border-bottom: none; }
   border: 1px solid rgba(201, 162, 39, 0.4); border-radius: 999px;
   padding: 0.4rem 1.1rem; font-style: italic; color: var(--gold-bright);
   font-size: 0.9rem; pointer-events: none;
-  align-items: center; gap: 0.5rem;
+  display: flex; align-items: center; gap: 0.5rem;
 }
 
 /* --------------------------------------------------------------- modals */
@@ -327,7 +330,7 @@ details.side-section:not([open]) > summary { border-bottom: none; }
   font-size: 0.72rem; letter-spacing: 0.2em; text-transform: uppercase;
   color: var(--gold); margin: 0.7rem 0 0.3rem;
 }
-.settings-body { padding: 0.4rem 0.8rem 0.8rem; min-width: min(400px, 84vw); }
+.settings-body { padding: 0.4rem 0.8rem 0.8rem; min-width: min(400px, calc(100vw - 4.5rem)); }
 .settings-row {
   display: flex; justify-content: space-between; align-items: center; gap: 1rem;
   padding: 0.45rem 0; min-height: 44px;
@@ -368,7 +371,7 @@ details.side-section:not([open]) > summary { border-bottom: none; }
 
 /* ----------------------------------------------------------------- odds */
 
-.odds-body { padding: 0.3rem 0.5rem 0.6rem; min-width: min(620px, 88vw); }
+.odds-body { padding: 0.3rem 0.5rem 0.6rem; min-width: min(620px, calc(100vw - 4.5rem)); }
 .odds-meter-row { text-align: center; margin-bottom: 0.7rem; }
 .odds-label { font-size: 1.15rem; font-weight: 700; color: var(--gold-bright); margin-bottom: 0.3rem; }
 .odds-meter {
@@ -387,7 +390,7 @@ details.side-section:not([open]) > summary { border-bottom: none; }
 
 /* --------------------------------------------------------------- battle */
 
-.battle-body { padding: 0.3rem 0.5rem 0.6rem; min-width: min(640px, 88vw); }
+.battle-body { padding: 0.3rem 0.5rem 0.6rem; min-width: min(640px, calc(100vw - 4.5rem)); }
 .battle-sides { display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem; margin-bottom: 0.7rem; }
 .battle-side { background: rgba(10, 7, 4, 0.35); border-radius: 5px; padding: 0.5rem 0.6rem; opacity: 0.75; }
 .battle-won { opacity: 1; border: 1px solid rgba(159, 191, 119, 0.4); }
@@ -433,21 +436,21 @@ body.reduced-motion .battle-round-live .battle-round-losses .neg { animation: no
 .handoff-screen {
   position: fixed; inset: 0; z-index: 80;
   background: #0a0703;
-  display: grid; place-items: center;
+  display: flex; overflow-y: auto;
 }
-.handoff-center { text-align: center; padding: 1rem; }
+.handoff-center { text-align: center; padding: 1rem; margin: auto; }
 
 /* ------------------------------------------------------------- ceremony */
 
 .ceremony-overlay {
   position: fixed; inset: 0; z-index: 70;
   background: radial-gradient(ellipse at 50% 40%, rgba(30, 20, 10, 0.94), rgba(5, 3, 1, 0.97));
-  display: grid; place-items: center;
+  display: flex; overflow-y: auto;
   animation: ceremonyIn 400ms ease-out;
 }
 .ceremony-out { opacity: 0; transition: opacity 300ms; }
 @keyframes ceremonyIn { from { opacity: 0; } }
-.ceremony-center { text-align: center; max-width: min(620px, 88vw); padding: 1rem; }
+.ceremony-center { text-align: center; max-width: min(620px, 88vw); padding: 1rem; margin: auto; }
 .ceremony-icon { color: var(--ember-bright); margin-bottom: 0.8rem; }
 .ceremony-title { font-size: clamp(1.4rem, 4vw, 2.2rem); }
 .ceremony-text { font-size: 1.02rem; line-height: 1.6; font-style: italic; color: #e8dcc0; }
@@ -455,7 +458,7 @@ body.reduced-motion .battle-round-live .battle-round-losses .neg { animation: no
 /* -------------------------------------------------------------- gameend */
 
 .gameend-modal { text-align: left; }
-.gameend-body { padding: 0.3rem 0.6rem 0.7rem; min-width: min(720px, 90vw); }
+.gameend-body { padding: 0.3rem 0.6rem 0.7rem; min-width: min(720px, calc(100vw - 4.5rem)); }
 .gameend-line { font-size: 1.05rem; color: #e8dcc0; margin-bottom: 0.6rem; }
 .campaign-graph {
   background: rgba(217, 201, 161, 0.9); border-radius: 4px; padding: 0.4rem;

@@ -83,6 +83,9 @@ export async function openOnlineLobby(app: App, invite?: { roomId: string; key: 
   }) as HTMLInputElement;
 
   const link = inviteLink(roomId, key);
+  // the creator's own address bar must carry the war too — a reload
+  // without it would orphan the lobby
+  if (!invite) history.replaceState(null, '', link);
   const screen = h('div', { class: 'room title-screen' },
     h('div', { class: 'title-center lobby-center' },
       h('p', { class: 'title-over muted italic' }, 'An online war'),
@@ -103,7 +106,18 @@ export async function openOnlineLobby(app: App, invite?: { roomId: string; key: 
       status,
       tableEl,
       controls,
-      h('button', { class: 'btn btn-quiet', style: { marginTop: '1rem' }, onclick: () => { client.close(); app.toTitle(); } }, 'Leave the table'),
+      h('button', {
+        class: 'btn btn-quiet', style: { marginTop: '1rem' },
+        onclick: async () => {
+          // vacate the chair on the log first, or it stays claimed forever
+          try {
+            await client.send({ kind: 'hello', cid, name: nameInput.value.trim() || 'A nameless lord', seat: null });
+          } catch { /* leaving anyway */ }
+          client.close();
+          history.replaceState(null, '', location.pathname); // drop the war fragment
+          app.toTitle();
+        },
+      }, 'Leave the table'),
     ),
   );
   mount(root, screen);
@@ -121,6 +135,16 @@ export async function openOnlineLobby(app: App, invite?: { roomId: string; key: 
     void client.send({ kind: 'hello', cid, name, seat });
   };
 
+  // a renamed lord re-announces (debounced) so the table sees the new name
+  let renameTimer: number | null = null;
+  nameInput.addEventListener('input', () => {
+    if (started) return;
+    const seatNow = tableFrom(client.list()).find((p) => p.cid === cid)?.seat ?? null;
+    if (seatNow === null) return;
+    if (renameTimer !== null) window.clearTimeout(renameTimer);
+    renameTimer = window.setTimeout(() => sendHello(seatNow), 600);
+  });
+
   const isHost = (): boolean => {
     const first = client.list().find((e) => e.payload.kind === 'hello');
     return !first || (first.payload as { cid?: string }).cid === cid;
@@ -132,6 +156,10 @@ export async function openOnlineLobby(app: App, invite?: { roomId: string; key: 
       .sort((a, b) => a.seat! - b.seat!)
       .slice(0, MAX_SEATS);
     if (seated.length < 1) return;
+    if (seated.length + aiFill < 2) {
+      status.textContent = 'A war needs a second claimant — invite someone, or add an AI rival.';
+      return;
+    }
     const seatCids = seated.map((p) => p.cid);
     const totalSeats = Math.min(MAX_SEATS, seatCids.length + aiFill);
     const players: PlayerSetup[] = [];

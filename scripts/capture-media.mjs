@@ -91,7 +91,13 @@ await browser.close();
 const webm = readdirSync(TMP).find((f) => f.endsWith('.webm'));
 if (!webm) throw new Error('no video recorded');
 renameSync(`${TMP}/${webm}`, `${MEDIA}/playthrough.webm`);
-const ff = (args) => spawnSync('ffmpeg', ['-y', ...args], { stdio: 'pipe' });
+const ff = (args) => {
+  const res = spawnSync('ffmpeg', ['-y', ...args], { stdio: 'pipe' });
+  if (res.status !== 0) {
+    // keep the webm as evidence and fail honestly (ffmpeg missing/broken)
+    throw new Error(`ffmpeg failed (${res.status ?? 'not found'}): ${String(res.stderr).slice(-400)}`);
+  }
+};
 ff(['-i', `${MEDIA}/playthrough.webm`, '-vf', 'fps=10,scale=880:-1:flags=lanczos,palettegen', `${TMP}/pal.png`]);
 ff(['-i', `${MEDIA}/playthrough.webm`, '-i', `${TMP}/pal.png`,
   '-lavfi', 'fps=10,scale=880:-1:flags=lanczos[x];[x][1:v]paletteuse=dither=bayer:bayer_scale=4',

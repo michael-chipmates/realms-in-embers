@@ -7,6 +7,7 @@ import { h } from '../dom';
 import { exportSave } from '../saves';
 import { artSlot } from '../art';
 import { sigilShield } from '../heraldry';
+import { trapFocus } from '../modal';
 import type { GameScreen } from './game';
 
 export function showHandoff(screen: GameScreen): Promise<void> {
@@ -28,6 +29,7 @@ export function showHandoff(screen: GameScreen): Promise<void> {
         h('button', {
           class: 'btn btn-seal', style: { marginTop: '1.2rem', fontSize: '1.05rem' },
           onclick: () => {
+            untrap();
             overlay.remove();
             resolve();
           },
@@ -43,8 +45,6 @@ export function showHandoff(screen: GameScreen): Promise<void> {
       ),
     );
     document.body.appendChild(overlay);
-    requestAnimationFrame(() => {
-      overlay.querySelector('button')?.focus();
-    });
+    const untrap = trapFocus(overlay); // the blackout must not leak focus to the board beneath
   });
 }

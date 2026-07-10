@@ -39,7 +39,10 @@ export type NetPayload =
   | { kind: 'hello'; cid: string; name: string; seat: number | null }
   | { kind: 'start'; settings: GameSettings; clock: ClockConfig; seatCids: string[] }
   | { kind: 'act'; seat: number; action: Action }
-  | { kind: 'chat'; name: string; text: string };
+  | { kind: 'chat'; name: string; text: string }
+  /** A relay entry that failed to decrypt — recorded so the log has no
+   * permanent gap; every consumer skips it. */
+  | { kind: 'corrupt' };
 
 export interface NetEntry {
   seq: number;
@@ -200,7 +203,10 @@ export class NetClient {
       for (let i = 0; i < msg.log.length; i++) {
         if (this.entries[i]) continue; // already decrypted (live entry beat us)
         const payload = await decrypt(this.key!, this.roomId, msg.log[i]);
-        if (payload) this.entries[i] = { seq: i, payload };
+        // an unreadable blob becomes a tombstone, not a forever-gap that
+        // would stall every consumer waiting on this seq
+        this.entries[i] = { seq: i, payload: payload ?? { kind: 'corrupt' } };
+        if (!payload) this.onError?.(`Entry ${i} of the war log could not be read and was skipped.`);
       }
       this.joined = true;
       this.onBacklogReady?.();
@@ -211,24 +217,40 @@ export class NetClient {
     if (msg.t === 'entry' && typeof msg.data === 'string' && typeof msg.seq === 'number') {
       if (this.entries[msg.seq]) return;
       const payload = await decrypt(this.key!, this.roomId, msg.data);
-      if (!payload) return;
-      const entry = { seq: msg.seq, payload };
+      const entry: NetEntry = { seq: msg.seq, payload: payload ?? { kind: 'corrupt' } };
       this.entries[msg.seq] = entry;
+      if (!payload) this.onError?.(`Entry ${msg.seq} of the war log could not be read and was skipped.`);
       this.onEntry?.(entry);
       return;
     }
     if (msg.t === 'peer' && typeof msg.n === 'number') this.onPeers?.(msg.n);
   }
 
+  /** Strictly-serialized sends: encryption is async, and two encryptions
+   * racing could hand the relay a later payload first. One at a time. */
+  private sendChain: Promise<void> = Promise.resolve();
+
   /** Queue-and-forget: if the relay is down, the payload waits and flushes
    * after the next successful join. Order among local sends is preserved. */
-  async send(payload: NetPayload): Promise<void> {
+  send(payload: NetPayload): Promise<void> {
+    const task = this.sendChain.then(() => this.sendNow(payload));
+    this.sendChain = task.catch(() => undefined);
+    return task;
+  }
+
+  private async sendNow(payload: NetPayload): Promise<void> {
     if (!this.key) { this.outbox.push(payload); return; }
     if (!this.ws || this.ws.readyState !== 1 || !this.joined) {
       this.outbox.push(payload);
       return;
     }
-    this.ws.send(JSON.stringify({ t: 'append', data: await encrypt(this.key, this.roomId, payload) }));
+    const data = await encrypt(this.key, this.roomId, payload);
+    // the socket can die during encryption; requeue instead of silently dropping
+    if (!this.ws || this.ws.readyState !== 1 || !this.joined) {
+      this.outbox.push(payload);
+      return;
+    }
+    this.ws.send(JSON.stringify({ t: 'append', data }));
   }
 
   close(): void {

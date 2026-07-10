@@ -8,6 +8,7 @@ import { h } from '../dom';
 import { iconSvg } from '../icons';
 import { artSlot } from '../art';
 import { audio } from '../audio';
+import { trapFocus } from '../modal';
 import type { GameScreen } from './game';
 
 interface Page {
@@ -21,8 +22,14 @@ export function maybeShowOnboarding(screen: GameScreen): void {
   if (state.turn !== 1) return;
   if (state.log.some((l) => l.action.t !== 'endTurn')) return;
   if (state.settings.veteranChronicle) return;
-  const player = screen.current();
-  if (player.kind !== 'human') return;
+  // online: Osperan addresses YOU, not seat 0 — spectators and mid-war
+  // rejoiners (their relay cursor is already past the opening) get no speech
+  if (screen.online) {
+    if (screen.online.mySeat < 0) return;
+    if (screen.online.cursor < screen.online.client.entries.length) return;
+  }
+  const player = screen.online ? state.players[screen.online.mySeat] : screen.current();
+  if (!player || player.kind !== 'human') return;
   const lord = LORD_BY_ID[player.lordId];
   const seat = state.provinces[player.seatProvince];
   const creed = CREEDS[lord.creed];
@@ -78,7 +85,7 @@ export function maybeShowOnboarding(screen: GameScreen): void {
         nextBtn,
         h('button', {
           class: 'btn btn-quiet',
-          onclick: () => overlay.remove(),
+          onclick: () => { untrap(); overlay.remove(); },
         }, 'I have read the Chronicle before'),
       ),
     ),
@@ -94,10 +101,11 @@ export function maybeShowOnboarding(screen: GameScreen): void {
       idx++;
       render();
     } else {
+      untrap();
       overlay.remove();
     }
   });
   render();
   document.body.appendChild(overlay);
-  requestAnimationFrame(() => nextBtn.focus());
+  const untrap = trapFocus(overlay);
 }

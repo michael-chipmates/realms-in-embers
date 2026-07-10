@@ -9,12 +9,13 @@ type TipBuilder = () => HTMLElement | string | null;
 
 let tipEl: HTMLDivElement | null = null;
 let currentAnchor: HTMLElement | null = null;
-let longPressTimer: number | null = null;
+let tipSerial = 0;
 
 function ensureTip(): HTMLDivElement {
   if (!tipEl) {
     tipEl = document.createElement('div');
     tipEl.className = 'tooltip';
+    tipEl.id = 'rie-tooltip';
     tipEl.setAttribute('role', 'tooltip');
     tipEl.style.display = 'none';
     document.body.appendChild(tipEl);
@@ -33,6 +34,7 @@ function show(anchor: HTMLElement): void {
   else tip.appendChild(content);
   tip.style.display = 'block';
   currentAnchor = anchor;
+  anchor.setAttribute('aria-describedby', tip.id); // screen readers hear what fingers see
   position(anchor, tip);
 }
 
@@ -51,6 +53,7 @@ function position(anchor: HTMLElement, tip: HTMLDivElement): void {
 
 export function hideTip(): void {
   if (tipEl) tipEl.style.display = 'none';
+  currentAnchor?.removeAttribute('aria-describedby');
   currentAnchor = null;
 }
 
@@ -66,15 +69,41 @@ export function tip(el: HTMLElement, builder: TipBuilder | string): void {
   el.addEventListener('mouseleave', hideTip);
   el.addEventListener('focus', () => show(el));
   el.addEventListener('blur', hideTip);
-  el.addEventListener('touchstart', (e) => {
-    longPressTimer = window.setTimeout(() => {
+
+  // touch: a long press means "explain this", never "do this". The timer is
+  // per-element; firing arms a one-shot click swallower so reading a tipped
+  // button cannot also press it.
+  let pressTimer: number | null = null;
+  let firedAt = 0;
+  const cancelPress = (): void => {
+    if (pressTimer !== null) {
+      window.clearTimeout(pressTimer);
+      pressTimer = null;
+    }
+  };
+  el.addEventListener('touchstart', () => {
+    cancelPress();
+    const mySerial = ++tipSerial;
+    pressTimer = window.setTimeout(() => {
+      pressTimer = null;
+      if (mySerial !== tipSerial) return; // another anchor took over
+      firedAt = performance.now();
       show(el);
-      e.preventDefault();
     }, 450);
-  }, { passive: false });
-  el.addEventListener('touchend', () => {
-    if (longPressTimer) window.clearTimeout(longPressTimer);
-    window.setTimeout(hideTip, 1400);
+  }, { passive: true });
+  el.addEventListener('touchmove', cancelPress, { passive: true }); // a scroll is not a question
+  el.addEventListener('touchcancel', cancelPress, { passive: true });
+  el.addEventListener('touchend', (e) => {
+    cancelPress();
+    if (firedAt > 0) {
+      // the press became a tooltip: swallow the synthetic click it would fire
+      if (e.cancelable) e.preventDefault();
+      firedAt = 0;
+      window.setTimeout(hideTip, 1400);
+    }
+  });
+  el.addEventListener('keydown', (e) => {
+    if ((e as KeyboardEvent).key === 'Escape' && currentAnchor === el) hideTip();
   });
 }
 

@@ -2,7 +2,7 @@
  * The unit roster. Numbers are the balance surface — the sim harness
  * exercises them; tune here, nowhere else.
  */
-import type { BuildingId, Creed, SiteType, Terrain, UnitTypeId } from '../types';
+import type { BuildingId, Creed, Terrain, UnitTypeId } from '../types';
 
 export type UnitTrait =
   | 'ranged'      // strikes in the archery prelude before melee
@@ -20,6 +20,26 @@ export type UnitTrait =
   | 'ambush'      // +25% attack in round 1 when attacking
   | 'ragged';     // rabble: -10% defense (rebels, marauders)
 
+/** The mechanical truth of every player-facing trait, for tooltips and the
+ * Codex. MUST match the combat code — these lines are the player's contract.
+ * ('ragged' is internal to neutral rabble; nothing a player raises has it.) */
+export const TRAIT_INFO: Partial<Record<UnitTrait, string>> = {
+  ranged: 'Strikes in the volley prelude, before the lines meet.',
+  charge: '+20% attack in the first clash on open ground (Meadowlands or hills) — cancelled if the enemy braces.',
+  brace: '+10% strength when defending, and cancels enemy charges.',
+  armored: 'Takes 15% fewer hits.',
+  siege: 'Ignores the defenders’ wall bonus when attacking.',
+  forestborn: '+25% strength when fighting in forest.',
+  mountainborn: '+25% strength when fighting in the Crags.',
+  marshborn: '+25% strength when fighting on the moors.',
+  flying: '+10% attack, and rivers are no obstacle.',
+  caster: 'Weaves battle-light (+4% army strength each, up to +12%) and kindles 1 Emberlight per season.',
+  terror: 'The enemy fights at −8% unless they also field terror, the unyielding, or an immune lord.',
+  unyielding: 'Immune to terror, and holds when every other company would break.',
+  ambush: '+25% attack in the first clash when attacking.',
+  ragged: 'Rabble in stolen boots — fights at −10%.',
+};
+
 export interface UnitDef {
   id: UnitTypeId;
   name: string;
@@ -31,12 +51,12 @@ export interface UnitDef {
   cost: number;
   upkeep: number;
   traits: UnitTrait[];
-  /** Recruitment gates — all listed must hold. Neutral-only units have recruit: null. */
+  /** Recruitment gates — all listed must hold. Neutral-only units have recruit: null.
+   * (Revenants carry extra gates in code: Morrikan's perk, and a barrow site.) */
   recruit: {
     building?: BuildingId;
     terrain?: Terrain[];
     creed?: Creed;
-    site?: SiteType;
   } | null;
   icon: string;
   desc: string;
@@ -168,7 +188,7 @@ export const UNITS: Record<UnitTypeId, UnitDef> = {
   revenants: {
     id: 'revenants', name: 'Barrow Revenants', namePlural: 'Barrow Revenants', tier: 2,
     atk: 5, def: 5, hits: 5, cost: 0, upkeep: 0, traits: ['terror', 'unyielding'],
-    recruit: null,
+    recruit: {}, // gated in code: Morrikan's perk + a barrow site
     icon: 'skull',
     desc: 'The unquiet dead of the old wars. Terrifying, tireless, and very poor conversation.',
     flavor: 'The Sundering woke things that had been politely pretending to sleep.',

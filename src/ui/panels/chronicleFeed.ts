@@ -42,6 +42,12 @@ export function renderChronicleFeed(screen: GameScreen, root: HTMLElement): void
     .filter((e) => filter === 'all' || e.kind === filter || (filter === 'realm' && e.kind === 'turn'))
     .slice(-60);
 
+  // remember where the reader was: yank to the bottom only if they were there
+  const prevFeed = root.querySelector<HTMLElement>('.chronicle-feed');
+  const wasAtBottom = !prevFeed
+    || prevFeed.scrollTop + prevFeed.clientHeight >= prevFeed.scrollHeight - 40;
+  const prevScroll = prevFeed?.scrollTop ?? 0;
+
   clear(root);
   root.classList.toggle('chronicle-collapsed', collapsed);
 
@@ -62,14 +68,13 @@ export function renderChronicleFeed(screen: GameScreen, root: HTMLElement): void
     h('div', { class: 'chronicle-heading' },
       artSlot('osperan', h('span', { class: 'osperan-emblem', html: iconSvg('quill', 22) }), { className: 'art-osperan', alt: 'Osperan the Unresting at his ledger' }),
       h('div', { class: 'small-caps' }, 'The Chronicle of the Sundered Age'),
-      h('div', { class: 'small muted italic' }, 'as set down by Osperan the Unresting'),
+      h('div', { class: 'small chronicle-byline italic' }, 'as set down by Osperan the Unresting'),
     ),
-    h('div', { class: 'chronicle-filters', role: 'tablist', 'aria-label': 'Chronicle filters' },
+    h('div', { class: 'chronicle-filters', role: 'group', 'aria-label': 'Chronicle filters' },
       ...FILTERS.map((f) =>
         h('button', {
           class: `chronicle-filter ${filter === f.key ? 'active' : ''}`,
-          role: 'tab',
-          'aria-selected': String(filter === f.key),
+          'aria-pressed': String(filter === f.key),
           'aria-label': f.label,
           title: f.label,
           onclick: () => {
@@ -83,7 +88,7 @@ export function renderChronicleFeed(screen: GameScreen, root: HTMLElement): void
   );
   root.appendChild(feed);
   requestAnimationFrame(() => {
-    feed.scrollTop = feed.scrollHeight;
+    feed.scrollTop = wasAtBottom ? feed.scrollHeight : prevScroll;
   });
 }
 

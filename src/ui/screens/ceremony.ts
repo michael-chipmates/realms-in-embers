@@ -4,6 +4,7 @@
  */
 import type { Effect } from '../../engine/types';
 import { h } from '../dom';
+import { trapFocus } from '../modal';
 import { iconSvg } from '../icons';
 import { artSlot } from '../art';
 import { audio } from '../audio';
@@ -78,6 +79,7 @@ function drainQueue(screen: GameScreen): void {
       h('button', {
         class: 'btn', style: { marginTop: '1.4rem' },
         onclick: () => {
+          untrap();
           overlay.classList.add('ceremony-out');
           window.setTimeout(() => {
             overlay.remove();
@@ -89,5 +91,5 @@ function drainQueue(screen: GameScreen): void {
     ),
   );
   document.body.appendChild(overlay);
-  requestAnimationFrame(() => overlay.querySelector('button')?.focus());
+  const untrap = trapFocus(overlay);
 }

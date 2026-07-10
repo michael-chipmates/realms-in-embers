@@ -1,5 +1,5 @@
 // Full mobile play loop at iPhone size: tap-select, attack, odds, battle,
-// overlay, end turn, long-press tooltip.
+// clear selection, end turn, AI wheel — asserting zero page errors.
 import { chromium } from 'playwright';
 const [url = 'http://localhost:5199', outdir = '/tmp'] = process.argv.slice(2);
 const browser = await chromium.launch();
@@ -54,7 +54,7 @@ if (target) {
   if (await close.isVisible().catch(() => false)) await close.click();
 }
 
-// court overlay on phone
+// clear the selection sheet
 await page.evaluate(() => window.__game.select(null, null));
 await page.waitForTimeout(200);
 // end the season -> AI turns
@@ -63,4 +63,5 @@ await end.click();
 await page.waitForTimeout(3500);
 await page.screenshot({ path: `${outdir}/m5-after-turn.png` });
 console.log(errors.length ? 'ERRORS:\n' + errors.join('\n') : 'no page errors');
+if (errors.length) process.exitCode = 1;
 await browser.close();

@@ -64,8 +64,10 @@ export function renderSelectionPanel(screen: GameScreen, root: HTMLElement): voi
     handle,
     renderProvinceCard(screen, p),
     ...armiesIn(state, p.id).map((a) => renderArmyCard(screen, a, a.id === sel.armyId)),
-    army === null && p.owner === viewer && screen.current().kind === 'human' ? renderBuildCard(screen, p) : null,
-    army === null && p.owner === viewer && screen.current().kind === 'human' ? renderRecruitCard(screen, p) : null,
+    // build/recruit only on YOUR turn — online, a rival's season would price
+    // everything off their treasury and refuse the click anyway
+    army === null && p.owner === viewer && state.current === viewer ? renderBuildCard(screen, p) : null,
+    army === null && p.owner === viewer && state.current === viewer ? renderRecruitCard(screen, p) : null,
   );
 }
 

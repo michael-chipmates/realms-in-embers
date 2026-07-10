@@ -44,8 +44,15 @@ export function aiTakeTurn(state: GameState): Effect[] {
     return result.ok;
   };
 
+  const endTurn = (): void => {
+    // never subject to the action budget — a turn must always end
+    if (state.phase === 'ended') return;
+    const result = applyAction(state, { t: 'endTurn' });
+    effects.push(...result.effects);
+  };
+
   if (player.kind !== 'ai' || !player.alive || state.phase === 'ended') {
-    dispatch({ t: 'endTurn' });
+    endTurn();
     return effects;
   }
 
@@ -68,7 +75,7 @@ export function aiTakeTurn(state: GameState): Effect[] {
   moveArmies(state, pid, nerve, dispatch);
   proactiveDiplomacy(state, pid, persona, dispatch);
 
-  dispatch({ t: 'endTurn' });
+  endTurn();
   return effects;
 }
 
@@ -424,14 +431,26 @@ function runQuests(state: GameState, pid: PlayerId, dispatch: (a: Action) => boo
         return d[saga.def.stat] + h.level * 0.5 + d.questAdd + 5 - saga.def.dc >= 0;
       });
       if (candidates.length > 0) {
-        const hero = candidates.reduce((a, b) =>
+        let hero = candidates.reduce((a, b) =>
           heroDerived(state, b)[saga.def.stat] > heroDerived(state, a)[saga.def.stat] ? b : a,
         );
-        // chapter 5 needs the Emberheart equipped on the quester
+        // chapter 5 needs the Emberheart equipped on the quester — OUR heart,
+        // wherever it sits: with its bearer if they can go, else reclaimed
         if (saga.def.saga === 5) {
-          const heartInst = Object.values(state.artifacts).find((a) => a.defId === 'emberheart');
-          if (heartInst && player.vault.includes(heartInst.id)) {
-            dispatch({ t: 'equip', heroId: hero.id, artifactId: heartInst.id, slot: 'trinket' });
+          const isHeart = (id: number | null) => id !== null && state.artifacts[id]?.defId === 'emberheart';
+          const bearer = heroesOf(state, pid).find((hh) =>
+            isHeart(hh.artifacts.weapon) || isHeart(hh.artifacts.armor) || isHeart(hh.artifacts.trinket));
+          if (bearer && candidates.includes(bearer)) {
+            hero = bearer;
+          } else {
+            if (bearer) {
+              const slot = isHeart(bearer.artifacts.weapon) ? 'weapon' : isHeart(bearer.artifacts.armor) ? 'armor' : 'trinket';
+              dispatch({ t: 'unequip', heroId: bearer.id, slot });
+            }
+            const heartInst = Object.values(state.artifacts).find((a) => a.defId === 'emberheart' && player.vault.includes(a.id));
+            if (heartInst) {
+              dispatch({ t: 'equip', heroId: hero.id, artifactId: heartInst.id, slot: 'trinket' });
+            }
           }
         }
         const venue = saga.venues.find((v) => state.provinces[v].owner === pid) ?? saga.venues[0];

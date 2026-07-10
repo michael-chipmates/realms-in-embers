@@ -26,8 +26,15 @@ export function buildWarTimeline(state: GameState): WarTimeline {
       owners.push(sim.provinces.map((p) => p.owner));
     }
   }
-  // close with the world as it truly ended
-  rounds.push(state.turn);
-  owners.push(state.provinces.map((p) => p.owner));
+  // close with the world as it truly ended — unless the replay's last frame
+  // already IS that world (same season, same owners): no duplicate frame
+  const finalOwners = state.provinces.map((p) => p.owner);
+  const last = owners[owners.length - 1];
+  const same = rounds[rounds.length - 1] === state.turn
+    && last !== undefined && last.every((o, i) => o === finalOwners[i]);
+  if (!same) {
+    rounds.push(state.turn);
+    owners.push(finalOwners);
+  }
   return { rounds, owners };
 }

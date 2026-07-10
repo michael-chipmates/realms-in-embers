@@ -347,10 +347,18 @@ function resolveQuest(state: GameState, rng: Rng, quest: ActiveQuest, effects: E
 }
 
 function consumeShards(state: GameState, pid: PlayerId, defIds: string[]): void {
+  // only THIS claimant's shards burn — rivals racing the Saga keep their own
+  const player = state.players[pid];
+  const mine = (defId: string) =>
+    Object.values(state.artifacts).find((a) =>
+      a.defId === defId && (
+        player.vault.includes(a.id) ||
+        heroesOf(state, pid).some((hh) =>
+          hh.artifacts.weapon === a.id || hh.artifacts.armor === a.id || hh.artifacts.trinket === a.id)
+      ));
   for (const defId of defIds) {
-    const inst = Object.values(state.artifacts).find((a) => a.defId === defId);
+    const inst = mine(defId);
     if (!inst) continue;
-    const player = state.players[pid];
     player.vault = player.vault.filter((id) => id !== inst.id);
     for (const hero of heroesOf(state, pid)) {
       for (const slot of ['weapon', 'armor', 'trinket'] as const) {

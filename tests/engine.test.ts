@@ -175,13 +175,13 @@ describe('movement & combat', () => {
     army.units.push(...makeUnits('knights', 8)); // ensure survival
     const r = applyAction(state, { t: 'moveArmy', armyId: army.id, to: first[0].to });
     expect(r.ok).toBe(true);
-    if (state.armies[army.id]) {
-      expect(moveTargets(state, state.armies[army.id]).length).toBe(0);
-    }
+    // the 8 knights guarantee survival — if the army died, the test's core
+    // claim (moved armies cannot move again) silently went unchecked
+    expect(state.armies[army.id]).toBeDefined();
+    expect(moveTargets(state, state.armies[army.id]).length).toBe(0);
     cycleTo(state, 0);
-    if (state.armies[army.id]) {
-      expect(moveTargets(state, state.armies[army.id]).length).toBeGreaterThan(0);
-    }
+    expect(state.armies[army.id]).toBeDefined();
+    expect(moveTargets(state, state.armies[army.id]).length).toBeGreaterThan(0);
   });
 });
 

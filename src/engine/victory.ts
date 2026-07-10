@@ -15,7 +15,7 @@ export const GOLDEN_ORDER = 65;
 export const GOLDEN_ROUNDS = 4;
 
 /** The Chronicle wearies: from this season the dominion threshold erodes
- * half a point per season, down to its floor — late games end in thrones,
+ * 0.8 points per season, down to its floor — late games end in thrones,
  * not points. Visible in the ledger; announced when it begins. */
 export const WEARINESS_TURN = 38;
 export const DOMINION_FLOOR = 0.38;
@@ -87,7 +87,7 @@ function setWinner(state: GameState, rng: Rng, pid: PlayerId, path: VictoryPath 
   }, { about: pid });
 }
 
-/** Run at every round end (and after eliminations). */
+/** Run at every round end, and when the table empties outside one. */
 export function checkVictory(state: GameState, rng: Rng, effects: Effect[]): void {
   if (state.phase === 'ended') return;
   const paths = state.victory.paths;

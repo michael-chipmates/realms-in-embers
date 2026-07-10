@@ -3,7 +3,7 @@
  * paths, drawn with currentColor so it takes the ink of its surroundings.
  */
 
-const P: Record<string, string> = {
+const P = {
   // ---- resources & ui
   gold: 'M12 4a8 8 0 1 0 0 16 8 8 0 0 0 0-16zm0 3a5 5 0 1 1 0 10 5 5 0 0 1 0-10zm-1 2h2v1c1 .2 2 .8 2 2h-2c0-.5-.4-.8-1-.8s-1 .3-1 .7c0 .4.3.6 1.2.8 1.6.3 2.8.8 2.8 2.3 0 1.2-.9 1.9-2 2.1V18h-2v-1c-1.2-.2-2.1-1-2.1-2.2h2c0 .6.5.9 1.1.9.7 0 1-.3 1-.7 0-.5-.4-.7-1.3-.9-1.5-.3-2.7-.8-2.7-2.2 0-1.1.8-1.8 2-2V9z',
   ember: 'M12 2c1 3-1 4-1 6 0 1 .7 2 2 2s2-1 2-2.5c2 1.5 3 3.5 3 6A6 6 0 0 1 6 13c0-2 1-3.5 2-4.5 0 1.5 1 2.5 2 2.5-1-3 1-6 2-9z',
@@ -97,17 +97,17 @@ const P: Record<string, string> = {
   forge: 'M4 12h9l3-3 2 2-2 3H4v-2zm3 2v4l3 3h4v-3l-3-1-1-3H7zm9-9l3 3',
   circle: 'M6 8v9m4-11v11m4-11v11m4-9v9M4 19h16',
   embersite: 'M12 3l7 9-7 9-7-9 7-9zm0 5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7z',
-};
+} satisfies Record<string, string>;
 
 export type IconName = keyof typeof P;
 
 /** Raw path data for composing icons into other SVG (heraldry). */
 export function iconPathOf(name: string): string {
-  return P[name] ?? P.info;
+  return (P as Record<string, string>)[name] ?? P.info;
 }
 
 export function iconSvg(name: string, size = 16, cls = ''): string {
-  const d = P[name] ?? P.info;
+  const d = (P as Record<string, string>)[name] ?? P.info;
   return `<svg class="icon ${cls}" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${d}"/></svg>`;
 }
 

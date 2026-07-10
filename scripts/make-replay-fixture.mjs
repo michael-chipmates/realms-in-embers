@@ -31,6 +31,11 @@ while (state.phase !== 'ended' && guard++ < 5000) {
   else applyAction(state, { t: 'endTurn' });
 }
 
+if (state.phase !== 'ended') {
+  console.error('the game never ended within the step guard — refusing to freeze a broken canary');
+  process.exit(1);
+}
+
 const fixture = {
   rulesVersion: RULES_VERSION,
   settings: state.settings,

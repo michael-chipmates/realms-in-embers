@@ -110,7 +110,6 @@ function buildSide(
   role: 'attacker' | 'defender',
   ctx: FightCtx,
   enemyHasTerror: boolean,
-  enemyUnits: CUnit[],
 ): Side {
   const player = armies[0].owner;
   const units = armies.flatMap((a) => a.units.map((_, i) => unitFromInstance(a, i)));
@@ -190,7 +189,8 @@ function buildSide(
 
   // terror
   if (enemyHasTerror) {
-    const immune = units.some((u) => u.traits.includes('terror') || u.traits.includes('unyielding'));
+    const lordImmune = player >= 0 && !!lordOf(state.players[player]).perk.fx.terrorImmune;
+    const immune = lordImmune || units.some((u) => u.traits.includes('terror') || u.traits.includes('unyielding'));
     if (!immune) mods.push({ label: 'Terror in the ranks', mult: 0.92 });
   }
 
@@ -248,7 +248,7 @@ function sidePower(side: Side, enemy: Side, round: number, ctx: FightCtx): numbe
   return power * side.mult;
 }
 
-function rangedPower(side: Side, enemy: Side, ctx: FightCtx): number {
+function rangedPower(side: Side, ctx: FightCtx): number {
   const enemyBraces = false;
   let power = 0;
   for (const u of side.units) {
@@ -266,7 +266,6 @@ interface FightResult {
   rounds: BattleRound[];
   notes: BattleEventNote[];
   withdrew: 'attacker' | 'defender' | null;
-  routed: 'attacker' | 'defender' | null;
 }
 
 function dealDamage(rng: Rng, target: Side, rawHits: number): number {
@@ -293,11 +292,10 @@ function fight(rng: Rng, attacker: Side, defender: Side, ctx: FightCtx): FightRe
   const rounds: BattleRound[] = [];
   const notes: BattleEventNote[] = [];
   let withdrew: FightResult['withdrew'] = null;
-  let routed: FightResult['routed'] = null;
 
   // archery prelude
-  const aRanged = rangedPower(attacker, defender, ctx);
-  const dRanged = rangedPower(defender, attacker, ctx);
+  const aRanged = rangedPower(attacker, ctx);
+  const dRanged = rangedPower(defender, ctx);
   if (aRanged > 0 || dRanged > 0) {
     const aLoss = dealDamage(rng, attacker, dRanged * DMG * 0.6 * rng.range(0.85, 1.15));
     const dLoss = dealDamage(rng, defender, aRanged * DMG * 0.6 * rng.range(0.85, 1.15));
@@ -366,13 +364,7 @@ function fight(rng: Rng, attacker: Side, defender: Side, ctx: FightCtx): FightRe
     if (alive(attacker)) notes.push({ kind: 'lastStand', text: 'Night ended the argument; the field stayed with its keepers.' });
   }
 
-  // rout: catastrophic collapse of the loser
-  const loser = winner === 'attacker' ? defender : attacker;
-  if (!withdrew && loser.units.every((u) => u.hits <= 0)) {
-    routed = winner === 'attacker' ? 'defender' : 'attacker';
-  }
-
-  return { winner, rounds, notes, withdrew, routed };
+  return { winner, rounds, notes, withdrew };
 }
 
 // -------------------------------------------------------------- ctx setup
@@ -468,8 +460,8 @@ export function previewBattle(state: GameState, armyId: number, targetProvince: 
     const ctx = makeCtx(state, army.province, target, viaSea, atkArmies, defenders);
     const enemyTerrorA = defenders.some((d) => d.units.some((u) => UNITS[u.type].traits.includes('terror')));
     const attackerTerror = atkArmies.some((a) => a.units.some((u) => UNITS[u.type].traits.includes('terror')));
-    const aSide = buildSide(state, atkArmies, 'attacker', ctx, enemyTerrorA, []);
-    const dSide = buildSide(state, defenders, 'defender', ctx, attackerTerror, []);
+    const aSide = buildSide(state, atkArmies, 'attacker', ctx, enemyTerrorA);
+    const dSide = buildSide(state, defenders, 'defender', ctx, attackerTerror);
     if (supports.length > 0 && i === 0) {
       aSide.mods.push({ label: `Combined assault — ${atkArmies.length} banners converge`, mult: 1 });
     }
@@ -558,8 +550,8 @@ export function resolveBattle(
   const ctx = makeCtx(state, fromProvince, target, viaSea, atkArmies, defenders);
   const defTerror = defenders.some((d) => d.units.some((u) => UNITS[u.type].traits.includes('terror')));
   const atkTerror = atkArmies.some((a) => a.units.some((u) => UNITS[u.type].traits.includes('terror')));
-  const aSide = buildSide(state, atkArmies, 'attacker', ctx, defTerror, []);
-  const dSide = buildSide(state, defenders, 'defender', ctx, atkTerror, []);
+  const aSide = buildSide(state, atkArmies, 'attacker', ctx, defTerror);
+  const dSide = buildSide(state, defenders, 'defender', ctx, atkTerror);
   if (supports.length > 0) {
     aSide.mods.push({ label: `Combined assault — ${atkArmies.length} banners converge`, mult: 1 });
   }
@@ -683,9 +675,9 @@ export function resolveBattle(
 
   // ---- plunder perks
   if (attackerWon && attacker >= 0) {
-    plunder(state, attacker, effects);
+    plunder(state, attacker);
   } else if (!attackerWon && dSide.player >= 0) {
-    plunder(state, dSide.player, effects);
+    plunder(state, dSide.player);
   }
 
   // ---- report
@@ -999,8 +991,7 @@ export function eliminatePlayer(state: GameState, rng: Rng, pid: PlayerId, by: s
   }, { about: pid });
 }
 
-function plunder(state: GameState, pid: PlayerId, effects: Effect[]): void {
-  void effects;
+function plunder(state: GameState, pid: PlayerId): void {
   const player = state.players[pid];
   let gold = 0;
   if (creedOf(player) === 'umbra') gold += 10;

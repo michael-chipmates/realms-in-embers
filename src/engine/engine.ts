@@ -65,6 +65,12 @@ export function replayGame(settings: GameSettings, log: LoggedAction[]): GameSta
   const { state } = createGame(settings);
   for (const entry of log) {
     if (state.phase === 'ended') break;
+    if (entry.turn !== state.turn || entry.player !== state.current) {
+      throw new Error(
+        `Replay diverged before turn ${entry.turn} (${entry.action.t}): ` +
+        `log expects player ${entry.player} on turn ${entry.turn}, state is at player ${state.current}, turn ${state.turn}`,
+      );
+    }
     const result = applyAction(state, entry.action);
     if (!result.ok) {
       throw new Error(

@@ -168,13 +168,14 @@ export function emberlightIncome(state: GameState, pid: PlayerId): Itemized {
     total += adepts;
   }
   let magi = 0;
+  let magusCount = 0;
   let relics = 0;
   for (const hero of heroesOf(state, pid)) {
-    if (hero.cls === 'magus') magi += 2;
+    if (hero.cls === 'magus') { magi += 2; magusCount++; }
     relics += heroDerived(state, hero).emberlight;
   }
   if (magi > 0) {
-    lines.push({ label: 'Magus at court', amount: magi });
+    lines.push({ label: magusCount === 1 ? 'Magus at court' : `${magusCount}× Magi at court`, amount: magi });
     total += magi;
   }
   if (relics > 0) {

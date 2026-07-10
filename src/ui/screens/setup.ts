@@ -16,7 +16,7 @@ import { sigilShield } from '../heraldry';
 import { artSlot } from '../art';
 import { tip } from '../tooltip';
 
-const VICTORY_INFO: Record<VictoryPath, { name: string; desc: string }> = {
+export const VICTORY_INFO: Record<VictoryPath, { name: string; desc: string }> = {
   conquest: { name: 'Conquest', desc: 'Be the last banner standing.' },
   dominion: { name: 'Dominion', desc: 'Hold 55% of the realm for 3 consecutive seasons. Everyone sees the countdown.' },
   goldenAge: { name: 'Golden Age', desc: 'Be the realm’s richest lord, holding 900+ gold with average order 65+, for 4 consecutive seasons.' },
@@ -28,6 +28,9 @@ function randomSeed(): string {
   const rng = new Rng(`${Date.now()}-${Math.random()}`);
   return `${rng.pick(words)}-${rng.pick(words)}-${rng.intRange(10, 99)}`;
 }
+
+/** One live preview-resize listener at most, across setup visits. */
+let activeResize: (() => void) | null = null;
 
 export function renderSetup(app: App, presetSeed?: string): void {
   const settings: GameSettings = { ...defaultSettings(), seed: presetSeed ?? randomSeed(), veteranChronicle: app.settings.veteranChronicle };
@@ -271,9 +274,12 @@ export function renderSetup(app: App, presetSeed?: string): void {
   const onResize = (): void => {
     if (!document.contains(canvas)) {
       window.removeEventListener('resize', onResize);
+      if (activeResize === onResize) activeResize = null;
       return;
     }
     forge();
   };
+  if (activeResize) window.removeEventListener('resize', activeResize);
+  activeResize = onResize;
   window.addEventListener('resize', onResize);
 }

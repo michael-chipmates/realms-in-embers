@@ -129,7 +129,7 @@ export const EVENTS: EventDef[] = [
         preview: '−120 gold; gain 2 seasoned Spearguard and 1 seasoned Longbow company here.',
         aiScore: (p, ctx) => (player(ctx).gold > 250 ? 5 + p.aggression * 4 : 0),
         apply: (ctx) => {
-          player(ctx).gold -= 120;
+          player(ctx).gold = Math.max(0, player(ctx).gold - 120);
           const units = [...makeUnits('spears', 2, 1), ...makeUnits('archers', 1, 1)];
           newArmy(ctx.state, ctx.pid, ctx.province!, units);
           return 'The Broken Wheel took the coin and the colors. They drill like men who intend to be on the winning side for once. (+3 seasoned companies)';
@@ -198,7 +198,7 @@ export const EVENTS: EventDef[] = [
         preview: '−60 gold; +3 order in every province you rule.',
         aiScore: (p, ctx) => (player(ctx).gold > 120 ? 4 + p.loyalty * 5 : 1),
         apply: (ctx) => {
-          player(ctx).gold -= 60;
+          player(ctx).gold = Math.max(0, player(ctx).gold - 60);
           for (const p of provincesOf(ctx.state, ctx.pid)) p.order = clamp(p.order + 3, 0, 100);
           return 'The pensions were paid in full, with arrears. Sergeant Wick saluted with the wrong hand, on purpose, weeping. Every tavern in the realm has heard about it. (+3 order everywhere)';
         },
@@ -296,7 +296,7 @@ export const EVENTS: EventDef[] = [
         preview: '−100 gold; 65% a true artifact, 35% worthless brass.',
         aiScore: (p, ctx) => (player(ctx).gold > 220 ? 2 + p.mysticism * 5 : 0),
         apply: (ctx) => {
-          player(ctx).gold -= 100;
+          player(ctx).gold = Math.max(0, player(ctx).gold - 100);
           if (ctx.rng.chance(0.65)) {
             const taken = artifactDefIdsInPlay(ctx.state);
             const pool = QUEST_ARTIFACTS.filter((id) => !taken.has(id));
@@ -385,6 +385,7 @@ export const EVENTS: EventDef[] = [
     },
     text: (ctx) => {
       const ready = heroesOf(ctx.state, ctx.pid).filter((h) => h.status === 'ready');
+      if (ready.length < 2) return 'Two of your champions have quarreled — over precedence, over a map, allegedly over a goose — and the court has chosen sides. They demand the old remedy: a public bout, first blood, winner keeps the argument.';
       const [a, b] = ready;
       return `${a.name} and ${b.name} have quarreled — over precedence, over a map, allegedly over a goose — and the court has chosen sides. They demand the old remedy: a public bout, first blood, winner keeps the argument.`;
     },
@@ -395,6 +396,7 @@ export const EVENTS: EventDef[] = [
         aiScore: (p) => 3 + p.aggression * 3 + p.pride * 2,
         apply: (ctx) => {
           const ready = heroesOf(ctx.state, ctx.pid).filter((h) => h.status === 'ready');
+          if (ready.length < 2) return 'By the appointed morning one duelist was abed with wounds and the other had rediscovered urgent business elsewhere. The quarrel dissolved, as most do, into anecdote.';
           const [a, b] = ready;
           const winner = ctx.rng.chance(a.might / Math.max(1, a.might + b.might)) ? a : b;
           const loser = winner === a ? b : a;
@@ -616,7 +618,7 @@ export const EVENTS: EventDef[] = [
       },
       {
         label: 'Hire them instead',
-        preview: '−140 gold; gain 2 veteran companies at your seat. Your reeves despair.',
+        preview: '−140 gold; gain 2 seasoned companies at your seat. Your reeves despair.',
         aiScore: (p, ctx) => (player(ctx).gold > 320 ? 2 + (1 - p.loyalty) * 4 : 0),
         apply: (ctx) => {
           player(ctx).gold = Math.max(0, player(ctx).gold - 140);
@@ -627,7 +629,7 @@ export const EVENTS: EventDef[] = [
           const units = makeUnits('spears', 2);
           for (const u of units) u.vet = 1;
           newArmy(ctx.state, ctx.pid, seat.id, units);
-          return 'The crown made the band an offer with a seal on it. They read it twice, laughed once, and mustered under your banner by month’s end — veterans, every one, of robbing you. (+2 veteran companies)';
+          return 'The crown made the band an offer with a seal on it. They read it twice, laughed once, and mustered under your banner by month’s end — veterans, every one, of robbing you. (+2 seasoned companies)';
         },
       },
     ],
@@ -639,8 +641,7 @@ export const EVENTS: EventDef[] = [
     cooldown: 12,
     when: (state, pid) => {
       if (!state.players[pid].flags.peddlerRelic) return null;
-      const site = provincesOf(state, pid).find((pp) => pp.site === 'embersite')
-        ?? state.provinces.find((pp) => pp.site === 'embersite' && pp.owner === pid);
+      const site = provincesOf(state, pid).find((pp) => pp.site === 'embersite');
       const anywhere = provincesOf(state, pid)[0];
       return anywhere ? { province: (site ?? anywhere).id, heroId: null } : null;
     },
@@ -962,7 +963,7 @@ export const EVENTS: EventDef[] = [
     choices: [
       {
         label: 'Take their oath',
-        preview: 'Gain 2 veteran spearguard companies; −3 order at your seat (the folk mistrust turncoats).',
+        preview: 'Gain 2 seasoned spearguard companies; −3 order at your seat (the folk mistrust turncoats).',
         aiScore: (p) => 3 + p.aggression * 3,
         apply: (ctx) => {
           const seat = ctx.state.provinces[player(ctx).seatProvince];
@@ -970,7 +971,7 @@ export const EVENTS: EventDef[] = [
           for (const u of units) u.vet = 1;
           newArmy(ctx.state, ctx.pid, seat.id, units);
           seat.order = clamp(seat.order - 3, 0, 100);
-          return 'They swore with the flat readiness of men who have learned exactly what oaths weigh, and drilled better than your own guard by the second week. Nobody says the old name like a joke. The sergeant sees to it. (+2 veteran companies, −3 order)';
+          return 'They swore with the flat readiness of men who have learned exactly what oaths weigh, and drilled better than your own guard by the second week. Nobody says the old name like a joke. The sergeant sees to it. (+2 seasoned companies, −3 order)';
         },
       },
       {

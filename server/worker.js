@@ -44,9 +44,19 @@ export class RelayRoom {
 
   async backlog(count) {
     if (count === 0) return [];
+    // storage.get() takes at most 128 keys per call — a real campaign logs
+    // hundreds of entries, so fetch the log in chunks
     const keys = Array.from({ length: count }, (_, i) => `e:${i}`);
-    const map = await this.state.storage.get(keys);
-    return keys.map((k) => map.get(k)).filter((v) => typeof v === 'string');
+    const log = [];
+    for (let at = 0; at < keys.length; at += 128) {
+      const slice = keys.slice(at, at + 128);
+      const map = await this.state.storage.get(slice);
+      for (const k of slice) {
+        const v = map.get(k);
+        if (typeof v === 'string') log.push(v);
+      }
+    }
+    return log;
   }
 
   async touch() {
@@ -54,7 +64,13 @@ export class RelayRoom {
   }
 
   async alarm() {
-    // 14 idle days: the room evaporates, ciphertext and all
+    // 14 idle days: the room evaporates, ciphertext and all — unless
+    // hibernated sockets are still attached (wiping under them would
+    // restart seq at 0 and silently desync every connected client)
+    if (this.state.getWebSockets().length > 0) {
+      await this.touch();
+      return;
+    }
     await this.state.storage.deleteAll();
   }
 

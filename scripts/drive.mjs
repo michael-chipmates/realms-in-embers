@@ -64,6 +64,7 @@ await page.screenshot({ path: `${outdir}/10-after-turn.png` });
 if (errors.length) {
   console.log('CONSOLE ERRORS:');
   for (const e of [...new Set(errors)]) console.log('  ' + e.slice(0, 300));
+  process.exitCode = 1; // drives gate CI-style checks — errors must fail
 } else {
   console.log('no console errors');
 }

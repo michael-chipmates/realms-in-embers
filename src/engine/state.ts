@@ -38,8 +38,17 @@ import { NEUTRAL } from './types';
  *     tolls actually protect (and die with the band), undefended sacks go
  *     through captureProvince (breakable rituals), joinWar refuses
  *     oathbreaking and re-clamps bribes, fervor preview matches battle,
- *     heroes detach where the banner fell. */
-export const RULES_VERSION = 8;
+ *     heroes detach where the banner fell.
+ * v9: final-audit round — a lone concession closes the chronicle (no
+ *     soft-lock), lords eliminated by their own rising get no ghost turn,
+ *     Morrikan's revenants and terror immunity and Vaelia's wolfshead
+ *     amnesty now real (their perks said so all along), Saga shards burn
+ *     only from the claimant's own vault, hero-rivalry resolves gracefully
+ *     with one duelist, paying events clamp at an empty purse, the AI's
+ *     endTurn escapes its action budget and chapter 5 finds its own
+ *     Emberheart, rites never double-teach, rebel bands besiege the
+ *     garrison in their own province, splitArmy (never reachable) removed. */
+export const RULES_VERSION = 9;
 
 export const HANDICAPS: Record<Difficulty, PlayerHandicap> = {
   squire: { incomeMult: 0.85, label: 'Squire — AI earns 15% less gold and attacks only with clear advantage.' },

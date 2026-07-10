@@ -122,39 +122,6 @@ export function removeArmy(state: GameState, armyId: number): void {
   delete state.armies[armyId];
 }
 
-/** Squad count string like "7 companies" for chronicle text. */
-export function armySizeText(army: Army): string {
-  const n = army.units.length;
-  return n === 1 ? 'one company' : `${n} companies`;
-}
-
-export function provinceDist(a: Province, b: Province): number {
-  return Math.hypot(a.cx - b.cx, a.cy - b.cy);
-}
-
-/** Graph distance (marches) between provinces; -1 if unreachable by land. */
-export function marchDistance(state: GameState, from: number, to: number): number {
-  if (from === to) return 0;
-  const dist = new Map<number, number>([[from, 0]]);
-  const queue = [from];
-  while (queue.length) {
-    const cur = queue.shift()!;
-    const d = dist.get(cur)!;
-    for (const n of state.provinces[cur].neighbors) {
-      if (!dist.has(n)) {
-        if (n === to) return d + 1;
-        dist.set(n, d + 1);
-        queue.push(n);
-      }
-    }
-  }
-  return -1;
-}
-
-export function alivePlayers(state: GameState): Player[] {
-  return state.players.filter((p) => p.alive);
-}
-
 /** Register a new artifact instance and place it in a player's vault. */
 export function grantArtifactTo(state: GameState, pid: PlayerId, defId: string): number {
   const id = state.nextArtifactId++;
@@ -180,10 +147,6 @@ export function roughArmyPower(army: Army): number {
     power += (def.atk + def.def) * (u.hits / def.hits) * (1 + u.vet * 0.12);
   }
   return power;
-}
-
-export function playerPower(state: GameState, pid: PlayerId): number {
-  return armiesOf(state, pid).reduce((sum, a) => sum + roughArmyPower(a), 0);
 }
 
 /** Everything `viewer` can see under fog: their own memory plus, while an

@@ -3,7 +3,7 @@
  * (neutral raids, victory checks, stats, omens) when the table comes back
  * around to the first banner.
  */
-import { captureProvince, eliminatePlayer, resolveBattle } from './combat';
+import { captureProvince, resolveBattle } from './combat';
 import { decayDeeds } from './diplo';
 import { drawEvent } from './events';
 import { refreshRiteOffers } from './magic';
@@ -13,7 +13,7 @@ import { incomeReport, isDefiant, orderDrift, prosperityStep, leaderId, strainOf
 import { makeCourtOffer, makeTroubleName } from './state';
 import { UNITS } from './content/units';
 import {
-  addDeed, armiesIn, armiesOf, clamp, getStance, heroesOf, lordName, makeUnits, newArmy, provincesOf, roughArmyPower,
+  addDeed, armiesIn, armiesOf, clamp, getStance, heroesOf, lordName, lordOf, makeUnits, newArmy, provincesOf, roughArmyPower,
 } from './helpers';
 import { say, scribe } from './narrator';
 import type { Rng } from './rng';
@@ -74,6 +74,11 @@ export function beginTurn(state: GameState, rng: Rng, effects: Effect[]): void {
     if (p.order < 25 && rng.chance((25 - p.order) * 0.016)) {
       spawnRebellion(state, rng, p, effects);
     }
+  }
+  // a rising can take a lord's last province: the fallen get no ghost turn
+  if (!player.alive) {
+    endTurnAdvance(state, rng, effects);
+    return;
   }
   if (strainOf(state, pid) !== 0) teach(state, pid, 'firstStrain');
   if (isDefiant(state, pid)) teach(state, pid, 'firstDefiance');
@@ -171,7 +176,7 @@ function enforceInsolvency(state: GameState, rng: Rng, pid: PlayerId, effects: E
     const [gone] = army.units.splice(w.idx, 1);
     disbanded.push(UNITS[gone.type].name);
     if (army.units.length === 0) {
-      // heroes cannot hold a banner alone; back to court with them
+      // heroes cannot hold a banner alone; they detach where the banner fell
       for (const hid of [...army.heroIds]) {
         const hero = state.heroes[hid];
         if (hero) {
@@ -225,7 +230,11 @@ export function endTurnAdvance(state: GameState, rng: Rng, effects: Effect[]): v
       break;
     }
   }
-  if (next === -1) return; // no one left; victory check already handled
+  if (next === -1) {
+    // no one left alive — a lone concession can do this; close the chronicle
+    checkVictory(state, rng, effects);
+    return;
+  }
 
   const wrapped = next <= state.current;
   if (wrapped) {
@@ -247,9 +256,13 @@ function roundEnd(state: GameState, rng: Rng, effects: Effect[]): void {
     const raidChance = kind === 'rebels' ? 0.4 : 0.25;
     if (!rng.chance(raidChance)) continue;
     // target: adjacent owned province, weakest garrison, richest for marauders.
-    // A paid wolfshead toll is honored: that band skips that lord's lands.
+    // A paid wolfshead toll is honored, and the Crowqueen's lands are simply
+    // never worth the trouble — that band skips that lord's provinces.
     const paidOff = (owner: number): boolean =>
-      kind === 'marauders' && owner >= 0 && !!state.players[owner].flags[`tollPaid:${army.id}`];
+      kind === 'marauders' && owner >= 0 && (
+        !!state.players[owner].flags[`tollPaid:${army.id}`] ||
+        !!lordOf(state.players[owner]).perk.fx.wolfsheadSafe
+      );
     const targets = p.neighbors
       .map((id) => state.provinces[id])
       .filter((t) => t.owner >= 0 && !paidOff(t.owner));
@@ -283,13 +296,10 @@ function roundEnd(state: GameState, rng: Rng, effects: Effect[]): void {
             : `Wolfsheads sacked ${target.name} and no banner came to stop them. ${lordName(state, prevOwner)}'s writ ends at its borders now.`,
         });
         if (target.id !== army.province) army.province = target.id;
-        const remaining = state.provinces.filter((pp) => pp.owner === prevOwner).length;
-        if (remaining === 0) {
-          eliminatePlayer(state, rng, prevOwner, 'a straw-crowned rising of their own subjects', effects);
-        }
       }
-    } else if (target.id !== army.province) {
-      resolveBattle(state, rng, army.id, target.id, false, army.province);
+    } else {
+      // defended — the band gives battle, even for the province it infests
+      effects.push(...resolveBattle(state, rng, army.id, target.id, false, army.province).effects);
     }
   }
 

@@ -47,7 +47,7 @@ export function openBattleReport(screen: GameScreen, report: BattleReport): void
     const total = Math.max(1, r.aPower + r.dPower);
     const aShare = Math.round((r.aPower / total) * 100);
     const el = h('div', { class: 'battle-round', 'data-share': String(aShare), style: reduced ? {} : { opacity: '0', transition: 'opacity 240ms' } },
-      h('div', { class: 'small muted battle-round-label' }, i === 0 && report.rounds.length > 1 && r.notes.some((n) => n.includes('Arrow')) ? 'Volleys' : `Clash ${i + (report.rounds[0]?.notes.some((n) => n.includes('Arrow')) ? 0 : 1)}`),
+      h('div', { class: 'small muted battle-round-label' }, i === 0 && r.notes.some((n) => n.includes('Arrow')) ? 'Volleys' : `Clash ${i + (report.rounds[0]?.notes.some((n) => n.includes('Arrow')) ? 0 : 1)}`),
       h('div', { class: 'battle-balance', role: 'img', 'aria-label': `Strength ${r.aPower} against ${r.dPower}` },
         h('div', { class: 'battle-balance-a', style: { width: reduced ? `${aShare}%` : '50%' } }),
       ),

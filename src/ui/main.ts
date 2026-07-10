@@ -15,7 +15,11 @@ preloadArtManifest();
 const app = new App(root);
 const invite = parseInvite(location.hash);
 if (invite) {
-  void openOnlineLobby(app, invite);
+  // a truncated or tampered invite key must fail into the hall, not a blank room
+  openOnlineLobby(app, invite).catch(() => {
+    history.replaceState(null, '', location.pathname);
+    app.toTitle();
+  });
 } else {
   app.toTitle();
 }

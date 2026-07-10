@@ -241,7 +241,7 @@ export interface BattleRound {
 }
 
 export interface BattleEventNote {
-  kind: 'heroWound' | 'heroDeath' | 'spell' | 'wallsBreached' | 'withdraw' | 'rout' | 'lastStand' | 'duel';
+  kind: 'heroWound' | 'heroDeath' | 'spell' | 'withdraw' | 'lastStand';
   text: string;
 }
 
@@ -380,7 +380,6 @@ export type Action =
   | { t: 'recruit'; province: ProvinceId; unit: UnitTypeId }
   | { t: 'disband'; armyId: number; index: number }
   | { t: 'moveArmy'; armyId: number; to: ProvinceId; viaSea?: boolean; support?: number[]; fervor?: boolean }
-  | { t: 'splitArmy'; armyId: number; unitIdx: number[]; heroIds: number[]; to: ProvinceId; viaSea?: boolean }
   | { t: 'mergeArmies'; from: number; into: number }
   | { t: 'setStance'; armyId: number; stance: Stance }
   | { t: 'hireHero'; offerIdx: number }

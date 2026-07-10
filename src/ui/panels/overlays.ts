@@ -706,7 +706,18 @@ function renderLedger(screen: GameScreen, body: HTMLElement): void {
 export function openMenuOverlay(screen: GameScreen): void {
   const state = screen.state;
   const content = h('div', { style: { padding: '0.8rem', display: 'flex', flexDirection: 'column', gap: '0.5rem', minWidth: '280px' } },
-    h('button', { class: 'btn', onclick: () => { saveToSlot(state, nextFreeSlot()); screen.toast('The chronicle is shelved.', 'info'); } }, 'Save to a slot'),
+    h('button', {
+      class: 'btn',
+      onclick: () => {
+        const slot = nextFreeSlot();
+        if (slot === null) {
+          screen.toast('All five shelf slots hold chronicles — burn one from the title screen first.', 'danger');
+          return;
+        }
+        saveToSlot(state, slot);
+        screen.toast('The chronicle is shelved.', 'info');
+      },
+    }, 'Save to a slot'),
     h('button', { class: 'btn', onclick: () => exportSave(state) }, 'Export to a file'),
     h('p', { class: 'small muted', style: { margin: '0 0.2rem' } },
       'War by letters: export after your turns and send the file to a fellow mortal — they load it and play on. The deterministic chronicle keeps everyone honest.'),
@@ -751,12 +762,12 @@ export function openMenuOverlay(screen: GameScreen): void {
   const modal = openModal('The Table', content);
 }
 
-function nextFreeSlot(): number {
+function nextFreeSlot(): number | null {
   const taken = new Set(listSlots().filter((s) => !s.auto).map((s) => parseInt(s.key.slice(4), 10)));
   for (let i = 1; i <= 5; i++) {
     if (!taken.has(i)) return i;
   }
-  return 1;
+  return null; // never silently overwrite an old campaign
 }
 
 export { loadSlot };

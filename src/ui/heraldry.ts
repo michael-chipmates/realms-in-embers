@@ -6,17 +6,21 @@ import { LORD_BY_ID } from '../engine/content/lords';
 import { iconPathOf } from './icons';
 import { h } from './dom';
 
+/** ids must be unique per INSTANCE — the same lord renders in many places. */
+let shieldSerial = 0;
+
 export function sigilShield(lordId: string, size = 34): HTMLElement {
   const lord = LORD_BY_ID[lordId];
   if (!lord) return h('span');
   const path = iconPathOf(lord.sigil);
+  const clipId = `shield-${lordId}-${++shieldSerial}`;
   const html = `
 <svg width="${size}" height="${Math.round(size * 1.15)}" viewBox="0 0 24 28" aria-hidden="true" class="sigil-shield">
   <defs>
-    <clipPath id="shield-${lordId}"><path d="M2 2h20v12c0 6-4.5 10.5-10 12C6.5 24.5 2 20 2 14V2z"/></clipPath>
+    <clipPath id="${clipId}"><path d="M2 2h20v12c0 6-4.5 10.5-10 12C6.5 24.5 2 20 2 14V2z"/></clipPath>
   </defs>
   <path d="M2 2h20v12c0 6-4.5 10.5-10 12C6.5 24.5 2 20 2 14V2z" fill="${lord.color}" stroke="#1e150c" stroke-width="1.2"/>
-  <path d="M2 2h20v6H2z" fill="${lord.colorAlt}" opacity="0.85" clip-path="url(#shield-${lordId})"/>
+  <path d="M2 2h20v6H2z" fill="${lord.colorAlt}" opacity="0.85" clip-path="url(#${clipId})"/>
   <g transform="translate(4.4, 6.8) scale(0.63)" fill="none" stroke="#f2e8cf" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" opacity="0.95">
     <path d="${path}"/>
   </g>

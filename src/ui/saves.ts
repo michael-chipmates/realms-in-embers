@@ -143,7 +143,8 @@ export function loadSettings(): UiSettings {
 export function defaultUiSettings(): UiSettings {
   return {
     colorblind: false,
-    reducedMotion: false,
+    // seed from the OS preference; the in-game toggle still overrides
+    reducedMotion: typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches,
     textScale: 1,
     volMaster: 0.8,
     volMusic: 0.6,

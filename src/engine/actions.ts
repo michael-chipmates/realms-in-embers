@@ -7,7 +7,7 @@
 import { applyAdvancedAction } from './advanced';
 import { previewBattle, captureProvince, eliminatePlayer, FERVOR_COST, hostileTo, resolveBattle } from './combat';
 import { buildingCostFor, consumeWarStores, unitCostFor, warStoresLeft } from './economy';
-import { BUILDINGS } from './content/world';
+import { BUILDINGS, TERRAIN } from './content/world';
 import { UNITS } from './content/units';
 import { createHero, HERO_CLASSES } from './heroes';
 import {
@@ -112,7 +112,7 @@ function grantSight(state: GameState, pid: PlayerId, provinceId: number): void {
 // ------------------------------------------------------------- applyAction
 
 export function applyAction(state: GameState, action: Action): ActionResult {
-  if (state.phase === 'ended' && action.t !== 'endTurn') {
+  if (state.phase === 'ended') {
     return fail('The chronicle is closed.');
   }
   const pid = state.current;
@@ -122,7 +122,6 @@ export function applyAction(state: GameState, action: Action): ActionResult {
 
   switch (action.t) {
     case 'endTurn': {
-      if (state.phase === 'ended') return fail('The chronicle is closed.');
       log(state, action);
       endTurnAdvance(state, rng, effects);
       return { ok: true, effects };
@@ -143,7 +142,7 @@ export function applyAction(state: GameState, action: Action): ActionResult {
       if (!def) return fail('No such works.');
       if (p.buildings.includes(action.building)) return fail('Already built.');
       if (def.requires && !p.buildings.includes(def.requires)) return fail(`Requires ${BUILDINGS[def.requires].name}.`);
-      if (def.terrain && !def.terrain.includes(p.terrain)) return fail(`The land does not suit it — it wants ${def.terrain.join(' or ')}.`);
+      if (def.terrain && !def.terrain.includes(p.terrain)) return fail(`The land does not suit it — it wants ${def.terrain.map((t) => TERRAIN[t].name).join(' or ')}.`);
       if (def.coastalOnly && !p.coastal) return fail('Needs a coast.');
       const { cost } = buildingCostFor(state, pid, action.building);
       if (player.gold < cost) return fail(`Needs ${cost} gold.`);
@@ -166,7 +165,7 @@ export function applyAction(state: GameState, action: Action): ActionResult {
       }
       if (gate.terrain && !gate.terrain.includes(p.terrain)) {
         const cragException = action.unit === 'cragguard' && fx.cragguardInHills && p.terrain === 'hills';
-        if (!cragException) return fail(`The land does not breed them — they muster only in ${gate.terrain.join(' or ')}.`);
+        if (!cragException) return fail(`The land does not breed them — they muster only in ${gate.terrain.map((t) => TERRAIN[t].name).join(' or ')}.`);
       }
       if (gate.creed && lordOf(player).creed !== gate.creed) return fail('Not of your creed.');
       if (action.unit === 'revenants') {
@@ -189,7 +188,7 @@ export function applyAction(state: GameState, action: Action): ActionResult {
       army.units.splice(action.index, 1);
       if (army.units.length === 0 && army.heroIds.length === 0) delete state.armies[army.id];
       else if (army.units.length === 0) {
-        // heroes cannot hold a banner alone; they return to court
+        // heroes cannot hold a banner alone; they detach where the banner fell
         for (const hid of [...army.heroIds]) {
           const hero = state.heroes[hid];
           if (hero) {
@@ -236,49 +235,6 @@ export function applyAction(state: GameState, action: Action): ActionResult {
       }
       log(state, action);
       executeMove(state, rng, army, target, effects, support, !!action.fervor);
-      return { ok: true, effects };
-    }
-
-    case 'splitArmy': {
-      const army = state.armies[action.armyId];
-      if (!army || army.owner !== pid) return fail('Not your army.');
-      if (army.moved) return fail('Already marched.');
-      const idxs = [...new Set(action.unitIdx)].sort((a, b) => b - a);
-      if (idxs.length === 0) return fail('Choose companies to march.');
-      if (idxs.some((i) => i < 0 || i >= army.units.length)) return fail('No such company.');
-      if (idxs.length >= army.units.length && action.heroIds.length >= army.heroIds.length) {
-        return fail('That is the whole army — just march it.');
-      }
-      if (idxs.length >= army.units.length) return fail('The banner must keep at least one company.');
-      for (const hid of action.heroIds) {
-        if (!army.heroIds.includes(hid)) return fail('That hero rides under another banner.');
-      }
-      // build the detachment
-      const detached = idxs.map((i) => army.units[i]);
-      for (const i of idxs) army.units.splice(i, 1);
-      const newArmyObj: Army = {
-        id: state.nextArmyId++,
-        owner: pid,
-        province: army.province,
-        units: detached.reverse(),
-        heroIds: [...action.heroIds],
-        moved: false,
-        stance: army.stance,
-      };
-      state.armies[newArmyObj.id] = newArmyObj;
-      for (const hid of action.heroIds) {
-        army.heroIds = army.heroIds.filter((h) => h !== hid);
-        const hero = state.heroes[hid];
-        if (hero) hero.armyId = newArmyObj.id;
-      }
-      log(state, action);
-      if (action.to !== army.province) {
-        const targets = moveTargets(state, newArmyObj);
-        const target = targets.find((t) => t.to === action.to && t.viaSea === !!action.viaSea);
-        if (target) {
-          executeMove(state, rng, newArmyObj, target, effects);
-        }
-      }
       return { ok: true, effects };
     }
 
@@ -769,5 +725,3 @@ function log(state: GameState, action: Action): void {
   state.log.push({ player: state.current, turn: state.turn, action });
 }
 
-export { beginTurn };
-export { previewBattle };
