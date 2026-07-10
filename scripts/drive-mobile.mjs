@@ -50,7 +50,7 @@ if (target) {
   await page.getByRole('button', { name: 'Give battle' }).click();
   await page.waitForTimeout(2500);
   await page.screenshot({ path: `${outdir}/m4-battle.png` });
-  const close = page.getByRole('button', { name: 'Close the account' });
+  const close = page.getByRole('button', { name: 'Close the report' });
   if (await close.isVisible().catch(() => false)) await close.click();
 }
 

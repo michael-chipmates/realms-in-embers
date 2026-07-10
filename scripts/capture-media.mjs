@@ -60,7 +60,7 @@ if (hostile) {
     await give.click();
     await page.waitForTimeout(2600); // playback surges
     await shot('battle');
-    const close = page.getByRole('button', { name: 'Close the account' });
+    const close = page.getByRole('button', { name: 'Close the report' });
     if (await close.isVisible().catch(() => false)) await close.click();
   }
 }
