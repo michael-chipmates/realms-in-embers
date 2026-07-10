@@ -7,6 +7,7 @@ import { CREEDS } from '../../engine/content/world';
 import { h } from '../dom';
 import { iconSvg } from '../icons';
 import { artSlot } from '../art';
+import { audio } from '../audio';
 import type { GameScreen } from './game';
 
 interface Page {
@@ -82,7 +83,13 @@ export function maybeShowOnboarding(screen: GameScreen): void {
       ),
     ),
   );
+  let spoke = false;
   nextBtn.addEventListener('click', () => {
+    if (!spoke) {
+      spoke = true;
+      audio.unlock();
+      audio.voice('opening'); // the first click is the gesture that frees his voice
+    }
     if (idx < pages.length - 1) {
       idx++;
       render();

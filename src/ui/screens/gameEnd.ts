@@ -35,6 +35,7 @@ export function showGameEnd(screen: GameScreen): void {
 
   if (viewerWon) audio.fanfare();
   else audio.dirge();
+  audio.voice(viewerWon ? 'victory' : 'defeat'); // Osperan says it himself
 
   // ---- campaign graph: provinces over time, one ink line per lord
   const graph = renderCampaignGraph(screen);

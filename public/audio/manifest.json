@@ -1,1 +1,5 @@
-{}
+{
+  "voice-opening": "voice-opening.mp3",
+  "voice-victory": "voice-victory.mp3",
+  "voice-defeat": "voice-defeat.mp3"
+}

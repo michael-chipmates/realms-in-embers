@@ -43,6 +43,33 @@ class AudioEngine {
       .catch(() => { this.sfxManifest = {}; });
   }
 
+  /** Narration: generated speech only, no synth stand-in. Waits for the
+   * manifest and the decode, then speaks — the ceremony can breathe first. */
+  voice(cue: string): void {
+    if (!this.ensure()) return;
+    if (this.sfxManifest === null) this.loadSfxManifest();
+    const attempt = (triesLeft: number): void => {
+      if (this.sfxManifest === null || this.sfxManifest === 'pending') {
+        if (triesLeft > 0) window.setTimeout(() => attempt(triesLeft - 1), 250);
+        return;
+      }
+      const file = this.sfxManifest[`voice-${cue}`];
+      if (!file || !this.ctx) return;
+      fetch(`audio/${file}`)
+        .then((r) => (r.ok ? r.arrayBuffer() : Promise.reject(new Error('404'))))
+        .then((buf) => this.ctx!.decodeAudioData(buf))
+        .then((decoded) => {
+          if (!this.started) return;
+          const src = this.ctx!.createBufferSource();
+          src.buffer = decoded;
+          src.connect(this.sfx!);
+          src.start();
+        })
+        .catch(() => { /* the chronicler declines to speak; text carries it */ });
+    };
+    attempt(8);
+  }
+
   /** True if a generated file covered this cue (played or now loading). */
   private tryFile(cue: string): boolean {
     if (!this.ctx || !this.started) return false;
