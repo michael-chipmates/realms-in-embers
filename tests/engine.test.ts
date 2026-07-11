@@ -8,7 +8,7 @@ import { EVENT_BY_ID } from '../src/engine/content/events';
 import { LORD_BY_ID } from '../src/engine/content/lords';
 import { SIGNATURE_TUNING } from '../src/engine/signature';
 import { Rng } from '../src/engine/rng';
-import { checkVictory, GOLDEN_GOLD, GOLDEN_ROUNDS } from '../src/engine/victory';
+import { checkVictory, DOMINION_ROUNDS, GOLDEN_GOLD, GOLDEN_ROUNDS } from '../src/engine/victory';
 import type { GameSettings, GameState } from '../src/engine/types';
 
 function freshGame(seed: string, players = 3): GameState {
@@ -320,7 +320,7 @@ describe('victory', () => {
       }
     }
     const over = (s: GameState) => s.phase === 'ended';
-    for (let round = 0; round < 4 && !over(state); round++) { // DOMINION_ROUNDS is 4 as of v12
+    for (let round = 0; round < DOMINION_ROUNDS && !over(state); round++) {
       for (let i = 0; i < state.players.length && !over(state); i++) {
         applyAction(state, { t: 'endTurn' });
       }

@@ -14,7 +14,9 @@ import type { Action, Effect, GameState, PlayerId } from './types';
 
 export const SIGNATURE_TUNING = {
   seraphine: { order: 10, goldPerProvince: 3, cooldown: 8 },
-  aldric: { knightCompanies: 1, cooldown: 12 },
+  // v15: cooldown 12→16 — a free knight company was the same standing-army
+  // subsidy as Morrikan's doors (Aldric ran a conclusive 40% at 600 games)
+  aldric: { knightCompanies: 1, cooldown: 16 },
   halvard: { defense: 0.25, sallyPct: 12, cooldown: 8 },
   lyra: { atkPct: 15, seasons: 3, cooldown: 12 },
   ulvra: { extraMarch: 1, cooldown: 8 },

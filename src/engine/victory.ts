@@ -9,7 +9,10 @@ import type { Rng } from './rng';
 import type { Effect, GameState, PlayerId, VictoryPath } from './types';
 
 export const DOMINION_SHARE = 0.55;
-export const DOMINION_ROUNDS = 4; // v12: was 3 — dominion carried 44–48% of AI endings
+// v12: 3→4 (dominion carried 44–48% of endings); v15: 4→5 (still 41–42%
+// across four mirrored sweeps against a ≤40% gate — the same dial, turned
+// once more, refereed by the 600-game sweep)
+export const DOMINION_ROUNDS = 5;
 export const GOLDEN_GOLD = 900;
 export const GOLDEN_ORDER = 65;
 export const GOLDEN_ROUNDS = 4;

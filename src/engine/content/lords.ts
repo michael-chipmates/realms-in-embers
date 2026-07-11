@@ -140,14 +140,17 @@ export const LORDS: LordDef[] = [
     color: '#b8860b', colorAlt: '#3a2c14', pattern: 'checks', sigil: 'crown',
     perk: {
       label: 'The Old Blood',
-      desc: 'Your capital yields +10% gold. Banner Knights cost 10% less.',
-      fx: { capitalIncomePct: 10, unitDiscountId: 'knights', unitDiscountPct: 10 },
+      // v15 balance: capital +10% → +5% — the compounding half of the perk
+      // ran Aldric to a conclusive 38–40% per seat at 600 mirrored games.
+      // The knights keep their discount; a king keeps his cavalry.
+      desc: 'Your capital yields +5% gold. Banner Knights cost 10% less.',
+      fx: { capitalIncomePct: 5, unitDiscountId: 'knights', unitDiscountPct: 10 },
     },
     signature: {
       id: 'royalMuster', name: 'Royal Muster',
       desc: 'A full company of Banner Knights musters at your seat, at once and without cost.',
       flavor: 'The Old Blood calls; the old families still answer. Mostly out of habit, which is the strongest reason there is.',
-      cooldown: 12, target: 'none', fxFamily: 'bless',
+      cooldown: 16, target: 'none', fxFamily: 'bless',
     },
     lines: {
       intro: 'Twice crowned, gentlemen. The third time I shall not even need to sit down.',
