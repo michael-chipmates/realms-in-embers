@@ -161,7 +161,7 @@ export function renderTitle(app: App): void {
     'div',
     { class: 'room title-screen' },
     artSlot('title-hall', h('span'), { className: 'title-backdrop', alt: '', eager: true }),
-    h('div', { class: 'title-center' },
+    h('main', { class: 'title-center' },
       h('p', { class: 'title-over muted italic' }, 'Forty years after the Sundering'),
       h('h1', { class: 'title-display title-main' }, 'Realms in Embers'),
       h('div', { class: 'rule-flourish', style: { width: 'min(420px, 70vw)', margin: '0.6rem auto 0.2rem' } }, '❧'),

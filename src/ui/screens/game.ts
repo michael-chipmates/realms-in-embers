@@ -26,6 +26,7 @@ import { renderSelectionPanel } from '../panels/selection';
 import { renderChronicleFeed } from '../panels/chronicleFeed';
 import { openCourtOverlay, openDiplomacyOverlay, openLedgerOverlay, openMagicOverlay, openQuestsOverlay, openMenuOverlay } from '../panels/overlays';
 import { openCodexOverlay } from '../panels/codex';
+import { openKeysOverlay, openNavigatorOverlay } from '../panels/navigator';
 import { anyModalOpen, closeAllModals, openModal } from '../modal';
 import { openBattleReport } from './battleReport';
 import { maybeOpenEventModal } from './eventModal';
@@ -1119,6 +1120,7 @@ export class GameScreen {
         this.iconAction('quest', 'Quests & the Saga', () => openQuestsOverlay(this)),
         this.iconAction('handshake', 'The other lords', () => openDiplomacyOverlay(this)),
         this.iconAction('book', 'Ledger & victory', () => openLedgerOverlay(this)),
+        this.iconAction('eye', 'The Province Navigator — the map as rows', () => openNavigatorOverlay(this)),
         this.iconAction('codex', 'The Codex — every rule of the realm', () => openCodexOverlay(this)),
         (() => {
           const cd = viewer.signatureCooldownLeft ?? 0;
@@ -1245,9 +1247,14 @@ export class GameScreen {
       case 'l':
         openLedgerOverlay(this);
         break;
+      case 'p':
+        openNavigatorOverlay(this);
+        break;
       case 'c':
-      case '?':
         openCodexOverlay(this);
+        break;
+      case '?':
+        openKeysOverlay(this);
         break;
       case 'escape':
         if (this.pendingSpell !== null) {

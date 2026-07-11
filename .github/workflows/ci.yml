@@ -57,6 +57,8 @@ jobs:
         run: node scripts/drive-battle.mjs http://localhost:5199 /tmp
       - name: First Ember drive (guided start, desktop + phone)
         run: node scripts/drive-ember.mjs http://localhost:5199 /tmp
+      - name: Accessibility gate (axe — serious/critical fail)
+        run: node scripts/drive-a11y.mjs http://localhost:5199
       - name: Upload drive screenshots
         if: always()
         uses: actions/upload-artifact@v4

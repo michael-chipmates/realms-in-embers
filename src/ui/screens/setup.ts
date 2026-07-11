@@ -267,7 +267,7 @@ export function renderSetup(app: App, presetSeed?: string): void {
       h('h1', { class: 'title-display', style: { fontSize: '1.3rem' } }, 'Muster the Age'),
       startBtn,
     ),
-    h('div', { class: 'setup-grid' },
+    h('main', { class: 'setup-grid' },
       h('div', { class: 'setup-left' },
         h('div', { class: 'panel setup-config' },
           h('div', { class: 'field' }, h('label', { for: 'setup-seed' }, 'Seed'), h('div', { style: { display: 'flex', gap: '0.3rem' } },

@@ -512,6 +512,36 @@ details.side-section:not([open]) > summary { border-bottom: none; }
   .codex-nav-btn.active { border-left: none; border-bottom-color: var(--gold); }
 }
 
+/* --------------------------------------------------------- the Navigator */
+
+.navigator-body { display: flex; flex-direction: column; gap: 0.5rem; max-width: min(680px, 92vw); }
+.nav-filter {
+  width: 100%; padding: 0.5rem 0.7rem; border-radius: 6px;
+  border: 1px solid rgba(201, 162, 39, 0.4); background: rgba(10, 7, 4, 0.5);
+  color: var(--parchment-text); font-size: 1rem;
+}
+.nav-groups { display: flex; flex-direction: column; gap: 0.5rem; max-height: min(56vh, 520px); overflow-y: auto; }
+.nav-group { display: flex; flex-direction: column; gap: 0.15rem; }
+.nav-row {
+  display: flex; align-items: center; gap: 0.5rem; width: 100%;
+  border: 1px solid transparent; border-radius: 5px; background: transparent;
+  padding: 0.4rem 0.55rem; text-align: left; color: var(--parchment-text);
+  cursor: pointer; font-size: 0.92rem;
+}
+.nav-row:hover { background: rgba(201, 162, 39, 0.08); border-color: rgba(201, 162, 39, 0.3); }
+.nav-row-selected { border-color: var(--gold); background: rgba(201, 162, 39, 0.12); }
+.nav-name { font-weight: 700; }
+.nav-terrain { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.nav-num { display: inline-flex; align-items: center; gap: 0.15rem; white-space: nowrap; }
+
+.keys-body { padding: 0.4rem 0.6rem 0.6rem; min-width: min(380px, 88vw); }
+.keys-row { display: flex; align-items: center; gap: 0.7rem; padding: 0.18rem 0; }
+.keys-key {
+  min-width: 3.2rem; text-align: center; padding: 0.12rem 0.4rem;
+  border: 1px solid rgba(201, 162, 39, 0.5); border-radius: 4px;
+  background: rgba(10, 7, 4, 0.5); font-family: inherit; color: var(--gold-bright);
+}
+
 /* ------------------------------------------------------ the First Ember */
 
 .guide-card {

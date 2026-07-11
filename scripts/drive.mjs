@@ -83,6 +83,30 @@ await page.waitForTimeout(400);
 await page.screenshot({ path: `${outdir}/9-ledger.png` });
 await page.keyboard.press('Escape');
 
+// the Navigator mirrors the map both ways: the map's selection is the
+// highlighted row, and choosing a row selects on the map
+await page.evaluate(() => {
+  const g = window.__game;
+  g.select(g.state.players[0].seatProvince, null);
+});
+await page.keyboard.press('p');
+await page.waitForTimeout(500);
+const seatName = await page.evaluate(() => window.__game.state.provinces[window.__game.state.players[0].seatProvince].name);
+const highlighted = await page.locator('.nav-row-selected .nav-name').textContent().catch(() => null);
+if (highlighted !== seatName) { console.error(`navigator did not highlight the map's selection (${highlighted} vs ${seatName})`); process.exit(1); }
+await page.screenshot({ path: `${outdir}/9b-navigator.png` });
+const otherRowName = await page.locator('.nav-row:not(.nav-row-selected) .nav-name').first().textContent();
+await page.locator('.nav-row:not(.nav-row-selected)').first().click();
+await page.waitForTimeout(300);
+const mapSel = await page.evaluate(() => {
+  const g = window.__game;
+  return g.sel.provinceId === null ? null : g.state.provinces[g.sel.provinceId].name;
+});
+if (mapSel !== otherRowName) { console.error(`choosing a navigator row did not select on the map (${mapSel} vs ${otherRowName})`); process.exit(1); }
+await page.keyboard.press('Escape');
+await page.keyboard.press('Escape');
+await page.waitForTimeout(200);
+
 // end a turn and let the AI move
 await page.keyboard.press('e');
 await page.waitForTimeout(3500);
