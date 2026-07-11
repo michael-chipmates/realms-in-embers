@@ -16,6 +16,9 @@ async function run(viewport, tag) {
   await page.waitForTimeout(400);
   await page.screenshot({ path: `${outdir}/quickwar-${tag}-modal.png` });
   await page.getByRole('button', { name: /Standard/ }).click();
+  await page.waitForTimeout(500);
+  // the gallery is part of the flow now — let fate deal keeps it quick
+  await page.getByRole('button', { name: 'Let fate deal' }).click();
   await page.waitForTimeout(1600);
   const skip = page.getByRole('button', { name: 'I have read the Chronicle before' });
   if (await skip.isVisible().catch(() => false)) await skip.click();

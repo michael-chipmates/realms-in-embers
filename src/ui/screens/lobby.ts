@@ -7,8 +7,9 @@
  * client (and every rejoiner, forever) derives the same table from the
  * same bytes — late hellos cannot fork it.
  */
-import { LORDS } from '../../engine/content/lords';
+import { LORD_BY_ID } from '../../engine/content/lords';
 import { defaultSettings } from '../../engine/state';
+import { openLordGallery } from './gallery';
 import type { GameSettings, PlayerSetup } from '../../engine/types';
 import { h, mount, clear } from '../dom';
 import { sigilShield } from '../heraldry';
@@ -32,7 +33,7 @@ export interface OnlineSession {
   cursor: number;
 }
 
-interface LobbyPeer { cid: string; name: string; seat: number | null; lastSeq: number }
+interface LobbyPeer { cid: string; name: string; seat: number | null; lordId: string | null; lastSeq: number }
 
 function myCid(): string {
   let cid = localStorage.getItem('rie-cid');
@@ -53,7 +54,7 @@ function tableFrom(entries: NetEntry[]): LobbyPeer[] {
   for (const e of entries) {
     const p = e.payload;
     if (p.kind === 'hello') {
-      peers.set(p.cid, { cid: p.cid, name: p.name, seat: p.seat, lastSeq: e.seq });
+      peers.set(p.cid, { cid: p.cid, name: p.name, seat: p.seat, lordId: p.lordId ?? null, lastSeq: e.seq });
     }
   }
   return [...peers.values()];
@@ -64,6 +65,13 @@ function seatLoser(peers: LobbyPeer[], cid: string): boolean {
   const me = peers.find((p) => p.cid === cid);
   if (!me || me.seat === null) return false;
   return peers.some((p) => p.cid !== cid && p.seat === me.seat && p.lastSeq < me.lastSeq);
+}
+
+/** Same rule for banners: the earlier relay seq keeps a contested lord. */
+function lordLoser(peers: LobbyPeer[], cid: string): boolean {
+  const me = peers.find((p) => p.cid === cid);
+  if (!me || me.lordId === null || me.seat === null) return false;
+  return peers.some((p) => p.cid !== cid && p.seat !== null && p.lordId === me.lordId && p.lastSeq < me.lastSeq);
 }
 
 export async function openOnlineLobby(app: App, invite?: { roomId: string; key: string }): Promise<void> {
@@ -129,10 +137,12 @@ export async function openOnlineLobby(app: App, invite?: { roomId: string; key: 
   let aiFill = 0;
   let fog = true;
 
-  const sendHello = (seat: number | null): void => {
+  const sendHello = (seat: number | null, lordId?: string | null): void => {
     const name = nameInput.value.trim() || 'A nameless lord';
     localStorage.setItem('rie-name', name);
-    void client.send({ kind: 'hello', cid, name, seat });
+    // an unnamed lordId keeps the current pick; standing up clears it
+    const current = tableFrom(client.list()).find((p) => p.cid === cid)?.lordId ?? null;
+    void client.send({ kind: 'hello', cid, name, seat, lordId: seat === null ? null : (lordId !== undefined ? lordId : current) });
   };
 
   // a renamed lord re-announces (debounced) so the table sees the new name
@@ -163,10 +173,18 @@ export async function openOnlineLobby(app: App, invite?: { roomId: string; key: 
     const seatCids = seated.map((p) => p.cid);
     const totalSeats = Math.min(MAX_SEATS, seatCids.length + aiFill);
     const players: PlayerSetup[] = [];
+    const claimed = new Set<string>();
     for (let i = 0; i < totalSeats; i++) {
-      players.push(i < seatCids.length
-        ? { kind: 'human', lordId: 'random', difficulty: 'knight' }
-        : { kind: 'ai', lordId: 'random', difficulty: 'knight' });
+      if (i < seatCids.length) {
+        // banner picks ride the hellos; a race the live lobby didn't catch
+        // resolves here the same way — the earlier seat keeps the lord
+        let lordId = seated[i].lordId ?? 'random';
+        if (lordId !== 'random' && claimed.has(lordId)) lordId = 'random';
+        claimed.add(lordId);
+        players.push({ kind: 'human', lordId, difficulty: 'knight' });
+      } else {
+        players.push({ kind: 'ai', lordId: 'random', difficulty: 'knight' });
+      }
     }
     const settings: GameSettings = {
       ...defaultSettings(),
@@ -214,14 +232,22 @@ export async function openOnlineLobby(app: App, invite?: { roomId: string; key: 
       sendHello(seat < MAX_SEATS ? seat : null);
       return; // re-render on the echo
     }
+    // contested banner and we picked later: the earlier claim keeps it
+    if (lordLoser(peers, cid)) {
+      const mine = peers.find((p) => p.cid === cid)!;
+      status.textContent = `${LORD_BY_ID[mine.lordId!]?.name ?? 'That lord'} was claimed first — choose another banner.`;
+      sendHello(mine.seat, null);
+      return; // re-render on the echo
+    }
 
     mount(tableEl,
       h('h3', { class: 'settings-head' }, `At the table (${seated.length} of ${MAX_SEATS})`),
       ...(seated.length === 0 ? [h('p', { class: 'small muted italic' }, 'Nobody seated yet. Take a seat.')] : []),
       ...seated.map((p) => h('div', { class: 'lobby-row' },
-        sigilShield(LORDS[(p.seat ?? 0) % LORDS.length].id, 22),
+        p.lordId !== null ? sigilShield(p.lordId, 22) : h('span', { class: 'small muted', style: { width: '22px', textAlign: 'center' } }, '?'),
         h('b', {}, p.name),
-        h('span', { class: 'small muted' }, `seat ${(p.seat ?? 0) + 1}${p.cid === cid ? ' — you' : ''}`),
+        h('span', { class: 'small muted' },
+          `seat ${(p.seat ?? 0) + 1}${p.cid === cid ? ' — you' : ''} · ${p.lordId !== null ? LORD_BY_ID[p.lordId]?.name ?? 'a lord' : 'fate decides'}`),
       )),
       ...(unseated.length > 0
         ? [h('p', { class: 'small muted' }, `Watching: ${unseated.map((p) => p.name).join(', ')}`)]
@@ -242,7 +268,23 @@ export async function openOnlineLobby(app: App, invite?: { roomId: string; key: 
               if (seat < MAX_SEATS) sendHello(seat);
             },
           }, tableFull ? 'The table is full — watch, or wait' : 'Take a seat')
-        : h('button', { class: 'btn compact', onclick: () => sendHello(null) }, 'Stand up'),
+        : h('div', { style: { display: 'flex', gap: '0.4rem', justifyContent: 'center', flexWrap: 'wrap', marginTop: '0.4rem' } },
+            h('button', {
+              class: 'btn compact',
+              onclick: () => {
+                const takenLords = peers.filter((p) => p.cid !== cid && p.seat !== null && p.lordId !== null).map((p) => p.lordId!);
+                openLordGallery({
+                  title: 'Whose banner do you carry into this war?',
+                  initial: peers.find((p) => p.cid === cid)?.lordId ?? null,
+                  taken: takenLords,
+                  onPick: (lordId) => sendHello(mySeatNow, lordId),
+                  onFate: () => sendHello(mySeatNow, null),
+                  onCancel: () => undefined,
+                });
+              },
+            }, 'Choose your banner'),
+            h('button', { class: 'btn compact btn-quiet', onclick: () => sendHello(null) }, 'Stand up'),
+          ),
       hostControls
         ? h('div', { class: 'lobby-host' },
             h('h3', { class: 'settings-head' }, 'The terms (host)'),
@@ -255,7 +297,7 @@ export async function openOnlineLobby(app: App, invite?: { roomId: string; key: 
             labeled('Fog of war', select(['on', 'off'], fog ? 'on' : 'off', (v) => { fog = v === 'on'; })),
             h('button', { class: 'btn btn-seal', style: { marginTop: '0.6rem' }, onclick: tryStart },
               'Begin the war'),
-            h('p', { class: 'small muted' }, 'Lords are dealt by fate when the war begins — argue about them in person.'),
+            h('p', { class: 'small muted' }, 'Unclaimed banners are dealt by fate when the war begins.'),
           )
         : (mySeatNow !== null ? h('p', { class: 'small muted italic', style: { marginTop: '0.6rem' } }, 'The host sets the terms and begins the war.') : null),
     );

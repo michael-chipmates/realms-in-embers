@@ -36,7 +36,9 @@ export const CLOCK_PRESETS: ClockConfig[] = [
 ];
 
 export type NetPayload =
-  | { kind: 'hello'; cid: string; name: string; seat: number | null }
+  /** lordId rides along since the gallery (2026-07-11); old clients ignore
+   * unknown JSON fields, so the wire stays compatible in both directions. */
+  | { kind: 'hello'; cid: string; name: string; seat: number | null; lordId?: string | null }
   | { kind: 'start'; settings: GameSettings; clock: ClockConfig; seatCids: string[] }
   | { kind: 'act'; seat: number; action: Action }
   | { kind: 'chat'; name: string; text: string }

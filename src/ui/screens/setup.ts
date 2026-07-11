@@ -9,6 +9,7 @@ import { HANDICAPS, defaultSettings } from '../../engine/state';
 import { Rng } from '../../engine/rng';
 import type { Difficulty, GameSettings, MapSize, PlayerSetup, VictoryPath } from '../../engine/types';
 import type { App } from '../app';
+import { openLordGallery } from './gallery';
 import { h, mount } from '../dom';
 import { iconSvg } from '../icons';
 import { MapRenderer } from '../mapRenderer';
@@ -138,7 +139,24 @@ export function renderSetup(app: App, presetSeed?: string): void {
             })
           : null;
 
-        const row = h('div', { class: 'setup-player-row' }, creedDot, kindSelect, lordSelect, diffSelect, removeBtn);
+        const galleryBtn = h('button', {
+          class: 'btn btn-quiet compact',
+          'aria-label': `Seat ${idx + 1}: browse the lords`,
+          html: iconSvg('crownSmall', 15),
+          onclick: () => {
+            openLordGallery({
+              title: `Seat ${idx + 1} — whose banner?`,
+              initial: player.lordId !== 'random' ? player.lordId : null,
+              taken: settings.players.filter((p, i) => i !== idx && p.lordId !== 'random').map((p) => p.lordId),
+              onPick: (lordId) => { player.lordId = lordId; renderPlayers(); },
+              onFate: () => { player.lordId = 'random'; renderPlayers(); },
+              onCancel: () => undefined,
+            });
+          },
+        });
+        tip(galleryBtn, 'Leaf through the twelve lords — portraits, both abilities, temperament.');
+
+        const row = h('div', { class: 'setup-player-row' }, creedDot, kindSelect, lordSelect, galleryBtn, diffSelect, removeBtn);
         if (lord) {
           tip(row, () => h('div', { class: 'tip-plain', style: { maxWidth: '300px' } },
             h('strong', {}, `${lord.name}, ${lord.epithet}`),

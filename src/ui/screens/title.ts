@@ -9,6 +9,7 @@ import { hasAnySave, listSlots, loadSlot, newestSave, deleteSlot, importSave } f
 import { openOnlineLobby } from './lobby';
 import { openModal } from '../modal';
 import { openSettingsPanel } from '../panels/settingsPanel';
+import { openLordGallery } from './gallery';
 import type { Difficulty } from '../../engine/types';
 import type { App } from '../app';
 
@@ -35,34 +36,42 @@ const QUICK_WARS: { label: string; blurb: string; difficulty: Difficulty }[] = [
 ];
 
 function openQuickWar(app: App): void {
-  const body = h('div', { class: 'quickwar-body' },
+  const begin = (difficulty: Difficulty, lordId: string): void => {
+    app.startGame({
+      seed: `quickwar-${Math.random().toString(36).slice(2, 10)}`,
+      mapSize: 'medium',
+      players: [
+        { kind: 'human', lordId, difficulty },
+        { kind: 'ai', lordId: 'random', difficulty },
+        { kind: 'ai', lordId: 'random', difficulty },
+        { kind: 'ai', lordId: 'random', difficulty },
+      ],
+      victoryPaths: ['conquest', 'dominion', 'goldenAge', 'legend'],
+      maxTurns: 36,
+      fogOfWar: true,
+      veteranChronicle: false,
+    });
+  };
+  const modal = openModal('Quick War', h('div', { class: 'quickwar-body' },
     h('p', { class: 'small muted', style: { margin: '0 0 0.7rem' } },
-      'A fresh realm, you and three rivals, 36 seasons, the map unexplored. Pick how hard they fight.'),
+      'A fresh realm, you and three rivals, 36 seasons, the map unexplored. Pick how hard they fight — then pick your banner.'),
     ...QUICK_WARS.map((q) =>
       h('button', {
         class: 'btn quickwar-option',
         onclick: () => {
-          app.startGame({
-            seed: `quickwar-${Math.random().toString(36).slice(2, 10)}`,
-            mapSize: 'medium',
-            players: [
-              { kind: 'human', lordId: 'random', difficulty: q.difficulty },
-              { kind: 'ai', lordId: 'random', difficulty: q.difficulty },
-              { kind: 'ai', lordId: 'random', difficulty: q.difficulty },
-              { kind: 'ai', lordId: 'random', difficulty: q.difficulty },
-            ],
-            victoryPaths: ['conquest', 'dominion', 'goldenAge', 'legend'],
-            maxTurns: 36,
-            fogOfWar: true,
-            veteranChronicle: false,
+          modal.close();
+          openLordGallery({
+            title: `A ${q.label.toLowerCase()} war — whose banner do you carry?`,
+            onPick: (lordId) => begin(q.difficulty, lordId),
+            onFate: () => begin(q.difficulty, 'random'),
+            onCancel: () => openQuickWar(app),
           });
         },
       },
         h('span', { class: 'quickwar-label' }, q.label),
         h('span', { class: 'small muted' }, q.blurb),
       )),
-  );
-  openModal('Quick War', body);
+  ));
 }
 
 /** Osperan keeps writing between wars. A different line each visit. */
