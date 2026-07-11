@@ -244,6 +244,29 @@ const BANKS = {
     ],
     true,
   ),
+  seasonDigest: defineBank<{ turn: number; wars: number; ledgers: number; quiet: boolean }>(
+    'turn',
+    [
+      (c) => c.quiet
+        ? `The season passed as seasons do: fields ploughed, walls patched, rumors traded at fair prices. Nobody died famous. I record the quiet faithfully; it is the only subject that never complains of my tone.`
+        : `The season passed as seasons do: ${tally(c.wars, 'matter', 'matters')} put to steel, ${tally(c.ledgers, 'argument', 'arguments')} between the granaries and the tax men, and the rest of the realm got its harvest in unremarked.`,
+      (c) => c.quiet
+        ? `Of the season's remainder there is nothing to report, which took the whole realm considerable effort. Roads mended, tolls paid, oaths unbroken for want of opportunity. I rule a line under it with real affection.`
+        : `The season's remainder, in sum: ${tally(c.wars, 'clash', 'clashes')} for the map-makers and ${tally(c.ledgers, 'entry', 'entries')} for the counting-houses. The maps get the ballads. The counting-houses get the last word.`,
+      (c) => c.quiet
+        ? `A quiet season otherwise, and I have learned to prize those: the levies stayed home, the granaries argued with no one, and my margin for the dead went unused. Long may it disappoint me.`
+        : `So closes season ${c.turn}'s ordinary business — ${tally(c.wars, 'field contested', 'fields contested')}, ${tally(c.ledgers, 'purse turned out', 'purses turned out')}. History will want the ceremonies. The realm, I note in passing, runs on the rest.`,
+      (c) => c.quiet
+        ? `Season ${c.turn} closed without further incident worth the ink, so I give it one line and my compliments. Uneventful seasons are the mortar of a realm. Nobody thanks mortar.`
+        : `For the rest of season ${c.turn}, the usual weather: ${tally(c.wars, 'quarrel settled at spear-length', 'quarrels settled at spear-length')}, ${tally(c.ledgers, 'quarrel settled in coin', 'quarrels settled in coin')}. Of the two currencies, coin at least gets counted honestly.`,
+      (c) => c.quiet
+        ? `What else the season held, it kept to itself: sowing, shearing, small honest weather. I have checked twice for anything worth a lord's attention and am pleased to certify there was none.`
+        : `The remainder of the season I compress without apology: ${tally(c.wars, 'passage of arms', 'passages of arms')}, ${tally(c.ledgers, 'grievance filed in ink', 'grievances filed in ink')}, and everywhere else the slow, unchronicled work of staying fed.`,
+      (c) => c.quiet
+        ? `The balance of the season was peace of the working kind — not the signed sort, the sort with hay in it. I note it here because nobody else will, and it deserves a witness.`
+        : `Item, for the season's back pages: ${tally(c.wars, 'affray', 'affrays')}, ${tally(c.ledgers, 'ledger dispute', 'ledger disputes')}, no prodigies. The realm calls this an ordinary season. So do I, and gratefully.`,
+    ],
+  ),
   lordSpeech: defineBank<{ lord: string; quote: string }>(
     'diplomacy',
     [
@@ -257,13 +280,19 @@ const BANKS = {
 
 export type BankKey = keyof typeof BANKS;
 
+// small deterministic count-speller for the digest lines
+const NUMS = ['no', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven', 'twelve'];
+function tally(n: number, one: string, many: string): string {
+  return `${n < NUMS.length ? NUMS[n] : String(n)} ${n === 1 ? one : many}`;
+}
+
 /** Append a chronicle entry from a bank, avoiding recent repeats. */
 export function say<K extends BankKey>(
   state: GameState,
   rng: Rng,
   bank: K,
   ctx: Parameters<(typeof BANKS)[K]['variants'][number]>[0],
-  opts: { about?: PlayerId | null; privateTo?: PlayerId } = {},
+  opts: { about?: PlayerId | null; privateTo?: PlayerId; digest?: boolean } = {},
 ): ChronicleEntry {
   const b = BANKS[bank] as Bank<unknown>;
   const idx = pickVariant(state, rng, bank, b.variants.length);
@@ -275,6 +304,7 @@ export function say<K extends BankKey>(
     about: opts.about ?? null,
     ...(opts.privateTo !== undefined ? { privateTo: opts.privateTo } : {}),
     ...(b.ceremony ? { ceremony: true } : {}),
+    ...(opts.digest ? { digest: true as const } : {}),
   };
   state.chronicle.push(entry);
   return entry;
@@ -299,6 +329,53 @@ export function pickFresh(state: GameState, rng: Rng, key: string, count: number
   const idx = pool[rng.int(pool.length)];
   state.narratorUsed[`${key}:${idx}`] = state.turn;
   return idx;
+}
+
+/**
+ * Digest-mode chronicle filter — pure, so the UI and the tests share it.
+ *
+ * NEVER digested (always visible, digest on or off):
+ *   - ceremony entries (kind 'ceremony' / entry.ceremony: openings, fallen
+ *     seats, hero deaths, eliminations, saga chapters, coalitions, victory)
+ *   - 'war'        — battles and captures
+ *   - 'diplomacy'  — declarations, peaces, lords' speeches
+ *   - 'hero'       — hirings, quest returns, artifacts
+ *   - 'magic'      — completed rites
+ *   - 'event'      — event cards
+ *   - 'teaching'   — Osperan's marginalia/teachings
+ *   - 'realm' lines WITHOUT the minor flag (rebellions, province losses,
+ *     victory warnings, signature orders)
+ *
+ * Digested (hidden when digestOn, replaced by the season's digest entry):
+ *   - 'turn' omens (non-digest) and minor-flagged 'realm' bookkeeping.
+ * With digestOn false the digest entries themselves are hidden instead —
+ * the feed reads exactly as it did before the Season Digest existed.
+ */
+export function filterChronicle(entries: ChronicleEntry[], digestOn: boolean): ChronicleEntry[] {
+  if (!digestOn) return entries.filter((e) => !e.digest);
+  return entries.filter((e) => {
+    if (e.digest || e.ceremony) return true;
+    if (e.kind === 'turn') return false;
+    if (e.kind === 'realm' && e.minor) return false;
+    return true;
+  });
+}
+
+/**
+ * The default Digest reading view, pure for the tests: older seasons sit
+ * collapsed and contribute only their digest line and their ceremonies
+ * (ceremonies are never hidden, collapsed or not); the current season —
+ * plus any the reader explicitly opened — shows everything filterChronicle
+ * keeps. This is why a sixty-season war still reads in a couple of screens.
+ */
+export function digestView(
+  entries: ChronicleEntry[],
+  currentTurn: number,
+  openSeasons?: ReadonlySet<number>,
+): ChronicleEntry[] {
+  return filterChronicle(entries, true).filter((e) =>
+    e.turn === currentTurn || openSeasons?.has(e.turn) || e.digest || e.ceremony === true,
+  );
 }
 
 /** Direct authored entry (events, teachings) — still deduped by caller. */

@@ -273,6 +273,20 @@ details.side-section:not([open]) > summary { border-bottom: none; }
 .chronicle-ceremony .chronicle-text { font-weight: 700; }
 .chronicle-ceremony { background: rgba(224, 120, 48, 0.08); margin: 0 -0.4rem; padding: 0.35rem 0.4rem; border-radius: 3px; }
 .chronicle-collapsed .chronicle-feed { display: none; }
+/* season digest: headers fold a whole season; Osperan's summary line reads
+   like a marginal note, set apart from ordinary entries */
+.chronicle-season {
+  display: flex; align-items: center; gap: 0.4rem; width: 100%;
+  background: transparent; border: 0; border-bottom: 1px solid rgba(58, 46, 28, 0.35);
+  color: #4a3d28; font-size: 0.7rem; letter-spacing: 0.12em; text-transform: uppercase;
+  font-weight: 700; padding: 0.45rem 0.1rem 0.25rem; margin-top: 0.3rem;
+  cursor: pointer; text-align: left; min-height: 36px;
+}
+.chronicle-season:hover { color: #2e2416; }
+.chronicle-season-chevron { width: 0.9em; flex-shrink: 0; }
+.chronicle-season-count { margin-left: auto; opacity: 0.65; font-weight: 400; letter-spacing: 0; }
+.chronicle-digest-entry { background: rgba(58, 46, 28, 0.07); margin: 0 -0.4rem; padding: 0.35rem 0.4rem; border-radius: 3px; }
+.chronicle-digest-entry .chronicle-text { font-style: italic; }
 
 /* --------------------------------------------------------------- alerts */
 

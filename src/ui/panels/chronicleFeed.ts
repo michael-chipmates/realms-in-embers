@@ -1,8 +1,15 @@
 /**
  * Osperan's column: the war chronicle, newest at the bottom, filtered to
  * what this viewer may know. Collapsible on small screens.
+ *
+ * Digest mode (default on, persisted): each season's routine lines fold
+ * behind Osperan's one-line season digest, entries group under collapsible
+ * season headers, and only the current season starts expanded. Digest off
+ * is exactly the old flat feed. What is and isn't digested is decided by
+ * filterChronicle in the engine's narrator (pure, shared with the tests).
  */
 import type { ChronicleEntry } from '../../engine/types';
+import { filterChronicle } from '../../engine/narrator';
 import { clear, h } from '../dom';
 import { artSlot } from '../art';
 import { iconSvg } from '../icons';
@@ -22,6 +29,11 @@ const KIND_ICON: Record<ChronicleEntry['kind'], string> = {
 
 let collapsed = window.innerWidth < 900;
 let filter: 'all' | ChronicleEntry['kind'] = 'all';
+const DIGEST_KEY = 'rie-digest';
+let digestOn = localStorage.getItem(DIGEST_KEY) !== 'off';
+/** Reader's explicit open/close choices per season header, on top of the
+ * default (only the current season open). */
+const seasonChoice: Record<number, boolean> = {};
 
 const FILTERS: { key: 'all' | ChronicleEntry['kind']; label: string; icon: string }[] = [
   { key: 'all', label: 'All', icon: 'quill' },
@@ -36,11 +48,15 @@ const FILTERS: { key: 'all' | ChronicleEntry['kind']; label: string; icon: strin
 export function renderChronicleFeed(screen: GameScreen, root: HTMLElement): void {
   const state = screen.state;
   const viewer = screen.viewerId();
-  const entries = state.chronicle
-    .filter((e) => e.privateTo === undefined || e.privateTo === viewer)
-    .filter((e) => !(state.settings.veteranChronicle && e.kind === 'teaching'))
-    .filter((e) => filter === 'all' || e.kind === filter || (filter === 'realm' && e.kind === 'turn'))
-    .slice(-60);
+  const visible = filterChronicle(
+    state.chronicle
+      .filter((e) => e.privateTo === undefined || e.privateTo === viewer)
+      .filter((e) => !(state.settings.veteranChronicle && e.kind === 'teaching'))
+      .filter((e) => filter === 'all' || e.kind === filter || (filter === 'realm' && e.kind === 'turn')),
+    digestOn,
+  );
+  // digest off = the old flat feed, digest on = every season, grouped
+  const entries = digestOn ? visible : visible.slice(-60);
 
   // remember where the reader was: yank to the bottom only if they were there
   const prevFeed = root.querySelector<HTMLElement>('.chronicle-feed');
@@ -83,8 +99,21 @@ export function renderChronicleFeed(screen: GameScreen, root: HTMLElement): void
           },
         }, h('span', { html: iconSvg(f.icon, 13) }), f.label),
       ),
+      h('button', {
+        class: `chronicle-filter chronicle-digest-chip ${digestOn ? 'active' : ''}`,
+        'aria-pressed': String(digestOn),
+        'aria-label': 'Digest mode',
+        title: "Digest — fold each season's routine lines into Osperan's one-line summary",
+        onclick: () => {
+          digestOn = !digestOn;
+          localStorage.setItem(DIGEST_KEY, digestOn ? 'on' : 'off');
+          renderChronicleFeed(screen, root);
+        },
+      }, h('span', { html: iconSvg('info', 13) }), 'Digest'),
     ),
-    ...entries.map((entry) => renderEntry(screen, entry)),
+    ...(digestOn
+      ? renderSeasons(screen, root, entries, state.turn)
+      : entries.map((entry) => renderEntry(entry))),
   );
   root.appendChild(feed);
   requestAnimationFrame(() => {
@@ -92,8 +121,49 @@ export function renderChronicleFeed(screen: GameScreen, root: HTMLElement): void
   });
 }
 
-function renderEntry(screen: GameScreen, entry: ChronicleEntry): HTMLElement {
-  return h('div', { class: `chronicle-entry ${entry.ceremony ? 'chronicle-ceremony' : ''} chronicle-${entry.kind}` },
+/** Group entries by season under collapsible headers. Only the current
+ * season starts open; a collapsed season still shows its digest line and
+ * its ceremonies (those are never hidden), so even a sixty-season war
+ * reads in a couple of screens. Mirrors engine digestView — keep in step. */
+function renderSeasons(
+  screen: GameScreen,
+  root: HTMLElement,
+  entries: ChronicleEntry[],
+  currentTurn: number,
+): HTMLElement[] {
+  const seasons: { turn: number; items: ChronicleEntry[] }[] = [];
+  for (const e of entries) {
+    const last = seasons[seasons.length - 1];
+    if (last && last.turn === e.turn) last.items.push(e);
+    else seasons.push({ turn: e.turn, items: [e] });
+  }
+  const out: HTMLElement[] = [];
+  for (const season of seasons) {
+    const open = seasonChoice[season.turn] ?? (season.turn === currentTurn);
+    const shown = open ? season.items : season.items.filter((e) => e.digest || e.ceremony);
+    const folded = season.items.length - shown.length;
+    out.push(h('button', {
+      class: `chronicle-season ${open ? 'open' : ''}`,
+      'aria-expanded': String(open),
+      'aria-label': `Season ${season.turn}, ${open ? 'expanded' : `collapsed, ${folded} more ${folded === 1 ? 'entry' : 'entries'}`}`,
+      onclick: () => {
+        seasonChoice[season.turn] = !open;
+        renderChronicleFeed(screen, root);
+      },
+    },
+      h('span', { class: 'chronicle-season-chevron' }, open ? '▾' : '▸'),
+      `Season ${season.turn}`,
+      h('span', { class: 'chronicle-season-count small' }, open ? String(season.items.length) : folded > 0 ? `+${folded}` : ''),
+    ));
+    for (const entry of shown) out.push(renderEntry(entry));
+  }
+  return out;
+}
+
+function renderEntry(entry: ChronicleEntry): HTMLElement {
+  return h('div', {
+    class: `chronicle-entry ${entry.ceremony ? 'chronicle-ceremony' : ''} ${entry.digest ? 'chronicle-digest-entry' : ''} chronicle-${entry.kind}`,
+  },
     h('div', { class: 'chronicle-meta small muted' },
       h('span', { html: iconSvg(KIND_ICON[entry.kind] ?? 'quill', 12) }),
       `Season ${entry.turn}`,

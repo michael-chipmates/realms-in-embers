@@ -130,13 +130,13 @@ export function beginTurn(state: GameState, rng: Rng, effects: Effect[]): void {
       if (player.gold >= 240) {
         player.gold -= 240;
         scribe(state, {
-          kind: 'realm', about: pid,
+          kind: 'realm', about: pid, minor: true,
           text: `${lordName(state, pid)} repaid the Guild of Weights and Measures in full — 240 gold, counted twice. The clerk's smile flickered, which the treasury counts as a victory.`,
         });
       } else {
         for (const p of provincesOf(state, pid)) p.order = clamp(p.order - 5, 0, 100);
         scribe(state, {
-          kind: 'realm', about: pid,
+          kind: 'realm', about: pid, minor: true,
           text: `${lordName(state, pid)} defaulted on the Guild loan. No bailiffs came — only a realm-wide whisper about credit, which is worse. (−5 order everywhere)`,
         });
       }
@@ -197,6 +197,7 @@ function enforceInsolvency(state: GameState, rng: Rng, pid: PlayerId, effects: E
     scribe(state, {
       kind: 'realm',
       about: pid,
+      minor: true,
       text: `${lordName(state, pid)}'s treasury ran dry. ${disbanded.length} ${disbanded.length === 1 ? 'company' : 'companies'} were paid in apologies and sent home; the realm noticed (order −2).`,
     });
     effects.push({ e: 'chronicle', entry: state.chronicle[state.chronicle.length - 1] });
@@ -309,6 +310,23 @@ function roundEnd(state: GameState, rng: Rng, effects: Effect[]): void {
 
   // -- memory fades a little
   decayDeeds(state);
+
+  // -- Osperan closes the season's ordinary business in one line. Digest
+  //    mode shows this entry instead of the routine 'turn' omens and
+  //    minor-flagged 'realm' bookkeeping; everything else always shows.
+  //    Written before the season turns so it belongs to the season it sums.
+  {
+    let wars = 0;
+    let ledgers = 0;
+    for (const e of state.chronicle) {
+      if (e.turn !== state.turn) continue;
+      if (e.kind === 'war') wars++;
+      else if (e.kind === 'realm' && e.minor) ledgers++;
+    }
+    say(state, rng, 'seasonDigest', {
+      turn: state.turn, wars, ledgers, quiet: wars + ledgers === 0,
+    }, { digest: true });
+  }
 
   // -- season turns
   state.turn++;

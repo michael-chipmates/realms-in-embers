@@ -305,6 +305,12 @@ export interface ChronicleEntry {
   privateTo?: PlayerId;
   /** Big-moment entries get ceremony treatment in the UI. */
   ceremony?: boolean;
+  /** Osperan's one-line season summary, written at round end. Digest mode
+   * shows this in place of the season's routine lines. */
+  digest?: true;
+  /** Routine bookkeeping line (insolvency, loan ledgers) — folded behind
+   * the season digest when Digest mode is on. */
+  minor?: true;
 }
 
 // ------------------------------------------------------------------ players

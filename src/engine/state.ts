@@ -59,8 +59,11 @@ import { NEUTRAL } from './types';
  *     1/sqrt(rivals−1) (D-018: nothing scales uncapped with table size);
  *     Fen Lights gain their offensive half; Morrikan's doors open at his
  *     seat when the seed gave him no barrow; empty victory-path setups are
- *     rejected instead of silently rewritten. */
-export const RULES_VERSION = 12;
+ *     rejected instead of silently rewritten.
+ * 13: Season Digest — Osperan closes every round with one digest entry
+ *     (ChronicleEntry.digest; routine ledger lines carry minor); the new
+ *     seasonDigest bank draws from the Rng at roundEnd. */
+export const RULES_VERSION = 13;
 
 export const HANDICAPS: Record<Difficulty, PlayerHandicap> = {
   squire: { incomeMult: 0.85, label: 'Squire — AI earns 15% less gold and attacks only with clear advantage.' },
