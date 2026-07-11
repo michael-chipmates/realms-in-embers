@@ -7,7 +7,7 @@
 <p align="center">Twelve lords · one cold throne · a narrator who refuses to stay dead</p>
 
 <p align="center">
-<a href=".github/workflows/ci.yml"><img src="https://img.shields.io/badge/CI-typecheck_·_56_tests_·_sim-2ea44f" alt="CI"></a>
+<a href=".github/workflows/ci.yml"><img src="https://img.shields.io/badge/CI-typecheck_·_tests_·_sim_·_build-2ea44f" alt="CI"></a>
 <a href="LICENSE"><img src="https://img.shields.io/badge/code-AGPL--3.0-8a4d00" alt="Code: AGPL-3.0"></a>
 <a href="LICENSE-CONTENT"><img src="https://img.shields.io/badge/content_&_art-CC_BY--SA_4.0-8a4d00" alt="Content: CC BY-SA 4.0"></a>
 <img src="https://img.shields.io/badge/accounts-none,_ever-1c1e21" alt="No accounts, no tracking">
@@ -17,7 +17,9 @@
 
 > A side project that got gloriously out of hand: a love letter to the *spirit* of SSI's 1993 classic Fantasy Empires — original fiction, original rules, zero runtime dependencies, and a dead chronicler who still meets his deadlines.
 
-![One tour of Realms in Embers: the hall, the war table, an honest battle, the painted lords](docs/media/playthrough.gif)
+![One tour of Realms in Embers: the hall, the painted lords, the war table, an honest battle](docs/media/playthrough.gif)
+
+<p align="center"><i>(A crisper <a href="docs/media/playthrough.mp4">mp4 of the tour</a> lives in the <a href="https://rie.gg/press.html">press kit</a>.)</i></p>
 
 ## Play
 
@@ -31,7 +33,7 @@ Pick a lord in the painted gallery (twelve, in three creeds, each with a real te
 
 <table>
 <tr>
-<td width="50%"><img src="docs/media/title.png" alt="The title screen: a candlelit hall, the wordmark glowing over a war table"></td>
+<td width="50%"><img src="docs/media/gallery.png" alt="The lord gallery: a painted portrait, creed, temperament bars, and both abilities on one set-piece screen"></td>
 <td width="50%"><img src="docs/media/war-table.png" alt="The war table: a painted map of provinces, the chronicle feed on the right"></td>
 </tr>
 <tr>
