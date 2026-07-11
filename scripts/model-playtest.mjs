@@ -14,7 +14,7 @@
  *
  * Reads .anthropic_token (gitignored). Never at game runtime; tooling only.
  */
-import { readFileSync, mkdirSync, writeFileSync } from 'node:fs';
+import { readFileSync, existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { createGame, applyAction } from '../src/engine/engine.ts';
 import { aiTakeTurn } from '../src/engine/ai.ts';
 import { previewBattle } from '../src/engine/combat.ts';
@@ -44,7 +44,7 @@ const MODEL = arg('model', 'claude-sonnet-5');
 const OUT = arg('out', 'playtest-out');
 const SERIES = process.argv.includes('--series');
 
-const KEY = readFileSync(new URL('../.anthropic_token', import.meta.url), 'utf8').trim();
+const KEY = readFileSync(existsSync(new URL('../.anthropic_token', import.meta.url)) ? new URL('../.anthropic_token', import.meta.url) : new URL('../../internal/.anthropic_token', import.meta.url), 'utf8').trim();
 
 // ----------------------------------------------------------------- the view
 
