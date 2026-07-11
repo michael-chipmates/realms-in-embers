@@ -23,7 +23,7 @@
 
 ## Play
 
-**[rie.gg](https://rie.gg)** — free, no account, nothing to install. ([realmsinembers.com](https://realmsinembers.com) gets you there too.) Works on phones, installs from the browser as an app, and the whole game keeps working offline after the first load. A full campaign fills an evening; a short chronicle fits a lunch break.
+**[rie.gg](https://rie.gg)** — free, no account, nothing to install. ([realmsinembers.com](https://realmsinembers.com) gets you there too.) Works on phones, installs from the browser as an app, and the whole game keeps working offline after the first load. A full campaign fills an evening; a short chronicle fits a lunch break. New to the table? **The First Ember** on the title page walks your first war — a real game, guided, skippable.
 
 ## The game in one paragraph
 
@@ -65,7 +65,7 @@ npm run dev        # http://localhost:5173 — desktop and phone
 ```bash
 npm test           # the full suite: engine, signatures, replay determinism, the rules-version canary
 npm run sim        # headless AI-vs-AI sweep with invariants checked every round
-npm run build      # typecheck + production build (~146 KB gzipped, zero runtime deps)
+npm run build      # typecheck + production build (~159 KB gzipped, zero runtime deps)
 ```
 
 ## The making of

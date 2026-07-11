@@ -1,12 +1,15 @@
 # Changelog
 
 All notable changes to Realms in Embers. The game's rules carry their own
-version (`RULES_VERSION` in `src/engine/state.ts`, currently v14) — bumped
+version (`RULES_VERSION` in `src/engine/state.ts`, currently v15) — bumped
 whenever engine semantics change, with a frozen replay fixture as the canary.
 
-## [Unreleased] — 0.5.0
+## [0.5.0] — the legible war (2026-07-12)
 
-In progress. Shipped so far on `main`:
+The experience wave and the second trust wave, in one release: battles stage
+themselves, a stranger's first game teaches by doing, the map has a semantic
+twin, online tables verify their own history, and the balance referee gained
+the statistics to convict — then convicted, twice, and was obeyed.
 
 - **The Battle Theater** — every fight opens as a staged scene: a stakes card
   carrying the odds you accepted, ranks of company chits, a balance that tips
@@ -47,6 +50,42 @@ In progress. Shipped so far on `main`:
   the End button whispers true omissions and never blocks.
 - Disbanding a company and releasing a hero now arm on the first press and
   act on the second — nothing irreversible on a stray tap.
+- **The chronicle at the right volume** — entries carry reading tiers
+  (ceremony, decision, alert, weather), new lines since your last full
+  reading wear an ember dot and count on the collapsed spine, and long wars
+  mount only their trailing seasons; the rest unroll on request.
+- **The endgame debrief and the share card** — the end screen names where
+  the war turned (great land-grabs, fallen banners, the season the lead
+  became permanent); a share card renders to PNG entirely on-device (victor,
+  path, score, seed, the final map), and a copied seed link opens the same
+  realm for anyone — never over a live game.
+- **The rival table** — every living rival in one row: stance, their regard
+  for you, lands, saga, signature readiness; the full card below as dossier.
+- **The map's three lifetimes** — a renderer layer cache: terrain moves with
+  the camera, politics with the action log, hover with the hand. A hover
+  repaint fell from ~6 ms of cartography to 0.05 ms of composition, with
+  screenshots within 0.2% of the old ink.
+- **The phone mode bar** — Map, Realm, Lords, Chronicle at the thumb line,
+  opening surfaces that already exist; the sheet sits on its shoulder.
+  Setup folds the victory fine print; the gallery says HOW each lord plays
+  (archetype line, candor chip) and recommends three first banners; iOS
+  learns the Add-to-Home-Screen line; the smallest phones get a 320px gate.
+- **Relay round two** — reconnects fetch only what they missed (`since` on
+  both relays), room-minting is throttled, and every act carries the cid the
+  start entry pinned to its seat (anti-spoofing among key-holders, labeled
+  honestly; older editions stay welcome).
+- **The offline keeper's card** — Settings shows the keeper's watch and a
+  one-tap sweep that carries all 96 plates, songs, and voices home, with an
+  honest megabyte count. CI gains a bundle budget (≤190 KB JS gz).
+- **The three-eyed lint and the reconciling clerk** — ESLint on exactly the
+  audit's classes (floating promises, loose equality, non-exhaustive
+  switches; one finding in the codebase, fixed) and a content check that
+  every plate is named and every name plated, on every PR.
+- **The shelf keeps every age** — save migrations are a registry of record
+  with tests that reopen an old chronicle and play it; Settings' credits
+  carry the full honest ledger including the AI-art disclosure.
+- **/lords/** — the twelve claimants as one crawlable page, rendered from
+  the engine's own content; joined the sitemap beside the Codex export.
 
 The enforced balance gates, over ≥300 mirrored games: every lord's bootstrap
 CI must touch expectation ±5pp (the ROPE gate — a CI wholly outside fails
@@ -56,8 +95,12 @@ simultaneous tests at p<0.01 would false-alarm one sweep in nine); dominion
 ≥ 1.0 uses/seat. Refereed by that gate this release: Barrow Revenants swing
 like the dead (4/4/5, raising costs 90 gold — a conclusive 41% Morrikan
 winrate said a free elite standing army was too generous) and Open the Doors
-returns every 16 seasons at −8 order. Post-tune sweeps: all gates pass on
-two independent 300-game prefixes.
+returns every 16 seasons at −8 order; then the 600-game sweep convicted
+Aldric at a conclusive 40%, so the compounding half of The Old Blood eased
+(capital +10% → +5%) and the Royal Muster slowed to every 16 seasons; and
+dominion, over its ceiling on four straight sweeps, holds `DOMINION_ROUNDS`
+5 now (dominion 30% of endings, chronicle 31%, all five alive). Final
+600-game sweep: every gate passes.
 
 ## [0.4.0] — the open realm (2026-07-12)
 
