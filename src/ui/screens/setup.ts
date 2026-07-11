@@ -242,11 +242,15 @@ export function renderSetup(app: App, presetSeed?: string): void {
   const startBtn = h('button', {
     class: 'btn btn-seal', style: { fontSize: '1.05rem', padding: '0.7rem 2rem' },
     onclick: () => {
+      errLine.textContent = '';
       if (settings.players.filter((p) => p.kind === 'human').length === 0) {
         errLine.textContent = 'At least one mortal must sit at the table.';
         return;
       }
-      if (settings.victoryPaths.length === 0) settings.victoryPaths = ['conquest'];
+      if (settings.victoryPaths.length === 0) {
+        errLine.textContent = 'Choose at least one road to the throne, or the age cannot resolve.';
+        return;
+      }
       settings.seed = settings.seed.trim() || randomSeed();
       app.startGame(settings);
     },

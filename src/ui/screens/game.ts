@@ -65,6 +65,8 @@ export class GameScreen {
   /** Online war session; null for local/hotseat play. */
   readonly online: OnlineSession | null;
   private clockEl: HTMLElement | null = null;
+  /** Persistent aria-live season indicator: reused across topbar renders so screen readers hear season changes. */
+  private seasonEl: HTMLElement | null = null;
   private clockTimer: number | null = null;
   /** Seconds left in each human seat's bank (client-side, honor-system). */
   private clockBanks: Record<number, number> = {};
@@ -1045,8 +1047,19 @@ export class GameScreen {
       return breakdown('Emberlight, each season', inc.lines, `+${inc.total} per season`);
     });
 
-    const seasonEl = h('div', { class: 'stat' }, h('span', { html: iconSvg('hourglass', 16) }), h('b', {}, `Season ${state.turn}`), h('span', { class: 'small muted' }, seasonName(state.turn)));
-    tip(seasonEl, () => `The Chronicle closes after season ${state.victory.maxTurns} — the realm is then judged as it stands.`);
+    // The season indicator is a persistent aria-live region. The topbar is
+    // remounted every render, so the element must survive across renders and
+    // its text must change in place (below, after mounting) or screen
+    // readers would never announce the new season.
+    if (!this.seasonEl) {
+      this.seasonEl = h('div', { class: 'stat', 'aria-live': 'polite', 'aria-atomic': 'true' },
+        h('span', { html: iconSvg('hourglass', 16), 'aria-hidden': 'true' }),
+        h('b', {}),
+        h('span', { class: 'small muted' }),
+      );
+      tip(this.seasonEl, () => `The Chronicle closes after season ${this.state.victory.maxTurns} — the realm is then judged as it stands.`);
+    }
+    const seasonEl = this.seasonEl;
 
     const heroesReady = heroesOf(state, viewer.id).filter((hh) => hh.status === 'ready' && hh.levelChoices.length > 0).length;
 
@@ -1097,6 +1110,15 @@ export class GameScreen {
           ? `${LORD_BY_ID[this.current().lordId].name.split(' ')[0]} moves…`
           : 'End the Season'),
     );
+    // Update the live region's text only now that it is back in the DOM, and
+    // only when the season actually changed: mutations inside an attached
+    // aria-live region are what make screen readers announce the transition.
+    const seasonLabel = `Season ${state.turn}`;
+    const seasonB = seasonEl.querySelector('b') as HTMLElement;
+    if (seasonB.textContent !== seasonLabel) {
+      seasonB.textContent = seasonLabel;
+      (seasonEl.querySelector('span.small') as HTMLElement).textContent = seasonName(state.turn);
+    }
     this.renderClock();
   }
 

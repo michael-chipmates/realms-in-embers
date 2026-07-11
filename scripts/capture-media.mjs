@@ -26,6 +26,16 @@ await page.waitForTimeout(2600); // the hall, breathing
 await shot('title');
 await page.getByRole('button', { name: 'New Chronicle' }).click();
 await page.waitForTimeout(600);
+// the set piece: leaf through the painted lords before mustering
+await page.getByRole('button', { name: 'Seat 1: browse the lords' }).click();
+await page.waitForTimeout(1500);
+await shot('gallery');
+await page.keyboard.press('ArrowRight');
+await page.waitForTimeout(900);
+await page.keyboard.press('ArrowRight');
+await page.waitForTimeout(900);
+await page.keyboard.press('Escape');
+await page.waitForTimeout(400);
 await page.locator('#setup-seed').fill('readme-tour-7');
 await page.waitForTimeout(900);
 await page.getByRole('button', { name: 'Begin the Chronicle' }).click();
@@ -98,9 +108,13 @@ const ff = (args) => {
     throw new Error(`ffmpeg failed (${res.status ?? 'not found'}): ${String(res.stderr).slice(-400)}`);
   }
 };
-ff(['-i', `${MEDIA}/playthrough.webm`, '-vf', 'fps=10,scale=880:-1:flags=lanczos,palettegen', `${TMP}/pal.png`]);
-ff(['-i', `${MEDIA}/playthrough.webm`, '-i', `${TMP}/pal.png`,
-  '-lavfi', 'fps=10,scale=880:-1:flags=lanczos[x];[x][1:v]paletteuse=dither=bayer:bayer_scale=4',
+// the press-kit mp4: crisp, small, plays everywhere (a 10 MB gif is not a tour)
+ff(['-ss', '0.6', '-i', `${MEDIA}/playthrough.webm`, '-c:v', 'libx264', '-crf', '26',
+  '-preset', 'slow', '-vf', 'scale=960:-2', '-pix_fmt', 'yuv420p', '-an', `${MEDIA}/playthrough.mp4`]);
+// the README gif: tighter palette, 720px, 9fps — aim well under 3 MB
+ff(['-ss', '0.6', '-i', `${MEDIA}/playthrough.webm`, '-vf', 'fps=9,scale=720:-1:flags=lanczos,palettegen=max_colors=160', `${TMP}/pal.png`]);
+ff(['-ss', '0.6', '-i', `${MEDIA}/playthrough.webm`, '-i', `${TMP}/pal.png`,
+  '-lavfi', 'fps=9,scale=720:-1:flags=lanczos[x];[x][1:v]paletteuse=dither=bayer:bayer_scale=5',
   `${MEDIA}/playthrough.gif`]);
 rmSync(TMP, { recursive: true, force: true });
 rmSync(`${MEDIA}/playthrough.webm`, { force: true });

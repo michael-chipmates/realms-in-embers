@@ -1,8 +1,59 @@
 /** Settings: accessibility and sound. Available from title and in game. */
+import { serializeGame } from '../../engine/engine';
+import { RULES_VERSION } from '../../engine/state';
 import { h } from '../dom';
 import { audio } from '../audio';
 import { openModal } from '../modal';
 import type { App } from '../app';
+
+function bugReport(app: App): string {
+  const lines = [
+    'Realms in Embers — bug report',
+    `Rules version: ${RULES_VERSION}`,
+    `User agent: ${navigator.userAgent}`,
+  ];
+  const state = app.game;
+  if (state) {
+    lines.push(
+      '',
+      `Seed: ${state.seed}`,
+      `Season: ${state.turn}`,
+      `Settings: ${JSON.stringify(state.settings)}`,
+      '',
+      'Save (same format as an exported save, full action log included):',
+      serializeGame(state),
+    );
+  } else {
+    lines.push('', 'No game was running.');
+  }
+  return lines.join('\n');
+}
+
+function copyBugReportRow(app: App): HTMLElement {
+  const status = h('span', { class: 'small muted', 'aria-live': 'polite' });
+  let timer = 0;
+  const note = (text: string): void => {
+    status.textContent = text;
+    clearTimeout(timer);
+    timer = window.setTimeout(() => { status.textContent = ''; }, 2500);
+  };
+  const btn = h('button', {
+    class: 'btn compact',
+    onclick: () => {
+      navigator.clipboard.writeText(bugReport(app)).then(
+        () => note('Copied.'),
+        () => note('Could not copy — your browser said no.'),
+      );
+    },
+  }, 'Copy bug report');
+  return h('div', { class: 'settings-row' },
+    h('span', {}, 'Found a bug?',
+      h('span', { class: 'small muted', style: { display: 'block' } },
+        'Everything a bug hunter needs: seed, settings, and the full action log. Paste it into a GitHub issue.'),
+    ),
+    h('span', { style: { display: 'flex', alignItems: 'center', gap: '0.5rem' } }, status, btn),
+  );
+}
 
 function slider(label: string, value: number, min: number, max: number, step: number, onInput: (v: number) => void): HTMLElement {
   const input = h('input', {
@@ -66,6 +117,8 @@ export function openSettingsPanel(app: App): void {
       app.applySettings();
       if (app.game) app.game.settings.veteranChronicle = v;
     }, "Osperan skips his teaching asides. For those who have read the Chronicle before."),
+    h('h3', { class: 'settings-head' }, 'Reporting'),
+    copyBugReportRow(app),
   );
   openModal('Settings', content);
 }
