@@ -30,6 +30,8 @@ interface GameRecord {
   rebellions: number;
   eliminations: number;
   chronicleEntries: number;
+  /** Signature uses by lord id — the balance gate wants all twelve alive. */
+  signatureUses: Record<string, number>;
   wallMs: number;
 }
 
@@ -71,6 +73,7 @@ function playGame(i: number): GameRecord {
   let steps = 0;
   let battles = 0;
   let rebellions = 0;
+  const signatureUses: Record<string, number> = {};
   let lastTurnSeen = state.turn;
   let stuckCounter = 0;
 
@@ -82,6 +85,10 @@ function playGame(i: number): GameRecord {
     for (const e of effects) {
       if (e.e === 'battle') battles++;
       if (e.e === 'rebellion') rebellions++;
+      if (e.e === 'signature') {
+        const lord = state.players[e.by].lordId;
+        signatureUses[lord] = (signatureUses[lord] ?? 0) + 1;
+      }
     }
     if (state.turn !== lastTurnSeen) {
       lastTurnSeen = state.turn;
@@ -124,6 +131,7 @@ function playGame(i: number): GameRecord {
     rebellions,
     eliminations,
     chronicleEntries: state.chronicle.length,
+    signatureUses,
     wallMs: Math.round(performance.now() - started),
   };
 }
@@ -193,6 +201,18 @@ function main(): void {
     const avgBattles = records.reduce((s, r) => s + r.battles, 0) / records.length;
     const avgChron = records.reduce((s, r) => s + r.chronicleEntries, 0) / records.length;
     console.log(`Average battles/game: ${avgBattles.toFixed(1)}, chronicle entries/game: ${avgChron.toFixed(0)}`);
+    // signature usage: the balance gate wants every lord firing theirs
+    const sigUses = new Map<string, number>();
+    for (const r of records) {
+      for (const [lord, n] of Object.entries(r.signatureUses ?? {})) {
+        sigUses.set(lord, (sigUses.get(lord) ?? 0) + n);
+      }
+    }
+    console.log('Signature uses (total / per seat at the table):');
+    for (const [lord, games] of [...byLordGames.entries()].sort()) {
+      const uses = sigUses.get(lord) ?? 0;
+      console.log(`  ${(LORD_BY_ID[lord]?.name ?? lord).padEnd(24)} ${String(uses).padStart(4)}   ${(uses / Math.max(1, games)).toFixed(1)}/seat`);
+    }
   }
   if (failures.length > 0) {
     console.log(`\n✗ ${failures.length} FAILURES:`);

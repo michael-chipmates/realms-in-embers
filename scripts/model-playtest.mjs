@@ -60,7 +60,9 @@ function view(state, pid, rejections) {
   const report = incomeReport(state, pid);
   const visible = state.settings.fogOfWar ? seenBy(state, pid) : null;
   const L = [];
-  L.push(`SEASON ${state.turn} of ${state.victory.maxTurns}. You are ${lord.name} (${lord.creed}). Perk: ${lord.perk.desc}`);
+  L.push(`SEASON ${state.turn} of ${state.victory.maxTurns}. You are ${lord.name} (${lord.creed}). Legacy: ${lord.perk.desc}`);
+  const sigCd = me.signatureCooldownLeft ?? 0;
+  L.push(`SIGNATURE — ${lord.signature.name}: ${lord.signature.desc} ${sigCd === 0 ? 'READY NOW' : `returns in ${sigCd} seasons`}${lord.signature.target === 'rival' ? ' (needs "targetPlayer")' : lord.signature.target === 'enemyProvince' ? ' (needs "province" bordering your realm)' : ''}.`);
   L.push(`Treasury ${Math.round(me.gold)} gold (net ${report.net >= 0 ? '+' : ''}${report.net}/season). Emberlight ${me.emberlight}. Tax: ${me.tax}.`);
   const needed = Math.round(dominionShareAt(state) * 100);
   L.push(`VICTORY RACE — dominion needs ${needed}% of ${state.provinces.length} provinces for 3 seasons${state.turn > 38 ? ' (eroding each season!)' : ''}; golden age needs richest+900 gold+order 65 for 4; legend needs saga chapter 5 (you: ${me.sagaChapter}/5).`);
@@ -120,7 +122,8 @@ function view(state, pid, rejections) {
   for (const o of state.players) {
     if (o.id === pid || !o.alive) continue;
     const att = attitudeOf(state, o.id, pid).total;
-    L.push(`  player${o.id} ${LORD_BY_ID[o.lordId].name} (${getStance(state, pid, o.id)}): holds ${provincesOf(state, o.id).length} provinces, regards you ${att >= 0 ? '+' : ''}${att}, saga ${o.sagaChapter}/5`);
+    const oSig = LORD_BY_ID[o.lordId].signature;
+    L.push(`  player${o.id} ${LORD_BY_ID[o.lordId].name} (${getStance(state, pid, o.id)}): holds ${provincesOf(state, o.id).length} provinces, regards you ${att >= 0 ? '+' : ''}${att}, saga ${o.sagaChapter}/5, signature ${oSig.name} ${(o.signatureCooldownLeft ?? 0) === 0 ? 'ready' : `in ${o.signatureCooldownLeft}`}`);
   }
   const lead = leaderId(state);
   if (lead !== null) L.push(`  Realm leader by land: player${lead}${lead === pid ? ' (YOU — expect a coalition if you pass 40%)' : ''}`);
@@ -152,6 +155,7 @@ function view(state, pid, rejections) {
   {"t":"startRite","spellId":"id"} · {"t":"pledgeEmberlight","amount":N} · {"t":"castSpell","spell":"id","province":P?}
   {"t":"diplomacy","kind":"declareWar|offerPeace|offerPact|offerAlliance|gift|demand|joinWar","target":playerN,"gold":N?,"against":playerN?}
   {"t":"respond","proposalId":N,"accept":true}
+  {"t":"signature","targetPlayer":playerN?,"province":P?}  — your lord's signature order (see SIGNATURE line above; only when READY)
   {"t":"eventChoice","eventId":N,"choiceIdx":N}
 Do NOT include endTurn — it is automatic after your actions.`);
   return L.join('\n');
@@ -197,6 +201,9 @@ Numbers must reference ids from the state view. Be decisive; empty actions is le
 const DEBRIEF_PROMPT = `The game has ended. File your playtest debrief as JSON only:
 {"fun":1-10,"clarity":1-10,"outcome_felt_earned":true/false,
  "dominant_strategy":"what line of play dominated, if any",
+ "signatures_read_clearly":true/false,
+ "signatures_created_decisions":"did your signature (and reading rivals' signatures) change real choices? one sentence",
+ "victory_race_visible":true/false,
  "confusions":["..."],"delights":["..."],
  "suggestions":["3-5 concrete design changes"],
  "would_play_again":true/false}`;

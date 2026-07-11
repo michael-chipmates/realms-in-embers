@@ -18,12 +18,12 @@ export const SIGNATURE_TUNING = {
   halvard: { defense: 0.25, cooldown: 8 },
   lyra: { atkPct: 15, seasons: 3, cooldown: 12 },
   ulvra: { extraMarch: 1, cooldown: 8 },
-  maera: { defense: 0.12, seasons: 2, cooldown: 9 },
+  maera: { defense: 0.15, seasons: 2, cooldown: 8 },
   cormac: { atkMult: 1.12, cooldown: 8 },
   branwen: { incomeCutPct: 20, seasons: 2, cooldown: 10 },
   corvas: { treasuryPct: 6, minGold: 2, cooldown: 10 },
   nyssa: { order: 15, cooldown: 6 },
-  morrikan: { companiesPerBarrow: 2, orderCost: 4, cooldown: 10 },
+  morrikan: { companiesPerBarrow: 2, orderCost: 4, cooldown: 8 },
   vaelia: { plunderMult: 3, seasons: 3, cooldown: 10 },
 } as const;
 

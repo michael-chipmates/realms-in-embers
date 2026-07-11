@@ -117,6 +117,37 @@ try {
   if (ha3 !== hb3) throw new Error(`the cast desynced the clients: ${ha3} vs ${hb3}`);
   await a.screenshot({ path: `${outdir}/on4-a-warded.png` });
 
+  // SIGNATURES over the wire: seat 0 fires whatever fate dealt, with a
+  // target computed from state; the echo must land identically on both.
+  const sigFired = await a.evaluate(() => (async () => {
+    const screen = window.__game;
+    const state = screen.state;
+    const pid = state.current;
+    const mod = await import('/src/engine/content/lords.ts');
+    const sigDef = mod.LORD_BY_ID[state.players[pid].lordId].signature;
+    let action = { t: 'signature' };
+    if (sigDef.target === 'rival') {
+      action = { t: 'signature', targetPlayer: state.players.find((p) => p.alive && p.id !== pid).id };
+    } else if (sigDef.target === 'enemyProvince') {
+      const p = state.provinces.find((pp) => pp.owner >= 0 && pp.owner !== pid
+        && pp.neighbors.some((n) => state.provinces[n].owner === pid));
+      if (!p) return { ok: 'skipped', sig: sigDef.id }; // no legal target this seed
+      action = { t: 'signature', province: p.id };
+    } else if (sigDef.id === 'openTheDoors') {
+      return { ok: 'skipped', sig: sigDef.id }; // needs a barrow; state injection would desync
+    }
+    return { ok: screen.dispatch(action), sig: sigDef.id };
+  })());
+  if (sigFired.ok === true) {
+    await a.waitForTimeout(1100);
+    const [ha4, hb4] = [await hash(a), await hash(b)];
+    if (ha4 !== hb4) throw new Error(`the signature desynced the clients (${sigFired.sig})`);
+    const cdBoth = await b.evaluate(() => window.__game.state.players[0].signatureCooldownLeft);
+    if (!(cdBoth > 0)) throw new Error('signature cooldown missing on the receiving client');
+  } else if (sigFired.ok !== 'skipped') {
+    throw new Error(`signature refused over the wire (${sigFired.sig})`);
+  }
+
   console.log(errors.length ? 'ERRORS:\n' + [...new Set(errors)].join('\n') : 'online drive clean: 2 clients, 2 turns, identical state, rejoin lands mid-war, a cast lands sealed on both');
 } finally {
   await browser.close();

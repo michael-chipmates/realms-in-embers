@@ -244,9 +244,9 @@ export const LORDS: LordDef[] = [
     },
     signature: {
       id: 'fenLights', name: 'Fen Lights',
-      desc: 'Lights walk your borders: every province you rule defends +12% for 2 seasons, and everything bordering your realm is revealed.',
+      desc: 'Lights walk your borders: every province you rule defends +15% for 2 seasons, and everything bordering your realm is revealed.',
       flavor: 'Follow the lights, the children are told. The lights lead soldiers somewhere else entirely.',
-      cooldown: 9, target: 'none', fxFamily: 'scry',
+      cooldown: 8, target: 'none', fxFamily: 'scry',
     },
     lines: {
       intro: 'The bog told me how this ends. I’m only here to make sure it keeps its word.',
@@ -387,7 +387,7 @@ export const LORDS: LordDef[] = [
       id: 'openTheDoors', name: 'Open the Doors',
       desc: 'The dead answer at every barrow you rule: two companies of Barrow Revenants rise at each (−4 order there).',
       flavor: 'Constituents, he calls them. They vote in ranks.',
-      cooldown: 10, target: 'none', fxFamily: 'summon',
+      cooldown: 8, target: 'none', fxFamily: 'summon',
     },
     lines: {
       intro: 'Three graves could not hold me. One throne should manage nicely.',

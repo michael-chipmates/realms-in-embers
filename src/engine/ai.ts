@@ -815,10 +815,12 @@ function maybeUseSignature(state: GameState, pid: PlayerId, dispatch: (a: Action
       break;
     }
     case 'halvard': {
-      // enemies at the gates: hostile armies standing in or beside his land
+      // a real siege coming, not every wandering rebel band: hostile armies
+      // of a lord he is at war with beside his land, or rebels inside it
       const threatened = mine.some((p) =>
-        [p.id, ...p.neighbors].some((n) =>
-          armiesIn(state, n).some((a) => a.owner !== pid && (a.owner === NEUTRAL || atWar(state, pid, a.owner)))));
+        armiesIn(state, p.id).some((a) => a.owner === NEUTRAL)
+        || p.neighbors.some((n) =>
+          armiesIn(state, n).some((a) => a.owner >= 0 && a.owner !== pid && atWar(state, pid, a.owner))));
       if (threatened) use();
       break;
     }
@@ -836,8 +838,8 @@ function maybeUseSignature(state: GameState, pid: PlayerId, dispatch: (a: Action
       break;
     }
     case 'cormac': {
-      const forestFoot = armiesOf(state, pid).some((a) => !a.moved && state.provinces[a.province].terrain === 'forest');
-      if (warTarget && forestFoot) use();
+      // the wood marches whenever he fights and holds any of it
+      if (warTarget && mine.some((p) => p.terrain === 'forest')) use();
       break;
     }
     case 'branwen': {
@@ -870,7 +872,7 @@ function maybeUseSignature(state: GameState, pid: PlayerId, dispatch: (a: Action
       break;
     }
     case 'morrikan': {
-      if (mine.some((p) => p.site === 'barrow') && (warTarget || state.turn >= 10)) use();
+      if (mine.some((p) => p.site === 'barrow') && (warTarget || state.turn >= 6)) use();
       break;
     }
     case 'vaelia': {
