@@ -20,7 +20,7 @@ const SHELL = ['.', 'manifest.webmanifest', 'favicon.svg'];
 const MEDIA_PATH = /\/(art|music|audio)\/.+\.(m4a|mp3|ogg|wav|flac|webp|png|jpe?g|gif|svg|avif)$/i;
 
 self.addEventListener('install', (e) => {
-  e.waitUntil(caches.open(APP_CACHE).then((c) => c.addAll(SHELL))));
+  e.waitUntil(caches.open(APP_CACHE).then((c) => c.addAll(SHELL)));
   // no skipWaiting: a fresh deploy waits politely for the next launch —
   // seizing control mid-campaign mixes versions under a live game (review R2)
 });
@@ -34,8 +34,7 @@ self.addEventListener('activate', (e) => {
         keys
           .filter((k) => k.startsWith('rie-') && k !== APP_CACHE && k !== MEDIA_CACHE)
           .map((k) => caches.delete(k)),
-      ))
-      ),
+      )),
   );
 });
 

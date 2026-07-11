@@ -43,9 +43,15 @@ try {
   await b.getByRole('button', { name: 'Take a seat' }).click();
   await b.waitForTimeout(500);
 
-  // host sees both, begins with no clock and no AI fill
-  await a.waitForTimeout(400);
-  const rows = await a.locator('.lobby-row').count();
+  // host sees both, begins with no clock and no AI fill. Real relays have
+  // real latency (and a contested seat costs extra round trips), so poll —
+  // and count only the muster table's rows, never the Wayhouse list's.
+  let rows = 0;
+  for (let i = 0; i < 25; i++) {
+    rows = await a.locator('.lobby-table').first().locator('.lobby-row').count();
+    if (rows >= 2) break;
+    await a.waitForTimeout(400);
+  }
   if (rows < 2) throw new Error(`host sees ${rows} seated, wanted 2`);
   await a.selectOption('.lobby-field:nth-of-type(3) select', { index: 0 }); // no clock
   await a.getByRole('button', { name: 'Begin the war' }).click();
