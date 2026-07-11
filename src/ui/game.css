@@ -521,6 +521,14 @@ details.side-section:not([open]) > summary { border-bottom: none; }
   .codex-nav-btn.active { border-left: none; border-bottom-color: var(--gold); }
 }
 
+/* ------------------------------------------------- gallery archetype row */
+
+.gallery-archetype-row { display: flex; gap: 0.3rem; justify-content: center; flex-wrap: wrap; margin: 0.25rem 0 0.1rem; }
+.gallery-archetype { color: var(--gold-bright); font-style: italic; margin: 0.15rem 0 0; }
+.title-ios-hint { margin-top: 0.6rem; }
+.setup-fineprint > summary { cursor: pointer; }
+.setup-fineprint > summary::marker { color: var(--gold); }
+
 /* ---------------------------------------------------- rival comparison */
 
 .rival-table-wrap { overflow-x: auto; margin-bottom: 0.5rem; }

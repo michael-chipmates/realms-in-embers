@@ -285,8 +285,12 @@ export function renderSetup(app: App, presetSeed?: string): void {
           h('div', { class: 'field' }, h('label', { for: 'setup-length' }, 'Chronicle'), lengthSelect),
           h('label', { class: 'field', style: { flexDirection: 'row', alignItems: 'center', gap: '0.4rem', minHeight: '44px' } }, fogToggle, 'Fog of war'),
         ),
-        h('div', { class: 'panel', style: { marginTop: '0.6rem' } },
-          h('div', { class: 'panel-title' }, 'Roads to the throne'),
+        // progressive disclosure: the defaults suit a first muster — the
+        // fine print unfolds for those who came to argue with it
+        h('details', { class: 'panel setup-fineprint', style: { marginTop: '0.6rem' } },
+          h('summary', { class: 'panel-title' }, 'Roads to the throne — the fine print'),
+          h('p', { class: 'small muted', style: { margin: '0.2rem 0 0.4rem' } },
+            'All roads stand open by default. Close some to force a different kind of war.'),
           victoryBoxes,
         ),
         h('div', { class: 'panel', style: { marginTop: '0.6rem' } }, playerList),

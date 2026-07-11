@@ -98,6 +98,29 @@ function startFirstEmber(app: App): void {
   }, { guide: new FirstEmberGuide() });
 }
 
+/** On iOS Safari, outside standalone mode, once per device: the one line
+ * that turns a tab into a game on the shelf. Dismissable for good. */
+function iosInstallHint(): HTMLElement | null {
+  const HINT_KEY = 'rie-ios-hint-done';
+  const isIos = /iPad|iPhone|iPod/.test(navigator.userAgent);
+  const standalone = window.matchMedia('(display-mode: standalone)').matches
+    || (navigator as unknown as { standalone?: boolean }).standalone === true;
+  if (!isIos || standalone || localStorage.getItem(HINT_KEY) !== null) return null;
+  const line = h('p', { class: 'small muted title-ios-hint' },
+    'Keep the realm on your shelf: Share ',
+    h('span', { 'aria-hidden': 'true' }, '⎋'),
+    ' → “Add to Home Screen”. It works with no wire after that. ',
+    h('button', {
+      class: 'btn btn-quiet compact',
+      onclick: () => {
+        localStorage.setItem(HINT_KEY, '1');
+        line.remove();
+      },
+    }, 'Noted'),
+  );
+  return line;
+}
+
 /** Osperan keeps writing between wars. A different line each visit. */
 const EPIGRAPHS = [
   'Somebody has to bury them properly.',
@@ -172,6 +195,8 @@ export function renderTitle(app: App): void {
       h('p', { class: 'small muted italic title-epigraph' }, `“${epigraph}” — O.`),
       h('p', { class: 'small muted title-foot' },
         'A turn-based strategy chronicle · an original homage to the spirit of 1993'),
+      // iOS keeps its install button three taps deep; one quiet line, once
+      iosInstallHint(),
     ),
   );
   mount(app.root, screen);

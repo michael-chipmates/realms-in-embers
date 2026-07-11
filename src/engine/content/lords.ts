@@ -70,6 +70,13 @@ export interface LordDef {
   creed: Creed;
   /** Two-to-three sentence portrait shown at setup and in the lords panel. */
   blurb: string;
+  /** One line on HOW this lord plays — the archetype, not the fiction. */
+  archetype: string;
+  /** How much of the game the kit asks you to hold in your head:
+   * forthright (a first banner), measured, or subtle. */
+  complexity: 'forthright' | 'measured' | 'subtle';
+  /** One of the three banners the gallery recommends to a first game. */
+  firstBanner?: boolean;
   personality: LordPersonality;
   favoredTerrain: Terrain;
   color: string;
@@ -95,6 +102,8 @@ export const LORDS: LordDef[] = [
     epithet: 'the Cinder Rose',
     creed: 'flame',
     blurb: 'Last abbess of the burned Hearthmother convent, now a claimant with a relic sword and a following that would walk into fire for her — several already have. She wars gently and governs fiercely.',
+    archetype: 'A realm in good order pays for its own defense. Shepherd the parishes first; the war chest follows.',
+    complexity: 'measured',
     personality: { aggression: 0.45, greed: 0.25, mysticism: 0.55, loyalty: 0.9, pride: 0.5 },
     favoredTerrain: 'meadow',
     color: '#9e2b25', colorAlt: '#e8c8a8', pattern: 'plain', sigil: 'rose',
@@ -123,6 +132,9 @@ export const LORDS: LordDef[] = [
     epithet: 'the Twice-Crowned',
     creed: 'flame',
     blurb: 'Crowned once as a boy in exile and once by his own hand over a dead usurper. Aldric believes the Ember Throne is his by blood, and treats the war as an extended coronation.',
+    archetype: 'Knights, coin, and the shortest road to the enemy gate. The crown plays fair and hits hard.',
+    complexity: 'forthright',
+    firstBanner: true,
     personality: { aggression: 0.7, greed: 0.4, mysticism: 0.2, loyalty: 0.6, pride: 0.95 },
     favoredTerrain: 'meadow',
     color: '#b8860b', colorAlt: '#3a2c14', pattern: 'checks', sigil: 'crown',
@@ -151,6 +163,9 @@ export const LORDS: LordDef[] = [
     epithet: 'the Oathwall',
     creed: 'flame',
     blurb: 'The last marshal of the old palace guard, who held the Cinder Gate for three days after the Sundering. He fights defensive wars by preference and finishes them by principle.',
+    archetype: 'Walls first, then more walls. The realm that cannot be taken outlasts the ones that can.',
+    complexity: 'forthright',
+    firstBanner: true,
     personality: { aggression: 0.3, greed: 0.2, mysticism: 0.25, loyalty: 0.95, pride: 0.6 },
     favoredTerrain: 'hills',
     color: '#5b6472', colorAlt: '#d8d2c2', pattern: 'stripes', sigil: 'gate',
@@ -179,6 +194,8 @@ export const LORDS: LordDef[] = [
     epithet: 'the Morninglark',
     creed: 'flame',
     blurb: 'A farrier’s daughter who claims the dawn itself knighted her, and has the battlefield record to make theologians nervous about dismissing it. Marches early, sings terribly, wins often.',
+    archetype: 'One shining charge at the chosen hour. Patience, then trumpets.',
+    complexity: 'measured',
     personality: { aggression: 0.85, greed: 0.2, mysticism: 0.5, loyalty: 0.7, pride: 0.45 },
     favoredTerrain: 'hills',
     color: '#c26a1f', colorAlt: '#f2e2c0', pattern: 'waves', sigil: 'lark',
@@ -208,6 +225,8 @@ export const LORDS: LordDef[] = [
     epithet: 'the Unmoved',
     creed: 'ash',
     blurb: 'Matriarch of the crag-holds, who watched the lowlands burn from her mountains and sent down blankets, not banners. She joins this war reluctantly and intends to end it economically.',
+    archetype: 'Roads, stone, and the long game. Everywhere at once, eventually.',
+    complexity: 'measured',
     personality: { aggression: 0.35, greed: 0.5, mysticism: 0.3, loyalty: 0.8, pride: 0.7 },
     favoredTerrain: 'mountain',
     color: '#1f3a52', colorAlt: '#c8ccd2', pattern: 'plain', sigil: 'mountain',
@@ -236,6 +255,8 @@ export const LORDS: LordDef[] = [
     epithet: 'the Moorwitch',
     creed: 'ash',
     blurb: 'The moors have always had a witch; Maera is merely the first to inherit a war along with the title. She reads the realm’s health in bog-water and finds it feverish. Her prescription involves fewer lords.',
+    archetype: 'Moors, mists, and workings. The land itself is her second army.',
+    complexity: 'subtle',
     personality: { aggression: 0.4, greed: 0.3, mysticism: 0.95, loyalty: 0.6, pride: 0.4 },
     favoredTerrain: 'moor',
     color: '#2a7f7f', colorAlt: '#e2ded0', pattern: 'dots', sigil: 'reed',
@@ -264,6 +285,8 @@ export const LORDS: LordDef[] = [
     epithet: 'the Rootward',
     creed: 'ash',
     blurb: 'Warden of the deepwood shires, older than most treaties and fonder of trees than of the people who sign them. Slow to anger; geological, once angered.',
+    archetype: 'The forest fights beside him. Take the woods, then let the woods take the rest.',
+    complexity: 'forthright',
     personality: { aggression: 0.25, greed: 0.25, mysticism: 0.5, loyalty: 0.85, pride: 0.3 },
     favoredTerrain: 'forest',
     color: '#3e6b3a', colorAlt: '#e8dcb8', pattern: 'crosshatch', sigil: 'oak',
@@ -292,6 +315,9 @@ export const LORDS: LordDef[] = [
     epithet: 'the Tide-Reckoner',
     creed: 'ash',
     blurb: 'Mistress of the salt-road guilds, who can price a war to the copper and has decided this one is, regrettably, a sound investment. Her fleets carry wool, grain, and consequences.',
+    archetype: 'The sea is a road only she sails for free. Trade fat, land uninvited, embargo whoever complains.',
+    complexity: 'forthright',
+    firstBanner: true,
     personality: { aggression: 0.45, greed: 0.85, mysticism: 0.2, loyalty: 0.55, pride: 0.5 },
     favoredTerrain: 'meadow',
     color: '#6d3b7e', colorAlt: '#d9c8e2', pattern: 'waves', sigil: 'sail',
@@ -321,6 +347,8 @@ export const LORDS: LordDef[] = [
     epithet: 'the Pale Bargain',
     creed: 'umbra',
     blurb: 'It is said the Duke has never broken a contract, and that this is entirely a matter of drafting. Owns four castles, several lords’ debts, and at least one of everyone’s secrets.',
+    archetype: 'Everyone owes the Duke. Play the ledger well and armies become other people’s expenses.',
+    complexity: 'subtle',
     personality: { aggression: 0.5, greed: 0.95, mysticism: 0.35, loyalty: 0.15, pride: 0.6 },
     favoredTerrain: 'meadow',
     color: '#3a3a3a', colorAlt: '#cfc8b8', pattern: 'stripes', sigil: 'coin',
@@ -349,6 +377,8 @@ export const LORDS: LordDef[] = [
     epithet: 'the Quiet Knife',
     creed: 'umbra',
     blurb: 'Nobody remembers inviting Lady Vex to court, and nobody has managed to make her leave. Wars, in her view, are decided in pantries, bedchambers, and margins — battles merely announce the result.',
+    archetype: 'Order is a rumor she can start or end. Wars are won at dinner parties.',
+    complexity: 'subtle',
     personality: { aggression: 0.4, greed: 0.5, mysticism: 0.6, loyalty: 0.3, pride: 0.55 },
     favoredTerrain: 'moor',
     color: '#b05c74', colorAlt: '#2e2230', pattern: 'dots', sigil: 'knife',
@@ -377,6 +407,8 @@ export const LORDS: LordDef[] = [
     epithet: 'the Thrice-Buried',
     creed: 'umbra',
     blurb: 'Buried by enemies three times, to widely acknowledged lack of effect. Morrikan speaks of the Sundering as a door left ajar, and of the dead as constituents. His rallies are quiet but extremely well attended.',
+    archetype: 'His voters are buried and voting. An economy of graves, patient as its constituents.',
+    complexity: 'subtle',
     personality: { aggression: 0.6, greed: 0.3, mysticism: 0.95, loyalty: 0.4, pride: 0.75 },
     favoredTerrain: 'moor',
     color: '#7a7a33', colorAlt: '#1e1e16', pattern: 'crosshatch', sigil: 'skullmoth',
@@ -405,6 +437,8 @@ export const LORDS: LordDef[] = [
     epithet: 'the Crowqueen',
     creed: 'umbra',
     blurb: 'Where armies march, crows follow; Vaelia simply reversed the arrangement. A warlord of the ruined east marches who found her calling the day the realm broke, and has been thriving on the pieces since.',
+    archetype: 'The crows mark a banner and the plunder follows. War, run as a business plan.',
+    complexity: 'measured',
     personality: { aggression: 0.9, greed: 0.6, mysticism: 0.4, loyalty: 0.25, pride: 0.7 },
     favoredTerrain: 'hills',
     color: '#2e5090', colorAlt: '#0f1526', pattern: 'checks', sigil: 'crow',

@@ -113,4 +113,34 @@ await page.waitForTimeout(3500);
 await page.screenshot({ path: `${outdir}/m5-after-turn.png` });
 console.log(errors.length ? 'ERRORS:\n' + errors.join('\n') : 'no page errors');
 if (errors.length) process.exitCode = 1;
+
+// --- the 320 px pass: the smallest phones get the same promises —
+// setup fits the width, and the war table's own overlays fit too
+{
+  const p320 = await browser.newPage({ viewport: { width: 320, height: 568 }, hasTouch: true, isMobile: true });
+  const errors320 = [];
+  p320.on('pageerror', (e) => errors320.push(String(e)));
+  await p320.goto(url, { waitUntil: 'networkidle' });
+  await p320.getByRole('button', { name: 'New Chronicle' }).click();
+  await p320.waitForTimeout(600);
+  const wide320 = await p320.evaluate(() =>
+    [...document.querySelectorAll('.setup-screen *')]
+      .filter((n) => n.getBoundingClientRect().right > window.innerWidth + 1 && n.getBoundingClientRect().width > 30)
+      .map((n) => `${n.tagName}.${n.className}`).slice(0, 6));
+  if (wide320.length) { console.error('setup overflows a 320px viewport:', wide320); process.exit(1); }
+  await p320.locator('#setup-seed').fill('mobile-320-1');
+  await p320.getByRole('button', { name: 'Begin the Chronicle' }).click();
+  await p320.waitForTimeout(1400);
+  const skip320 = p320.getByRole('button', { name: 'I have read the Chronicle before' });
+  if (await skip320.isVisible().catch(() => false)) await skip320.click();
+  await p320.waitForTimeout(400);
+  await p320.keyboard.press('b');
+  await p320.waitForTimeout(400);
+  const briefWide = await p320.evaluate(() => document.body.scrollWidth > window.innerWidth + 1);
+  if (briefWide) { console.error('an overlay overflows the 320px viewport'); process.exit(1); }
+  await p320.screenshot({ path: `${outdir}/m6-320.png` });
+  if (errors320.length) { console.error('320px PAGE ERRORS:\n' + errors320.join('\n')); process.exit(1); }
+  console.log('320px: setup and overlays fit, no page errors');
+  await p320.close();
+}
 await browser.close();

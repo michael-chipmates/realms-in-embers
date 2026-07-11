@@ -122,6 +122,14 @@ export function openLordGallery(opts: GalleryOptions): void {
           h('h2', { class: 'gallery-name' }, lord.name),
           h('p', { class: 'small muted' }, `${lord.epithet} · ${creed.name}`),
           h('p', { class: 'small italic', style: { color: 'var(--gold)' } }, creed.tagline),
+          h('div', { class: 'gallery-archetype-row' },
+            h('span', { class: 'chip' },
+              lord.complexity === 'forthright' ? 'forthright — reads at a glance'
+                : lord.complexity === 'measured' ? 'measured — rewards a plan'
+                : 'subtle — plays the long game'),
+            lord.firstBanner ? h('span', { class: 'chip chip-win' }, 'a good first banner') : null,
+          ),
+          h('p', { class: 'small gallery-archetype' }, lord.archetype),
           h('p', { class: 'small gallery-blurb' }, lord.blurb),
           h('div', { class: 'gallery-abilities' },
             h('div', { class: 'gallery-ability' },
