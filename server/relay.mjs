@@ -72,12 +72,26 @@ wss.on('connection', (ws) => {
     let msg;
     try { msg = JSON.parse(raw.toString()); } catch { return; }
     if (msg.t === 'join' && typeof msg.room === 'string' && msg.room.length <= 64) {
+      // room-creation throttle: joining an EXISTING room is always free;
+      // minting fresh rooms is a slow, deliberate act (burst 6, ~1/10s)
+      if (!rooms.has(msg.room)) {
+        const now = Date.now();
+        if (!ws._roomBucket) ws._roomBucket = { tokens: 6, at: now };
+        const rb = ws._roomBucket;
+        rb.tokens = Math.min(6, rb.tokens + ((now - rb.at) / 1000) * 0.1);
+        rb.at = now;
+        if (rb.tokens < 1) { ws.send(JSON.stringify({ t: 'error', error: 'slow down' })); return; }
+        rb.tokens -= 1;
+      }
       const r = room(msg.room);
       if (!r) { ws.send(JSON.stringify({ t: 'error', error: 'relay full' })); return; }
       if (joined) rooms.get(joined)?.sockets.delete(ws);
       joined = msg.room;
       r.sockets.add(ws);
-      ws.send(JSON.stringify({ t: 'joined', room: msg.room, seq: r.log.length, log: r.log }));
+      // delta fetch: a reconnecting client asks from its cursor; the reply
+      // names the base so the client can index the suffix correctly
+      const since = Number.isInteger(msg.since) && msg.since >= 0 ? Math.min(msg.since, r.log.length) : 0;
+      ws.send(JSON.stringify({ t: 'joined', room: msg.room, seq: r.log.length, since, log: r.log.slice(since) }));
       for (const other of r.sockets) {
         if (other !== ws && other.readyState === 1) other.send(JSON.stringify({ t: 'peer', n: r.sockets.size }));
       }

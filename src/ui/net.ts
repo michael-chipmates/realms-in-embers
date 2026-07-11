@@ -53,7 +53,12 @@ export type NetPayload =
    * `proto`/`rules` (v2) ride the hello for the compatibility handshake. */
   | { kind: 'hello'; cid: string; name: string; seat: number | null; lordId?: string | null; proto?: number; rules?: number; mid?: string }
   | { kind: 'start'; settings: GameSettings; clock: ClockConfig; seatCids: string[]; rules?: number; mid?: string }
-  | { kind: 'act'; seat: number; action: Action; mid?: string }
+  /** v0.5: acts carry the sender's cid so every client can check the act
+   * against the seat roster the start entry pinned. cid-binding, labeled
+   * honestly: it stops seat-spoofing between people who share a room key,
+   * not a key-holder determined to cheat their friends (SECURITY.md). Old
+   * clients omit cid and stay accepted. */
+  | { kind: 'act'; seat: number; action: Action; cid?: string; mid?: string }
   /** NET-033: a state checkpoint. After applying the endTurn act at relay
    * seq `afterSeq`, the sender's serialized state hashed to `hash`. Every
    * client reaches that exact point deterministically, so a mismatch means
@@ -93,6 +98,7 @@ export function validatePayload(p: unknown): NetPayload | null {
     case 'act':
       if (!int(o.seat, 0, 15)) return null;
       if (typeof o.action !== 'object' || o.action === null || !str((o.action as Record<string, unknown>).t, 40)) return null;
+      if (o.cid !== undefined && !str(o.cid, 64)) return null;
       return o as NetPayload;
     case 'check':
       if (!int(o.seat, 0, 15) || !int(o.afterSeq, 0, 1_000_000) || !int(o.turn, 0, 10_000)) return null;
@@ -282,7 +288,9 @@ export class NetClient {
     ws.addEventListener('open', () => {
       this.backoff = 500;
       this.onStatus?.('open');
-      ws.send(JSON.stringify({ t: 'join', room: this.roomId }));
+      // delta fetch: a reconnect asks only for what it missed — the relay
+      // replies with `since`, and old relays ignore the field (full log)
+      ws.send(JSON.stringify({ t: 'join', room: this.roomId, since: this.entries.length }));
     });
     ws.addEventListener('message', (ev) => {
       const raw = String(ev.data);
@@ -298,17 +306,20 @@ export class NetClient {
   }
 
   private async onMessage(raw: string): Promise<void> {
-    let msg: { t: string; seq?: number; data?: string; log?: string[]; n?: number; error?: string };
+    let msg: { t: string; seq?: number; since?: number; data?: string; log?: string[]; n?: number; error?: string };
     try { msg = JSON.parse(raw); } catch { return; }
     if (msg.t === 'error') {
       this.onError?.(msg.error ?? 'relay refused');
       return;
     }
     if (msg.t === 'joined' && Array.isArray(msg.log)) {
+      // `since`-aware relays send a suffix; the first entry is seq `since`
+      const base = typeof msg.since === 'number' && msg.since >= 0 ? msg.since : 0;
       for (let i = 0; i < msg.log.length; i++) {
-        if (this.entries[i]) continue; // already decrypted (live entry beat us)
-        const payload = await this.readBlob(msg.log[i], i);
-        this.entries[i] = { seq: i, payload };
+        const seq = base + i;
+        if (this.entries[seq]) continue; // already decrypted (live entry beat us)
+        const payload = await this.readBlob(msg.log[i], seq);
+        this.entries[seq] = { seq, payload };
       }
       this.joined = true;
       // settle the unacked ledger against the backlog: whatever landed is

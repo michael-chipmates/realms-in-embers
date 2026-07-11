@@ -78,20 +78,37 @@ export class RelayRoom {
     const pair = new WebSocketPair();
     const [client, server] = Object.values(pair);
     this.state.acceptWebSocket(server);
-    const meta = await this.meta();
-    server.send(JSON.stringify({ t: 'joined', seq: meta.count, log: await this.backlog(meta.count) }));
+    // the backlog waits for the join message, which names how much the
+    // client already holds (delta fetch) — every client sends one on open
     await this.touch();
     this.broadcastPeers(server);
     return new Response(null, { status: 101, webSocket: client });
+  }
+
+  async backlogSince(count, since) {
+    if (since <= 0) return this.backlog(count);
+    if (since >= count) return [];
+    const keys = Array.from({ length: count - since }, (_, i) => `e:${since + i}`);
+    const log = [];
+    for (let at = 0; at < keys.length; at += 128) {
+      const slice = keys.slice(at, at + 128);
+      const map = await this.state.storage.get(slice);
+      for (const k of slice) {
+        const v = map.get(k);
+        if (typeof v === 'string') log.push(v);
+      }
+    }
+    return log;
   }
 
   async webSocketMessage(ws, raw) {
     let msg;
     try { msg = JSON.parse(raw); } catch { return; }
     if (msg.t === 'join') {
-      // (re)join over an existing socket: resend the backlog
+      // (re)join: send only what the client is missing (delta fetch)
       const meta = await this.meta();
-      ws.send(JSON.stringify({ t: 'joined', seq: meta.count, log: await this.backlog(meta.count) }));
+      const since = Number.isInteger(msg.since) && msg.since >= 0 ? Math.min(msg.since, meta.count) : 0;
+      ws.send(JSON.stringify({ t: 'joined', seq: meta.count, since, log: await this.backlogSince(meta.count, since) }));
       await this.touch();
       return;
     }

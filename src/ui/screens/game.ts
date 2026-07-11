@@ -147,6 +147,11 @@ export class GameScreen {
       if (this.desynced) break; // frozen: the log and this table disagree
       if (this.aiRunning || this.current().kind === 'ai') break; // wait for the wheel
       if (payload.seat !== this.state.current) { session.cursor++; continue; } // stale/dishonest
+      // cid seat binding (v0.5): an act claiming a seat must come from the
+      // cid the start entry pinned to it. Acts without a cid (older
+      // editions) stay accepted — binding is honest, not a signature.
+      const pinned = session.seatCids[payload.seat];
+      if (payload.cid !== undefined && pinned && payload.cid !== pinned) { session.cursor++; continue; }
       // replaying history (a join or rejoin mid-war): keep the room quiet —
       // no battle-report stacks, no ceremony parade for old news
       this.catchingUp = session.client.entries.length - 1 - session.cursor > 2;
@@ -843,7 +848,7 @@ export class GameScreen {
         this.toast('Not your season.', 'info');
         return false;
       }
-      void this.online.client.send({ kind: 'act', seat: this.online.mySeat, action });
+      void this.online.client.send({ kind: 'act', seat: this.online.mySeat, action, cid: this.online.myCid });
       return true;
     }
     const result = applyAction(this.state, action);
