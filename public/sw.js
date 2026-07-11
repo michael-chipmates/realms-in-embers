@@ -48,7 +48,13 @@ self.addEventListener('fetch', (e) => {
       caches.open(APP_CACHE).then(async (cache) => {
         try {
           const res = await fetch(e.request);
-          if (res.ok) cache.put('.', res.clone());
+          if (res.ok) {
+            const path = new URL(e.request.url).pathname;
+            // Only the game shell may claim the shell slot — a visit to
+            // /press.html or /codex/* must never hijack offline app entry
+            if (path === '/' || path === '/index.html') cache.put('.', res.clone());
+            else cache.put(e.request, res.clone());
+          }
           return res;
         } catch {
           return (await cache.match(e.request)) ?? (await cache.match('.')) ?? Response.error();
