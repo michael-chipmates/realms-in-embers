@@ -49,7 +49,7 @@ Pick a lord in the painted gallery (twelve, in three creeds, each with a real te
 
 ## Three ways to war
 
-- **Online** — "Online War" on the title screen. One invite link seats up to six; turn clocks (relaxed / standard / blitz, bank + increment) keep a full war inside two hours. **The relay is blind:** every action is end-to-end encrypted with a key that lives only in the invite link's URL fragment. The server stores ciphertext and ordinals; it cannot read a single move. Reconnecting replays the encrypted log through the deterministic engine — you rejoin exactly where the war stands. Self-host the relay with `node server/relay.mjs`, the Dockerfile in `server/`, or the included Cloudflare Worker.
+- **Online** — "Play with Friends" on the title screen. One invite link seats up to six; turn clocks (relaxed / standard / blitz, bank + increment) keep a full war inside two hours. **The relay is blind:** every action is end-to-end encrypted with a key that lives only in the invite link's URL fragment. The server stores ciphertext and ordinals; it cannot read a single move. Reconnecting replays the encrypted log through the deterministic engine — you rejoin exactly where the war stands. Self-host the relay with `node server/relay.mjs`, the Dockerfile in `server/`, or the included Cloudflare Worker.
 - **Hotseat** — several mortals, one device; the map hides between turns.
 - **Courier** — war by letters: export the chronicle file after your turns, the other side loads it and plays on. A stalled online session degrades gracefully into this.
 
@@ -75,7 +75,7 @@ Some of the machinery is half the fun:
 - **The Illustrated Edition, one command.** Ninety-one painted plates in a late-80s game-manual style, generated against a single approved style anchor so the whole set reads as one painter's hand — and every slot is generated three to five times, reviewed against its brief, and only the best candidate ships (`scripts/gen-art.mjs --candidates` + `scripts/pick-art.mjs`). The procedural heraldry remains as the eternal fallback.
 - **A ghost with a voice.** The chronicler's ceremonies are spoken (`scripts/gen-audio.mjs`); the synth engine still covers every sound offline.
 
-Deeper reading: [`DECISIONS.md`](DECISIONS.md) (why things are the way they are), [`docs/ART.md`](docs/ART.md) (the whole art pipeline), [`CHANGELOG.md`](CHANGELOG.md), and [`STATE.md`](STATE.md) (the honest build log).
+Deeper reading: [`DECISIONS.md`](DECISIONS.md) (why things are the way they are), [`docs/ART.md`](docs/ART.md) (the whole art pipeline), [`CHANGELOG.md`](CHANGELOG.md).
 
 ## Credits & licenses
 

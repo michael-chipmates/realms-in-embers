@@ -96,7 +96,7 @@ export async function openOnlineLobby(app: App, invite?: { roomId: string; key: 
   if (!invite) history.replaceState(null, '', link);
   const screen = h('div', { class: 'room title-screen' },
     h('div', { class: 'title-center lobby-center' },
-      h('p', { class: 'title-over muted italic' }, 'An online war'),
+      h('p', { class: 'title-over muted italic' }, 'A war among friends'),
       h('h1', { class: 'title-display', style: { fontSize: 'clamp(1.5rem, 4vw, 2.4rem)' } }, 'The Muster Table'),
       h('p', { class: 'small muted', style: { maxWidth: '52ch', margin: '0.4rem auto' } },
         'One link seats everyone. The relay carries only ciphertext — the key never leaves this address bar. No accounts, no tracking, ever.'),

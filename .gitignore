@@ -10,3 +10,11 @@ coverage/
 audio-audition/
 .art-originals/
 .wrangler/
+
+# candidate archives live locally; only the picked plates ship
+.art-candidates/
+
+# internal: session handovers, harness output, agent tooling — never public
+STATE.md
+.claude/
+playtest-out/

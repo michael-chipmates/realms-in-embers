@@ -72,7 +72,7 @@ try {
   const a = await mk('A');
   const b = await mk('B');
   await a.goto(url, { waitUntil: 'networkidle' });
-  await a.getByRole('button', { name: 'Online War' }).click();
+  await a.getByRole('button', { name: 'Play with Friends' }).click();
   await a.waitForSelector('.lobby-invite input');
   await a.fill('input[placeholder="Your name at the table"]', 'Alaric');
   await a.getByRole('button', { name: 'Take a seat' }).click();

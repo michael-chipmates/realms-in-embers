@@ -372,7 +372,7 @@ details.side-section:not([open]) > summary { border-bottom: none; }
 .gallery-arrow { font-size: 1.6rem; padding: 0 0.55rem; flex: none; align-self: center; min-height: 64px; }
 .gallery-lord { flex: 1; min-width: 0; text-align: center; display: flex; flex-direction: column; gap: 0.3rem; align-items: center; }
 .art-portrait-xl { display: flex; justify-content: center; }
-.art-portrait-xl img { width: min(240px, 52vw); height: auto; max-height: 34vh; object-fit: cover; border-radius: 8px; box-shadow: var(--shadow-deep); }
+.art-portrait-xl img { width: min(240px, 52vw); height: auto; max-height: 34vh; object-fit: cover; object-position: center 12%; border-radius: 8px; box-shadow: var(--shadow-deep); }
 .gallery-name { margin: 0; font-size: 1.35rem; color: var(--gold-bright); font-weight: 400; letter-spacing: 0.03em; }
 .gallery-blurb { max-width: 46ch; }
 .gallery-abilities { display: flex; flex-direction: column; gap: 0.35rem; width: 100%; }
@@ -458,10 +458,13 @@ details.side-section:not([open]) > summary { border-bottom: none; }
 .codex-entry { display: flex; gap: 0.65rem; padding: 0.5rem 0; border-top: 1px solid rgba(201, 162, 39, 0.12); }
 .codex-entry-glyph { color: var(--gold); flex: none; width: 30px; display: flex; justify-content: center; padding-top: 2px; }
 .art-codex-entry { flex: none; }
-.art-codex-entry img { width: 56px; height: 56px; object-fit: cover; border-radius: 5px; }
+.art-codex-entry img { width: 56px; height: 56px; object-fit: cover; object-position: center 18%; border-radius: 5px; }
 .codex-entry-body { min-width: 0; }
 .codex-entry-body p { margin: 0.15rem 0; }
-.codex-entry-title { font-weight: 600; color: var(--ink); }
+/* Card titles sit on the dark modal, never on vellum — they take gold,
+ * not ink (ink names vanished into the dark on phones; Michel caught it). */
+.codex-entry-title { font-weight: 600; color: var(--gold-bright); font-size: 0.98rem; }
+.codex-spell .codex-entry-title { color: var(--ember-bright); }
 .codex-spell-glyph { color: var(--ember-bright); }
 .codex-sealed { display: flex; align-items: baseline; gap: 0.35rem; margin: 0.25rem 0; }
 .codex-pager {
@@ -655,21 +658,21 @@ body.reduced-motion .battle-round-live .battle-round-losses .neg { animation: no
 .art-portrait { width: 76px; height: 95px; align-items: center; justify-content: center; flex: none; }
 .art-portrait-sm { width: 34px; height: 42px; align-items: center; justify-content: center; flex: none; }
 .art-portrait-sm .art-img {
-  width: 34px; height: 42px; object-fit: cover; border-radius: 3px;
+  width: 34px; height: 42px; object-fit: cover; object-position: center 15%; border-radius: 3px;
   border: 1px solid rgba(201, 162, 39, 0.5);
 }
 .art-portrait .art-img {
-  width: 76px; height: 95px; object-fit: cover; border-radius: 5px;
+  width: 76px; height: 95px; object-fit: cover; object-position: center 15%; border-radius: 5px;
   border: 1px solid rgba(201, 162, 39, 0.5); box-shadow: 0 2px 8px rgba(0,0,0,0.55);
 }
 .art-portrait-lg { width: 132px; height: 165px; align-items: center; justify-content: center; flex: none; }
 .art-portrait-lg .art-img {
-  width: 132px; height: 165px; object-fit: cover; border-radius: 6px;
+  width: 132px; height: 165px; object-fit: cover; object-position: center 15%; border-radius: 6px;
   border: 1px solid rgba(201, 162, 39, 0.5); box-shadow: var(--shadow-deep);
 }
 .art-class { width: 64px; height: 64px; align-items: center; justify-content: center; flex: none; }
 .art-class .art-img {
-  width: 64px; height: 64px; object-fit: cover; border-radius: 8px;
+  width: 64px; height: 64px; object-fit: cover; object-position: center 20%; border-radius: 8px;
   border: 1px solid rgba(201, 162, 39, 0.5); box-shadow: 0 2px 6px rgba(0,0,0,0.5);
 }
 @media (max-width: 480px) {

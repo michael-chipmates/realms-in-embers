@@ -105,7 +105,7 @@ export function renderTitle(app: App): void {
           },
         }, `Continue — ${newest.lords.split(',')[0]?.trim() ?? 'the war'}, season ${newest.turn}`)
       : null,
-    h('button', { class: 'btn title-btn', onclick: () => void openOnlineLobby(app) }, 'Online War'),
+    h('button', { class: 'btn title-btn', onclick: () => void openOnlineLobby(app) }, 'Play with Friends'),
     h('button', {
       class: 'btn title-btn',
       onclick: () => {

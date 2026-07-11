@@ -280,7 +280,7 @@ function renderMagic(): HTMLElement {
           h('span', { class: 'small muted' },
             ` ${def.cost > 0 ? `${def.cost} Emberlight` : 'no Emberlight'}${def.cooldown > 0 ? ` · returns after ${def.cooldown} seasons` : ''}${def.riteCost > 0 ? ` · rite ${def.riteCost}` : ''}`)),
         h('p', { class: 'small' }, def.desc),
-        def.creedAffinity ? h('p', { class: 'small muted' }, `The ${CREEDS[def.creedAffinity].name} teaches this one first.`) : null,
+        def.creedAffinity ? h('p', { class: 'small muted' }, `${CREEDS[def.creedAffinity].name} teaches this one first.`) : null,
         h('p', { class: 'small italic muted' }, def.flavor),
       ),
     );
