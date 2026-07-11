@@ -42,6 +42,27 @@ export function serializeGame(state: GameState): string {
   return JSON.stringify(file);
 }
 
+/**
+ * The save-migration registry: saves from ANY older rules version load and
+ * play forward — LOADING is forever, only byte-exact log REPLAY is
+ * version-bound (the fixture canary). Each entry upgrades the shape one
+ * rules version introduced; they run in order against saves older than
+ * `sinceRules`. Purely additive versions need no entry, and this list plus
+ * the tests in tests/migrations.test.ts are the registry of record.
+ */
+const SAVE_MIGRATIONS: { sinceRules: number; note: string; apply: (state: GameState) => void }[] = [
+  {
+    sinceRules: 11,
+    note: 'signature abilities: players gained signatureCooldownLeft',
+    apply: (state) => {
+      for (const p of state.players) p.signatureCooldownLeft ??= 0;
+    },
+  },
+  // v12 (victory resolution), v13 (digest flags on new entries), v14
+  // (Army.lastMove, optional), v15 (AI + tuning only): additive — no shape
+  // change, nothing to migrate.
+];
+
 export function deserializeGame(json: string): GameState {
   const file = JSON.parse(json) as SaveFile;
   if (file.app !== 'realms-in-embers') throw new Error('Not a Realms in Embers save.');
@@ -54,8 +75,9 @@ export function deserializeGame(json: string): GameState {
     || !Array.isArray(state.rng) || !Array.isArray(state.provinces)) {
     throw new Error('The save is damaged or from a newer age — the chronicle cannot be reopened.');
   }
-  // saves from before rules v11 predate signature abilities
-  for (const p of state.players) p.signatureCooldownLeft ??= 0;
+  for (const migration of SAVE_MIGRATIONS) {
+    if (state.v < migration.sinceRules) migration.apply(state);
+  }
   return state;
 }
 
