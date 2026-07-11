@@ -34,6 +34,23 @@ let digestOn = localStorage.getItem(DIGEST_KEY) !== 'off';
 /** Reader's explicit open/close choices per season header, on top of the
  * default (only the current season open). */
 const seasonChoice: Record<number, boolean> = {};
+/** How many trailing seasons render at once; older ones wait behind one
+ * button, so a sixty-season war never mounts sixty seasons of DOM. */
+const SEASON_WINDOW = 12;
+let seasonsShown = SEASON_WINDOW;
+/** Unread watermark: how much of the visible feed the reader has seen.
+ * Session-scoped and per-campaign; reading to the bottom advances it. */
+let readMark = 0;
+let readMarkSeed = '';
+
+/** The reading order of an entry: ceremonies command the page, decisions
+ * demanded a choice, alerts touched your banner, chronicle is the weather. */
+function tierOf(entry: ChronicleEntry, viewer: number): 'ceremony' | 'decision' | 'alert' | 'chronicle' {
+  if (entry.ceremony) return 'ceremony';
+  if (entry.kind === 'event') return 'decision';
+  if ((entry.kind === 'war' || entry.kind === 'diplomacy') && entry.about === viewer) return 'alert';
+  return 'chronicle';
+}
 
 const FILTERS: { key: 'all' | ChronicleEntry['kind']; label: string; icon: string }[] = [
   { key: 'all', label: 'All', icon: 'quill' },
@@ -58,6 +75,14 @@ export function renderChronicleFeed(screen: GameScreen, root: HTMLElement): void
   // digest off = the old flat feed, digest on = every season, grouped
   const entries = digestOn ? visible : visible.slice(-60);
 
+  // the unread watermark follows the campaign, not the tab
+  if (readMarkSeed !== state.seed) {
+    readMarkSeed = state.seed;
+    readMark = visible.length;
+    seasonsShown = SEASON_WINDOW;
+  }
+  const unread = Math.max(0, visible.length - readMark);
+
   // remember where the reader was: yank to the bottom only if they were there
   const prevFeed = root.querySelector<HTMLElement>('.chronicle-feed');
   const wasAtBottom = !prevFeed
@@ -70,15 +95,25 @@ export function renderChronicleFeed(screen: GameScreen, root: HTMLElement): void
   const toggle = h('button', {
     class: 'chronicle-toggle btn btn-quiet',
     'aria-expanded': String(!collapsed),
-    'aria-label': collapsed ? 'Open the chronicle' : 'Close the chronicle',
+    'aria-label': collapsed
+      ? `Open the chronicle${unread > 0 ? ` — ${unread} unread` : ''}`
+      : 'Close the chronicle',
     onclick: () => {
       collapsed = !collapsed;
       renderChronicleFeed(screen, root);
     },
-  }, h('span', { html: iconSvg('quill', 16) }), collapsed ? ' The Chronicle' : '');
+  },
+    h('span', { html: iconSvg('quill', 16) }),
+    collapsed ? ' The Chronicle' : '',
+    collapsed && unread > 0 ? h('span', { class: 'badge' }, String(unread)) : null,
+  );
 
   root.appendChild(toggle);
   if (collapsed) return;
+  // what arrived since the last full reading gets a quiet ember dot;
+  // reading to the bottom marks everything read for next time
+  const unreadSet = new Set(visible.slice(readMark));
+  if (wasAtBottom) readMark = visible.length;
 
   const feed = h('div', { class: 'chronicle-feed' },
     h('div', { class: 'chronicle-heading' },
@@ -112,8 +147,8 @@ export function renderChronicleFeed(screen: GameScreen, root: HTMLElement): void
       }, h('span', { html: iconSvg('info', 13) }), 'Digest'),
     ),
     ...(digestOn
-      ? renderSeasons(screen, root, entries, state.turn)
-      : entries.map((entry) => renderEntry(entry))),
+      ? renderSeasons(screen, root, entries, state.turn, viewer, unreadSet)
+      : entries.map((entry) => renderEntry(entry, viewer, unreadSet))),
   );
   root.appendChild(feed);
   requestAnimationFrame(() => {
@@ -130,6 +165,8 @@ function renderSeasons(
   root: HTMLElement,
   entries: ChronicleEntry[],
   currentTurn: number,
+  viewer: number,
+  unreadSet: Set<ChronicleEntry>,
 ): HTMLElement[] {
   const seasons: { turn: number; items: ChronicleEntry[] }[] = [];
   for (const e of entries) {
@@ -138,6 +175,19 @@ function renderSeasons(
     else seasons.push({ turn: e.turn, items: [e] });
   }
   const out: HTMLElement[] = [];
+  // DOM windowing: only the trailing seasons mount; the rest wait behind
+  // one button, so a long war stays a light page
+  if (seasons.length > seasonsShown) {
+    const hidden = seasons.length - seasonsShown;
+    out.push(h('button', {
+      class: 'btn btn-quiet compact chronicle-unroll',
+      onclick: () => {
+        seasonsShown += SEASON_WINDOW;
+        renderChronicleFeed(screen, root);
+      },
+    }, `Unroll ${Math.min(SEASON_WINDOW, hidden)} earlier ${hidden === 1 ? 'season' : 'seasons'} (${hidden} folded)`));
+    seasons.splice(0, hidden);
+  }
   for (const season of seasons) {
     const open = seasonChoice[season.turn] ?? (season.turn === currentTurn);
     const shown = open ? season.items : season.items.filter((e) => e.digest || e.ceremony);
@@ -155,19 +205,21 @@ function renderSeasons(
       `Season ${season.turn}`,
       h('span', { class: 'chronicle-season-count small' }, open ? String(season.items.length) : folded > 0 ? `+${folded}` : ''),
     ));
-    for (const entry of shown) out.push(renderEntry(entry));
+    for (const entry of shown) out.push(renderEntry(entry, viewer, unreadSet));
   }
   return out;
 }
 
-function renderEntry(entry: ChronicleEntry): HTMLElement {
+function renderEntry(entry: ChronicleEntry, viewer: number, unreadSet: Set<ChronicleEntry>): HTMLElement {
+  const tier = tierOf(entry, viewer);
   return h('div', {
-    class: `chronicle-entry ${entry.ceremony ? 'chronicle-ceremony' : ''} ${entry.digest ? 'chronicle-digest-entry' : ''} chronicle-${entry.kind}`,
+    class: `chronicle-entry chronicle-tier-${tier} ${entry.ceremony ? 'chronicle-ceremony' : ''} ${entry.digest ? 'chronicle-digest-entry' : ''} chronicle-${entry.kind}`,
   },
     h('div', { class: 'chronicle-meta small muted' },
       h('span', { html: iconSvg(KIND_ICON[entry.kind] ?? 'quill', 12) }),
       `Season ${entry.turn}`,
       entry.privateTo !== undefined ? h('span', { class: 'chip chip-magic', style: { marginLeft: '0.4em' } }, 'for your eyes') : null,
+      unreadSet.has(entry) ? h('span', { class: 'chronicle-unread-dot', title: 'New since your last reading' }) : null,
     ),
     h('div', { class: 'chronicle-text' }, entry.text),
   );

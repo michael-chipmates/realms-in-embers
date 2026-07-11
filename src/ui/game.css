@@ -272,6 +272,15 @@ details.side-section:not([open]) > summary { border-bottom: none; }
 .chronicle-text { font-size: 0.88rem; line-height: 1.4; margin-top: 0.1rem; }
 .chronicle-ceremony .chronicle-text { font-weight: 700; }
 .chronicle-ceremony { background: rgba(224, 120, 48, 0.08); margin: 0 -0.4rem; padding: 0.35rem 0.4rem; border-radius: 3px; }
+/* reading tiers: ceremonies command, decisions demanded a choice, alerts
+   touched your banner, chronicle is the weather */
+.chronicle-tier-decision { border-left: 2px solid rgba(201, 162, 39, 0.55); padding-left: 0.45rem; }
+.chronicle-tier-alert { border-left: 2px solid rgba(184, 67, 47, 0.55); padding-left: 0.45rem; }
+.chronicle-unread-dot {
+  display: inline-block; width: 6px; height: 6px; border-radius: 999px;
+  background: var(--ember-bright, #e07830); margin-left: 0.35em; vertical-align: middle;
+}
+.chronicle-unroll { align-self: center; margin: 0.2rem 0; }
 .chronicle-collapsed .chronicle-feed { display: none; }
 /* season digest: headers fold a whole season; Osperan's summary line reads
    like a marginal note, set apart from ordinary entries */
