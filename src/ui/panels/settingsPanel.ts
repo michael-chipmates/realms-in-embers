@@ -4,6 +4,8 @@ import { RULES_VERSION } from '../../engine/state';
 import { h } from '../dom';
 import { audio } from '../audio';
 import { openModal } from '../modal';
+import { seasonName } from '../format';
+import { exportSave, getSaveHealth, saveToSlot, subscribeSaveHealth, type SaveHealth } from '../saves';
 import type { App } from '../app';
 
 function bugReport(app: App): string {
@@ -55,6 +57,48 @@ function copyBugReportRow(app: App): HTMLElement {
   );
 }
 
+/** Quiet save-health line; grows a warning with Retry/Export when saving fails. */
+function saveHealthRow(app: App): { el: HTMLElement; dispose: () => void } {
+  const line = h('span', { class: 'small muted', style: { display: 'block' }, 'aria-live': 'polite' });
+  const actions = h('span', { style: { display: 'flex', alignItems: 'center', gap: '0.5rem' } });
+
+  const render = (health: SaveHealth): void => {
+    actions.replaceChildren();
+    line.style.color = '';
+    if (health.state === 'ok') {
+      const when = health.lastSavedTurn != null
+        ? `Last saved: ${seasonName(health.lastSavedTurn)}.`
+        : health.lastSaved != null
+          ? `Last saved: ${new Date(health.lastSaved).toLocaleString()}.`
+          : 'No save written yet.';
+      line.textContent = health.message ? `${when} ${health.message}` : when;
+      return;
+    }
+    line.textContent = health.message ?? 'The realm could not be saved.';
+    line.style.color = 'var(--danger)';
+    if (app.game && health.state === 'failed') {
+      actions.append(h('button', {
+        class: 'btn compact',
+        onclick: () => { if (app.game) saveToSlot(app.game, 'auto'); },
+      }, 'Retry'));
+    }
+    if (app.game) {
+      actions.append(h('button', {
+        class: 'btn compact',
+        onclick: () => { if (app.game) exportSave(app.game); },
+      }, 'Export'));
+    }
+  };
+
+  const dispose = subscribeSaveHealth(render);
+  render(getSaveHealth());
+  const el = h('div', { class: 'settings-row' },
+    h('span', {}, 'Chronicle keeping', line),
+    actions,
+  );
+  return { el, dispose };
+}
+
 function slider(label: string, value: number, min: number, max: number, step: number, onInput: (v: number) => void): HTMLElement {
   const input = h('input', {
     type: 'range', class: 'slider', min: String(min), max: String(max), step: String(step), value: String(value),
@@ -78,6 +122,7 @@ function toggle(label: string, checked: boolean, onChange: (v: boolean) => void,
 
 export function openSettingsPanel(app: App): void {
   const s = app.settings;
+  const healthRow = saveHealthRow(app);
   const content = h('div', { class: 'settings-body' },
     h('h3', { class: 'settings-head' }, 'Seeing'),
     toggle('Colorblind patterns', s.colorblind, (v) => {
@@ -106,6 +151,8 @@ export function openSettingsPanel(app: App): void {
       s.volSfx = v;
       app.applySettings();
     }),
+    h('h3', { class: 'settings-head' }, 'Keeping'),
+    healthRow.el,
     h('h3', { class: 'settings-head' }, 'Credits'),
     h('div', { class: 'small muted', style: { lineHeight: '1.5' } },
       ...audio.credits().map((line) => h('p', { style: { margin: '0 0 0.3rem' } }, line)),
@@ -120,5 +167,5 @@ export function openSettingsPanel(app: App): void {
     h('h3', { class: 'settings-head' }, 'Reporting'),
     copyBugReportRow(app),
   );
-  openModal('Settings', content);
+  openModal('Settings', content, { onClose: healthRow.dispose });
 }

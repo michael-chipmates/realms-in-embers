@@ -6,7 +6,7 @@
 import { createGame } from '../engine/engine';
 import type { GameSettings, GameState } from '../engine/types';
 import { clear } from './dom';
-import { loadSettings, saveSettings, saveToSlot, type UiSettings } from './saves';
+import { bootRecoveryCheck, loadSettings, saveSettings, saveToSlot, type UiSettings } from './saves';
 import { renderTitle } from './screens/title';
 import { renderSetup } from './screens/setup';
 import { GameScreen } from './screens/game';
@@ -25,6 +25,10 @@ export class App {
     this.root = root;
     this.settings = loadSettings();
     this.applySettings();
+    // If the newest autosave is damaged but the :lastgood copy reads,
+    // restore it now so Continue works. The note also shows in Settings.
+    const recovery = bootRecoveryCheck();
+    if (recovery) console.warn(`[saves] ${recovery}`);
   }
 
   applySettings(): void {
@@ -54,7 +58,8 @@ export class App {
     this.gameScreen = null;
     const { state, effects } = createGame(settings);
     this.game = state;
-    saveToSlot(state, 'auto');
+    const saved = saveToSlot(state, 'auto');
+    if (!saved.ok) console.warn(`[saves] ${saved.message}`);
     clear(this.root);
     this.gameScreen = new GameScreen(this, state);
     this.gameScreen.mount(this.root);
