@@ -9,7 +9,61 @@ import { hasAnySave, listSlots, loadSlot, newestSave, deleteSlot, importSave } f
 import { openOnlineLobby } from './lobby';
 import { openModal } from '../modal';
 import { openSettingsPanel } from '../panels/settingsPanel';
+import type { Difficulty } from '../../engine/types';
 import type { App } from '../app';
+
+/** Quick War: one tap, one choice, straight into the fire. A random medium
+ * realm, you against three rivals, fog on, 36 seasons — the full game with
+ * none of the muster table. The gentle option exists so a first evening
+ * ends in a story, not a siege of the tutorial. */
+const QUICK_WARS: { label: string; blurb: string; difficulty: Difficulty }[] = [
+  {
+    label: 'Gentle',
+    blurb: 'Rivals who make mistakes and forgive yours. For a first war.',
+    difficulty: 'squire',
+  },
+  {
+    label: 'Standard',
+    blurb: 'Rivals who play their tempers honestly. The intended game.',
+    difficulty: 'knight',
+  },
+  {
+    label: 'Merciless',
+    blurb: 'Rivals with sharpened knives and long memories. You were warned.',
+    difficulty: 'warlord',
+  },
+];
+
+function openQuickWar(app: App): void {
+  const body = h('div', { class: 'quickwar-body' },
+    h('p', { class: 'small muted', style: { margin: '0 0 0.7rem' } },
+      'A fresh realm, you and three rivals, 36 seasons, the map unexplored. Pick how hard they fight.'),
+    ...QUICK_WARS.map((q) =>
+      h('button', {
+        class: 'btn quickwar-option',
+        onclick: () => {
+          app.startGame({
+            seed: `quickwar-${Math.random().toString(36).slice(2, 10)}`,
+            mapSize: 'medium',
+            players: [
+              { kind: 'human', lordId: 'random', difficulty: q.difficulty },
+              { kind: 'ai', lordId: 'random', difficulty: q.difficulty },
+              { kind: 'ai', lordId: 'random', difficulty: q.difficulty },
+              { kind: 'ai', lordId: 'random', difficulty: q.difficulty },
+            ],
+            victoryPaths: ['conquest', 'dominion', 'goldenAge', 'legend'],
+            maxTurns: 36,
+            fogOfWar: true,
+            veteranChronicle: false,
+          });
+        },
+      },
+        h('span', { class: 'quickwar-label' }, q.label),
+        h('span', { class: 'small muted' }, q.blurb),
+      )),
+  );
+  openModal('Quick War', body);
+}
 
 /** Osperan keeps writing between wars. A different line each visit. */
 const EPIGRAPHS = [
@@ -31,7 +85,8 @@ export function renderTitle(app: App): void {
   const menu = h(
     'div',
     { class: 'title-menu' },
-    h('button', { class: 'btn btn-seal title-btn', onclick: () => app.toSetup() }, 'New Chronicle'),
+    h('button', { class: 'btn btn-seal title-btn', onclick: () => openQuickWar(app) }, 'Quick War'),
+    h('button', { class: 'btn title-btn', onclick: () => app.toSetup() }, 'New Chronicle'),
     newest
       ? h('button', {
           class: 'btn title-btn',

@@ -355,6 +355,15 @@ details.side-section:not([open]) > summary { border-bottom: none; }
 .ledger-table td { padding: 0.25rem 0.5rem 0.25rem 0; border-top: 1px solid rgba(201, 162, 39, 0.15); }
 .ledger-you { background: rgba(201, 162, 39, 0.08); }
 
+/* ------------------------------------------------------------- quick war */
+
+.quickwar-body { display: flex; flex-direction: column; gap: 0.5rem; padding: 0.2rem 0.4rem 0.6rem; }
+.quickwar-option {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 0.15rem;
+  padding: 0.7rem 0.9rem; text-align: left; min-height: 56px;
+}
+.quickwar-label { font-weight: 600; font-size: 1rem; color: var(--gold-bright); }
+
 /* ---------------------------------------------------------------- codex */
 
 .codex-modal { max-width: min(960px, 96vw); width: 100%; }
