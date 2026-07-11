@@ -14,7 +14,9 @@ under the same license. No closed-source paid forks.
 
 - *Penumbra* and *Song Of The Forge* by **Scott Buckley** (www.scottbuckley.com.au),
   released under [CC-BY 4.0](https://creativecommons.org/licenses/by/4.0/),
-  bundled unmodified in `public/music/` and credited in-game (Settings → Credits).
+  bundled in `public/music/` and credited in-game (Settings → Credits).
+- The tracks are re-encoded to AAC (`.m4a`) for lighter delivery; the music is
+  otherwise unmodified and the attribution above is unchanged.
 
 ## Illustrations
 

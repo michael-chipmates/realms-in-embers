@@ -10,9 +10,10 @@
 /**
  * Bundled score: Scott Buckley — 'Penumbra' & 'Song Of The Forge',
  * CC-BY 4.0 (www.scottbuckley.com.au). Credits shown in Settings & README.
- * Drop your own MP3s in public/music/ + playlist.json to override.
+ * Delivered as ~128kbps-class AAC (.m4a) to keep the download light.
+ * Drop your own audio files in public/music/ + playlist.json to override.
  */
-const DEFAULT_PLAYLIST = ['music/penumbra.mp3', 'music/song-of-the-forge.mp3'];
+const DEFAULT_PLAYLIST = ['music/penumbra.m4a', 'music/song-of-the-forge.m4a'];
 
 class AudioEngine {
   private ctx: AudioContext | null = null;
