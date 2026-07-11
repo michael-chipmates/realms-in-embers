@@ -53,7 +53,7 @@ export function maybeShowOnboarding(screen: GameScreen): void {
     {
       icon: 'crownSmall',
       title: 'How this ends',
-      body: `Ways to the throne: conquest, dominion, a golden age of coin and quiet, or the Grand Saga — five chapters that end with a hero of yours relighting the Ember Throne itself (the Quests screen keeps the count). The Ledger screen tracks every race. And the Chronicle ALWAYS ends — season ${state.victory.maxTurns} at the latest, when I judge the realm as it stands. End your season with the wax-red button. I shall be watching. It is, quite literally, all I can do.`,
+      body: `Ways to the throne: conquest, dominion, a golden age of coin and quiet, or the Grand Saga — five chapters that end with a hero of yours relighting the Ember Throne itself (the Quests screen keeps the count). The Ledger screen tracks every race, and when any rule wants studying, the Codex (the tome in the bar, or the letter c) holds my complete handbook of this realm. And the Chronicle ALWAYS ends — season ${state.victory.maxTurns} at the latest, when I judge the realm as it stands. End your season with the wax-red button. I shall be watching. It is, quite literally, all I can do.`,
     },
   ];
 

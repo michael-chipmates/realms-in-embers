@@ -18,7 +18,7 @@ import { questStat, sagaGate } from '../../engine/quests';
 import { armiesOf, getStance, heroesOf, provincesOf } from '../../engine/helpers';
 import type { Hero, PlayerId, SpellId } from '../../engine/types';
 import { h, mount } from '../dom';
-import { fmt, lordDisplay, signed } from '../format';
+import { classGrowthWords, fmt, lordDisplay, signed } from '../format';
 import { iconSvg } from '../icons';
 import { openModal, closeAllModals, type ModalHandle } from '../modal';
 import { breakdown, tip } from '../tooltip';
@@ -58,6 +58,8 @@ function renderCourt(screen: GameScreen, body: HTMLElement, modal: ModalHandle, 
       ),
       h('p', { class: 'small', style: { padding: '0 0.8rem' } },
         `Might ${offer.might} · Lore ${offer.lore} · Guile ${offer.guile} · Leadership ${offer.leadership}`),
+      h('p', { class: 'small muted', style: { padding: '0 0.8rem' } },
+        `${classGrowthWords(offer.cls)} Wage ${cls.wage} gold a season, rising 2 a level.`),
       h('p', { class: 'small muted italic', style: { padding: '0 0.8rem' } }, cls.desc),
       h('div', { style: { padding: '0.5rem 0.8rem' } },
         h('button', {

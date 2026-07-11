@@ -3,7 +3,8 @@
  * economics with itemized causes, armies with orders, recruit & build.
  */
 import { BUILDINGS, BUILD_ORDER, TERRAIN } from '../../engine/content/world';
-import { RECRUITABLE, UNITS, VET_NAMES } from '../../engine/content/units';
+import { RECRUITABLE, TRAIT_INFO, UNITS, VET_NAMES } from '../../engine/content/units';
+import type { UnitTrait } from '../../engine/content/units';
 import { SITE_NAMES } from '../../engine/content/names';
 import { buildingCostFor, orderDrift, provinceIncome, unitCostFor } from '../../engine/economy';
 import { heroDerived } from '../../engine/heroFx';
@@ -14,7 +15,17 @@ import { fmt, lordDisplay, signed } from '../format';
 import { iconSvg } from '../icons';
 import { breakdown, tip } from '../tooltip';
 import { audio } from '../audio';
+import { codexHint } from './codex';
 import type { GameScreen } from '../screens/game';
+
+/** One plain line per trait — TRAIT_INFO is the player's contract with the
+ * combat code, so tooltips never restate it by hand. */
+function traitLines(traits: UnitTrait[]): HTMLElement[] {
+  return traits
+    .filter((t) => TRAIT_INFO[t])
+    .map((t) => h('p', { class: 'small trait-line' },
+      h('b', {}, t[0].toUpperCase() + t.slice(1) + '. '), TRAIT_INFO[t]!));
+}
 
 export function renderSelectionPanel(screen: GameScreen, root: HTMLElement): void {
   const state = screen.state;
@@ -120,8 +131,17 @@ function renderProvinceCard(screen: GameScreen, p: Province): HTMLElement {
       ? h('p', { class: 'small muted build-note' }, h('span', { html: iconSvg('banner', 12) }), `Mustering ${UNITS[p.recruitQueue.unit].name}`)
       : null,
     p.mods.length > 0
-      ? h('div', { class: 'chip-row' }, ...p.mods.map((m) =>
-          h('span', { class: 'chip chip-magic' }, `${m.label} (${m.turnsLeft})`)))
+      ? h('div', { class: 'chip-row' }, ...p.mods.map((m) => {
+          const chip = h('span', { class: 'chip chip-magic' }, `${m.label} (${m.turnsLeft})`);
+          tip(chip, () => h('div', { class: 'tip-plain' },
+            h('b', {}, m.label),
+            m.income ? h('p', { class: `small ${m.income > 0 ? 'pos' : 'neg'}` }, `${signed(m.income)} gold each season`) : null,
+            m.order ? h('p', { class: `small ${m.order > 0 ? 'pos' : 'neg'}` }, `${signed(m.order)} order each season`) : null,
+            m.defense ? h('p', { class: `small ${m.defense > 0 ? 'pos' : 'neg'}` }, `Defenders here ${m.defense > 0 ? '+' : ''}${Math.round(m.defense * 100)}%`) : null,
+            h('p', { class: 'small muted' }, m.turnsLeft === 1 ? 'Fades after this season.' : `Lasts ${m.turnsLeft} more seasons.`),
+          ));
+          return chip;
+        }))
       : null,
     h('p', { class: 'flavor-line italic' }, p.flavor),
   );
@@ -158,8 +178,9 @@ function renderArmyCard(screen: GameScreen, army: Army, selected: boolean): HTML
     tip(row, () => h('div', { class: 'tip-plain' },
       h('b', {}, def.name),
       h('p', { class: 'small' }, `Attack ${def.atk} · Defense ${def.def} · ${def.hits} hits · upkeep ${def.upkeep}`),
-      def.traits.length > 0 ? h('p', { class: 'small' }, `Traits: ${def.traits.join(', ')}`) : null,
+      ...traitLines(def.traits),
       h('p', { class: 'small italic muted' }, def.flavor),
+      codexHint(),
     ));
     return row;
   });
@@ -316,8 +337,10 @@ function renderRecruitCard(screen: GameScreen, p: Province): HTMLElement | null 
           h('b', {}, `${def.name} — ${cost} gold, ready next season`),
           h('p', { class: 'small' }, `Attack ${def.atk} · Defense ${def.def} · ${def.hits} hits · upkeep ${def.upkeep}/season`),
           h('p', { class: 'small' }, def.desc),
+          ...traitLines(def.traits),
           ...lines.map((l) => h('p', { class: 'small pos' }, l)),
           h('p', { class: 'small italic muted' }, def.flavor),
+          codexHint(),
         ));
         return btn;
       }),

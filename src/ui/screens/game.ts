@@ -25,6 +25,7 @@ import { breakdown, tip, hideTip } from '../tooltip';
 import { renderSelectionPanel } from '../panels/selection';
 import { renderChronicleFeed } from '../panels/chronicleFeed';
 import { openCourtOverlay, openDiplomacyOverlay, openLedgerOverlay, openMagicOverlay, openQuestsOverlay, openMenuOverlay } from '../panels/overlays';
+import { openCodexOverlay } from '../panels/codex';
 import { anyModalOpen, closeAllModals, openModal } from '../modal';
 import { openBattleReport } from './battleReport';
 import { maybeOpenEventModal } from './eventModal';
@@ -909,6 +910,7 @@ export class GameScreen {
         this.iconAction('quest', 'Quests & the Saga', () => openQuestsOverlay(this)),
         this.iconAction('handshake', 'The other lords', () => openDiplomacyOverlay(this)),
         this.iconAction('book', 'Ledger & victory', () => openLedgerOverlay(this)),
+        this.iconAction('codex', 'The Codex — every rule of the realm', () => openCodexOverlay(this)),
       ),
       this.online && this.online.clock.perTurn > 0
         ? (this.clockEl = h('div', { class: 'stat turn-clock', 'aria-label': 'Season clock' }))
@@ -1008,6 +1010,10 @@ export class GameScreen {
         break;
       case 'l':
         openLedgerOverlay(this);
+        break;
+      case 'c':
+      case '?':
+        openCodexOverlay(this);
         break;
       case 'escape':
         if (this.pendingSpell !== null) {

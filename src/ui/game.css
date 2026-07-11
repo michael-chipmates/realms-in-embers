@@ -355,6 +355,57 @@ details.side-section:not([open]) > summary { border-bottom: none; }
 .ledger-table td { padding: 0.25rem 0.5rem 0.25rem 0; border-top: 1px solid rgba(201, 162, 39, 0.15); }
 .ledger-you { background: rgba(201, 162, 39, 0.08); }
 
+/* ---------------------------------------------------------------- codex */
+
+.codex-modal { max-width: min(960px, 96vw); width: 100%; }
+.codex-body { display: grid; grid-template-columns: 205px 1fr; gap: 1rem; align-items: start; }
+.codex-nav {
+  position: sticky; top: 0; display: flex; flex-direction: column; gap: 2px;
+  padding: 0.2rem 0; background: transparent;
+}
+.codex-nav-btn {
+  display: flex; align-items: center; gap: 0.5rem; text-align: left;
+  background: none; border: none; border-left: 2px solid transparent;
+  color: var(--ink-soft); font: inherit; font-size: 0.86rem;
+  padding: 0.42rem 0.6rem; cursor: pointer; border-radius: 0 4px 4px 0;
+}
+.codex-nav-btn:hover { color: var(--ink); background: rgba(201, 162, 39, 0.07); }
+.codex-nav-btn.active {
+  color: var(--gold-bright); border-left-color: var(--gold);
+  background: rgba(201, 162, 39, 0.1);
+}
+.codex-page { min-width: 0; padding: 0 0.2rem 0.8rem 0; }
+.codex-page-head { display: flex; flex-direction: column; gap: 0.4rem; margin-bottom: 0.4rem; }
+.codex-page-title { margin: 0; font-size: 1.15rem; color: var(--gold-bright); font-weight: 400; letter-spacing: 0.04em; }
+.codex-page-glyph { color: var(--gold); }
+.art-codex-head img { width: 100%; height: clamp(72px, 16vh, 130px); object-fit: cover; border-radius: 6px; }
+.codex-p { margin: 0.45rem 0; font-size: 0.92rem; line-height: 1.55; }
+.codex-fact { margin: 0.3rem 0; font-size: 0.88rem; line-height: 1.5; }
+.codex-fact b { color: var(--gold); font-weight: 600; }
+.codex-entry { display: flex; gap: 0.65rem; padding: 0.5rem 0; border-top: 1px solid rgba(201, 162, 39, 0.12); }
+.codex-entry-glyph { color: var(--gold); flex: none; width: 30px; display: flex; justify-content: center; padding-top: 2px; }
+.art-codex-entry { flex: none; }
+.art-codex-entry img { width: 56px; height: 56px; object-fit: cover; border-radius: 5px; }
+.codex-entry-body { min-width: 0; }
+.codex-entry-body p { margin: 0.15rem 0; }
+.codex-entry-title { font-weight: 600; color: var(--ink); }
+.codex-spell-glyph { color: var(--ember-bright); }
+.codex-sealed { display: flex; align-items: baseline; gap: 0.35rem; margin: 0.25rem 0; }
+.codex-table-wrap { overflow-x: auto; }
+.trait-line b { color: var(--gold); font-weight: 600; }
+.codex-hint { margin-top: 0.35rem; opacity: 0.75; }
+
+@media (max-width: 700px) {
+  .codex-body { grid-template-columns: 1fr; gap: 0.4rem; }
+  .codex-nav {
+    flex-direction: row; overflow-x: auto; gap: 0.25rem; padding: 0.3rem 0;
+    background: rgba(20, 14, 8, 0.97); z-index: 2;
+    scrollbar-width: thin; -webkit-overflow-scrolling: touch;
+  }
+  .codex-nav-btn { flex: none; border-left: none; border-bottom: 2px solid transparent; border-radius: 4px; padding: 0.4rem 0.55rem; }
+  .codex-nav-btn.active { border-left: none; border-bottom-color: var(--gold); }
+}
+
 /* -------------------------------------------------------------- tooltip */
 
 .tooltip {

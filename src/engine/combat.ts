@@ -30,6 +30,50 @@ import type {
 } from './types';
 import { NEUTRAL } from './types';
 
+// ---------------------------------------------------------------- tuning
+
+/** The battle engine's tuning table, exported so the Codex renders the same
+ * numbers the fights use. Change a value here and the book follows — never
+ * restate these numbers in UI copy by hand. */
+export const COMBAT_TUNING = {
+  /** Melee clashes before night ends it; a stalemate keeps the field with the defender. */
+  clashes: 7,
+  /** Hits dealt per point of power, each clash. */
+  damagePerPower: 0.135,
+  /** The archery volley deals this share of a normal clash. */
+  volleyMult: 0.6,
+  /** Every clash's damage rolls within this band. */
+  swingLo: 0.85,
+  swingHi: 1.15,
+  /** Attacker power leans on attack; defender power leans on defense. */
+  attackerAtkWeight: 0.65,
+  attackerDefWeight: 0.35,
+  stance: { bold: 1.1, wary: 0.88 },
+  /** From clash 2: a side withdraws when its power falls under (enemy × threshold). */
+  withdrawAt: { wary: 0.8, measured: 0.5, bold: 0.28 },
+  /** Parting damage on a withdrawal, as a share of one clash. */
+  withdrawParting: 0.5,
+  leadershipPerLevel: 0.02,
+  leadershipCap: 0.3,
+  adeptEach: 0.04,
+  adeptCap: 0.12,
+  terrorMult: 0.92,
+  riverMult: 0.85,
+  seaMult: 0.85,
+  chargeMult: 1.2,
+  ambushMult: 1.25,
+  braceMult: 1.1,
+  terrainBornMult: 1.25,
+  flyingMult: 1.1,
+  raggedMult: 0.9,
+  /** Chance an armored company turns a hit aside. */
+  armoredTurn: 0.15,
+  walls: { walls1: 0.2, walls2: 0.35, walls3: 0.5 },
+  /** A hero adds might × (base + perLevel × level) power. */
+  heroPowerBase: 2,
+  heroPowerPerLevel: 0.45,
+} as const;
+
 // ------------------------------------------------------------ hostilities
 
 export function hostileTo(state: GameState, a: PlayerId, b: PlayerId): boolean {
@@ -162,21 +206,21 @@ function buildSide(
   // attacker-only situational penalties
   if (role === 'attacker') {
     if (ctx.riverCrossing && !units.every((u) => u.traits.includes('flying'))) {
-      mods.push({ label: 'Crossing the river', mult: 0.85 });
+      mods.push({ label: 'Crossing the river', mult: COMBAT_TUNING.riverMult });
     }
     if (ctx.amphibious) {
-      mods.push({ label: 'Landing from ships', mult: 0.85 });
+      mods.push({ label: 'Landing from ships', mult: COMBAT_TUNING.seaMult });
     }
   }
 
   // stance
-  if (stance === 'bold') mods.push({ label: 'Bold stance', mult: 1.1 });
-  if (stance === 'wary') mods.push({ label: 'Wary stance', mult: 0.88 });
+  if (stance === 'bold') mods.push({ label: 'Bold stance', mult: COMBAT_TUNING.stance.bold });
+  if (stance === 'wary') mods.push({ label: 'Wary stance', mult: COMBAT_TUNING.stance.wary });
 
   // leadership
   const lead = heroes.reduce((m, hh) => Math.max(m, hh.leadership), 0);
   if (lead > 0) {
-    const bonus = Math.min(0.3, lead * 0.02);
+    const bonus = Math.min(COMBAT_TUNING.leadershipCap, lead * COMBAT_TUNING.leadershipPerLevel);
     const best = heroes.reduce((a, b) => (b.leadership >= a.leadership ? b : a));
     mods.push({ label: `${best.name}'s command (+${Math.round(bonus * 100)}%)`, mult: 1 + bonus });
   }
@@ -184,14 +228,14 @@ function buildSide(
   // battle-casters
   const casters = units.filter((u) => u.traits.includes('caster')).length;
   if (casters > 0) {
-    mods.push({ label: `${casters}× Ember Adepts weave battle-light`, mult: 1 + Math.min(0.12, casters * 0.04) });
+    mods.push({ label: `${casters}× Ember Adepts weave battle-light`, mult: 1 + Math.min(COMBAT_TUNING.adeptCap, casters * COMBAT_TUNING.adeptEach) });
   }
 
   // terror
   if (enemyHasTerror) {
     const lordImmune = player >= 0 && !!lordOf(state.players[player]).perk.fx.terrorImmune;
     const immune = lordImmune || units.some((u) => u.traits.includes('terror') || u.traits.includes('unyielding'));
-    if (!immune) mods.push({ label: 'Terror in the ranks', mult: 0.92 });
+    if (!immune) mods.push({ label: 'Terror in the ranks', mult: COMBAT_TUNING.terrorMult });
   }
 
   // creed grudge perks (atkVsCreed) are appended by the caller via
@@ -213,9 +257,9 @@ function wallLabel(p: Province): string {
 }
 
 function wallBonusOf(p: Province): number {
-  if (p.buildings.includes('walls3')) return 0.5;
-  if (p.buildings.includes('walls2')) return 0.35;
-  if (p.buildings.includes('walls1')) return 0.2;
+  if (p.buildings.includes('walls3')) return COMBAT_TUNING.walls.walls3;
+  if (p.buildings.includes('walls2')) return COMBAT_TUNING.walls.walls2;
+  if (p.buildings.includes('walls1')) return COMBAT_TUNING.walls.walls1;
   return 0;
 }
 
@@ -223,20 +267,21 @@ function wallBonusOf(p: Province): number {
 
 function unitContribution(u: CUnit, side: Side, round: number, ctx: FightCtx, enemyBraces: boolean): number {
   if (u.hits <= 0) return 0;
-  const roleAtk = side.role === 'attacker' ? u.atk * 0.65 + u.def * 0.35 : u.atk * 0.35 + u.def * 0.65;
+  const { attackerAtkWeight: aw, attackerDefWeight: dw } = COMBAT_TUNING;
+  const roleAtk = side.role === 'attacker' ? u.atk * aw + u.def * dw : u.atk * dw + u.def * aw;
   let mult = vetMult(u.vet) * (u.hits / u.maxHits);
   const t = ctx.province.terrain;
-  if (u.traits.includes('forestborn') && t === 'forest') mult *= 1.25;
-  if (u.traits.includes('mountainborn') && t === 'mountain') mult *= 1.25;
-  if (u.traits.includes('marshborn') && t === 'moor') mult *= 1.25;
-  if (u.traits.includes('flying')) mult *= 1.1;
-  if (u.traits.includes('ragged')) mult *= 0.9;
+  if (u.traits.includes('forestborn') && t === 'forest') mult *= COMBAT_TUNING.terrainBornMult;
+  if (u.traits.includes('mountainborn') && t === 'mountain') mult *= COMBAT_TUNING.terrainBornMult;
+  if (u.traits.includes('marshborn') && t === 'moor') mult *= COMBAT_TUNING.terrainBornMult;
+  if (u.traits.includes('flying')) mult *= COMBAT_TUNING.flyingMult;
+  if (u.traits.includes('ragged')) mult *= COMBAT_TUNING.raggedMult;
   if (round === 1 && !side.calmed) {
     const open = t === 'meadow' || t === 'hills';
-    if (u.traits.includes('charge') && open && !enemyBraces) mult *= 1.2;
-    if (u.traits.includes('ambush') && side.role === 'attacker') mult *= 1.25;
+    if (u.traits.includes('charge') && open && !enemyBraces) mult *= COMBAT_TUNING.chargeMult;
+    if (u.traits.includes('ambush') && side.role === 'attacker') mult *= COMBAT_TUNING.ambushMult;
   }
-  if (u.traits.includes('brace') && side.role === 'defender') mult *= 1.1;
+  if (u.traits.includes('brace') && side.role === 'defender') mult *= COMBAT_TUNING.braceMult;
   return roleAtk * mult;
 }
 
@@ -244,7 +289,7 @@ function sidePower(side: Side, enemy: Side, round: number, ctx: FightCtx): numbe
   const enemyBraces = enemy.units.some((u) => u.hits > 0 && u.traits.includes('brace'));
   let power = 0;
   for (const u of side.units) power += unitContribution(u, side, round, ctx, enemyBraces);
-  for (const hh of side.heroes) power += hh.might * (2 + hh.level * 0.45);
+  for (const hh of side.heroes) power += hh.might * (COMBAT_TUNING.heroPowerBase + hh.level * COMBAT_TUNING.heroPowerPerLevel);
   return power * side.mult;
 }
 
@@ -259,7 +304,7 @@ function rangedPower(side: Side, ctx: FightCtx): number {
 
 // ------------------------------------------------------------------ fight
 
-const DMG = 0.135;
+const DMG = COMBAT_TUNING.damagePerPower;
 
 interface FightResult {
   winner: 'attacker' | 'defender';
@@ -276,7 +321,7 @@ function dealDamage(rng: Rng, target: Side, rawHits: number): number {
     const alive = target.units.filter((u) => u.hits > 0);
     if (alive.length === 0) break;
     const pick = rng.pickWeighted(alive, (u) => u.hits);
-    if (pick.traits.includes('armored') && rng.chance(0.15)) {
+    if (pick.traits.includes('armored') && rng.chance(COMBAT_TUNING.armoredTurn)) {
       toDeal--;
       continue; // turned by armor
     }
@@ -297,8 +342,9 @@ function fight(rng: Rng, attacker: Side, defender: Side, ctx: FightCtx): FightRe
   const aRanged = rangedPower(attacker, ctx);
   const dRanged = rangedPower(defender, ctx);
   if (aRanged > 0 || dRanged > 0) {
-    const aLoss = dealDamage(rng, attacker, dRanged * DMG * 0.6 * rng.range(0.85, 1.15));
-    const dLoss = dealDamage(rng, defender, aRanged * DMG * 0.6 * rng.range(0.85, 1.15));
+    const { volleyMult, swingLo, swingHi } = COMBAT_TUNING;
+    const aLoss = dealDamage(rng, attacker, dRanged * DMG * volleyMult * rng.range(swingLo, swingHi));
+    const dLoss = dealDamage(rng, defender, aRanged * DMG * volleyMult * rng.range(swingLo, swingHi));
     rounds.push({
       aPower: Math.round(aRanged), dPower: Math.round(dRanged), aLoss, dLoss,
       notes: ['Arrow-storm before the lines meet.'],
@@ -307,7 +353,7 @@ function fight(rng: Rng, attacker: Side, defender: Side, ctx: FightCtx): FightRe
 
   const alive = (s: Side) => s.units.some((u) => u.hits > 0);
 
-  for (let round = 1; round <= 7; round++) {
+  for (let round = 1; round <= COMBAT_TUNING.clashes; round++) {
     if (!alive(attacker) || !alive(defender)) break;
     const aPow = sidePower(attacker, defender, round, ctx);
     const dPow = sidePower(defender, attacker, round, ctx);
@@ -320,8 +366,8 @@ function fight(rng: Rng, attacker: Side, defender: Side, ctx: FightCtx): FightRe
       else if (aCharge && open) roundNotes.push('Cavalry strikes home at the first shock.');
       if (attacker.units.some((u) => u.traits.includes('ambush'))) roundNotes.push('The first blow comes from nowhere.');
     }
-    const aLoss = dealDamage(rng, attacker, dPow * DMG * rng.range(0.85, 1.15));
-    const dLoss = dealDamage(rng, defender, aPow * DMG * rng.range(0.85, 1.15));
+    const aLoss = dealDamage(rng, attacker, dPow * DMG * rng.range(COMBAT_TUNING.swingLo, COMBAT_TUNING.swingHi));
+    const dLoss = dealDamage(rng, defender, aPow * DMG * rng.range(COMBAT_TUNING.swingLo, COMBAT_TUNING.swingHi));
     rounds.push({ aPower: Math.round(aPow), dPower: Math.round(dPow), aLoss, dLoss, notes: roundNotes });
 
     if (!alive(attacker) || !alive(defender)) break;
@@ -333,18 +379,18 @@ function fight(rng: Rng, attacker: Side, defender: Side, ctx: FightCtx): FightRe
       const check = (side: Side, own: number, other: number): boolean => {
         if (side.player === NEUTRAL) return false;
         if (side.units.every((u) => u.hits <= 0 || u.traits.includes('unyielding'))) return false;
-        const threshold = side.stance === 'wary' ? 0.8 : side.stance === 'measured' ? 0.5 : 0.28;
+        const threshold = COMBAT_TUNING.withdrawAt[side.stance];
         return own < other * threshold;
       };
       if (check(attacker, aPow2, dPow2)) {
         withdrew = 'attacker';
-        dealDamage(rng, attacker, dPow2 * DMG * 0.5);
+        dealDamage(rng, attacker, dPow2 * DMG * COMBAT_TUNING.withdrawParting);
         notes.push({ kind: 'withdraw', text: 'The attackers broke off and fell back in order — mostly.' });
         break;
       }
       if (check(defender, dPow2, aPow2)) {
         withdrew = 'defender';
-        dealDamage(rng, defender, aPow2 * DMG * 0.5);
+        dealDamage(rng, defender, aPow2 * DMG * COMBAT_TUNING.withdrawParting);
         notes.push({ kind: 'withdraw', text: 'The defenders yielded the field, saving what could be saved.' });
         break;
       }

@@ -6,7 +6,9 @@
 import { scribe } from './narrator';
 import type { GameState, PlayerId } from './types';
 
-const TEACHINGS: Record<string, string> = {
+/** Exported for the Codex: the Marginalia chapter re-opens every page
+ * Osperan has already written for the player (player.flags['taught:<key>']). */
+export const TEACHINGS: Record<string, string> = {
   firstCapture:
     'Marginalia — on holding what you take: a conquered province remembers its old masters for five seasons (order suffers), and a folk of another creed is always a little deaf to your law. Garrisons soothe; Hearthshrines soothe better; time soothes best.',
   firstBattleWon:
