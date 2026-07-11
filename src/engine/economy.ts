@@ -18,10 +18,16 @@ export const TAX_FX: Record<TaxLevel, { mult: number; order: number; label: stri
   harsh: { mult: 1.35, order: -3, label: 'Harsh tithes — coin now, resentment on an installment plan.' },
 };
 
+/** The explain pattern this engine lives by (C§11.7 names it
+ * ExplainedValue): a number plus the labeled lines that sum to it. If a
+ * number can't produce its lines, it doesn't ship. */
 export interface Itemized {
   total: number;
   lines: { label: string; amount: number }[];
 }
+
+/** The formal name, for surfaces adopting the pattern by contract. */
+export type ExplainedValue = Itemized;
 
 // ------------------------------------------------------------------- gold
 

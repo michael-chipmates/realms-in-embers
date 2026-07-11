@@ -20,6 +20,10 @@ jobs:
       - run: npm ci
       - name: Typecheck
         run: npm run typecheck
+      - name: Lint (floating promises, eqeqeq, exhaustive switches)
+        run: npm run lint
+      - name: Content reconciliation (manifests ↔ disk ↔ code)
+        run: node scripts/check-content.mjs
       - name: Tests (incl. rules-version canary)
         run: npm test
       - name: Sim smoke — AI-vs-AI games with invariants

@@ -836,6 +836,7 @@ export class MapRenderer {
   }
 
   private drawSite(ctx: CanvasRenderingContext2D, p: Province, sx: number, sy: number): void {
+    if (p.site === null) return; // callers gate on p.site, but the switch must not trust that
     const s = this.scale;
     const y = sy + s * 0.75;
     ctx.save();
