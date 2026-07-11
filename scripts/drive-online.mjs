@@ -3,18 +3,20 @@
 import { chromium } from 'playwright';
 import { spawn } from 'child_process';
 
-const [url = 'http://localhost:5199', outdir = '/tmp'] = process.argv.slice(2);
+const [url = 'http://localhost:5199', outdir = '/tmp', relayOverride = ''] = process.argv.slice(2);
 
-// a throwaway relay on a test port
-const relay = spawn('node', ['server/relay.mjs', '8788'], { stdio: 'pipe' });
-await new Promise((r) => setTimeout(r, 700));
+// a throwaway relay on a test port — or, for the production smoke, the
+// LIVE relay passed as the third argument (no local spawn)
+const relay = relayOverride ? null : spawn('node', ['server/relay.mjs', '8788'], { stdio: 'pipe' });
+const relayWs = relayOverride || 'ws://localhost:8788';
+if (!relayOverride) await new Promise((r) => setTimeout(r, 700));
 
 const browser = await chromium.launch();
 const errors = [];
 const mkPage = async (label) => {
   const ctx = await browser.newContext({ viewport: { width: 1280, height: 850 } });
   const page = await ctx.newPage();
-  await page.addInitScript(() => localStorage.setItem('rie-relay', 'ws://localhost:8788'));
+  await page.addInitScript((ws) => localStorage.setItem('rie-relay', ws), relayWs);
   page.on('console', (m) => { if (m.type() === 'error') errors.push(`${label}: ${m.text()}`); });
   page.on('pageerror', (e) => errors.push(`${label}: ${String(e)}`));
   return page;
@@ -119,7 +121,9 @@ try {
 
   // SIGNATURES over the wire: seat 0 fires whatever fate dealt, with a
   // target computed from state; the echo must land identically on both.
-  const sigFired = await a.evaluate(() => (async () => {
+  // source import exists on the dev server only; the production smoke
+  // (relayOverride set) covers the wire with the cast test above
+  const sigFired = relayOverride ? { ok: 'skipped', sig: 'prod-build' } : await a.evaluate(() => (async () => {
     const screen = window.__game;
     const state = screen.state;
     const pid = state.current;
@@ -151,5 +155,5 @@ try {
   console.log(errors.length ? 'ERRORS:\n' + [...new Set(errors)].join('\n') : 'online drive clean: 2 clients, 2 turns, identical state, rejoin lands mid-war, a cast lands sealed on both');
 } finally {
   await browser.close();
-  relay.kill();
+  relay?.kill();
 }

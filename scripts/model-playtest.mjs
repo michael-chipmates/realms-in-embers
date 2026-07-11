@@ -63,8 +63,11 @@ function view(state, pid, rejections) {
   L.push(`SEASON ${state.turn} of ${state.victory.maxTurns}. You are ${lord.name} (${lord.creed}). Legacy: ${lord.perk.desc}`);
   const sigCd = me.signatureCooldownLeft ?? 0;
   L.push(`SIGNATURE — ${lord.signature.name}: ${lord.signature.desc} ${sigCd === 0 ? 'READY NOW' : `returns in ${sigCd} seasons`}${lord.signature.target === 'rival' ? ' (needs "targetPlayer")' : lord.signature.target === 'enemyProvince' ? ' (needs "province" bordering your realm)' : ''}.`);
-  L.push(`Treasury ${Math.round(me.gold)} gold (net ${report.net >= 0 ? '+' : ''}${report.net}/season). Emberlight ${me.emberlight}. Tax: ${me.tax}.`);
+  L.push(`Treasury ${Math.round(me.gold)} gold — net ${report.net >= 0 ? '+' : ''}${report.net}/season (gross ${report.gold}, upkeep −${report.upkeep}, hero wages −${report.wages}). Emberlight ${me.emberlight}. Tax: ${me.tax}.`);
   const needed = Math.round(dominionShareAt(state) * 100);
+  const shares = state.players.filter((p) => p.alive)
+    .map((p) => `player${p.id} ${Math.round((provincesOf(state, p.id).length / state.provinces.length) * 100)}%`).join(', ');
+  L.push(`LAND HELD: ${shares}.`);
   L.push(`VICTORY RACE — dominion needs ${needed}% of ${state.provinces.length} provinces for 3 seasons${state.turn > 38 ? ' (eroding each season!)' : ''}; golden age needs richest+900 gold+order 65 for 4; legend needs saga chapter 5 (you: ${me.sagaChapter}/5).`);
 
   if (isDefiant(state, pid)) L.push(`DEFIANT (underdog boon): your musters cost 15% less and every province stands +2 order while you trail the leader badly.`);
