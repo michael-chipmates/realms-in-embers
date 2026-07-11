@@ -12,7 +12,7 @@ async function run(viewport, tag) {
   page.on('pageerror', (err) => errors.push(String(err)));
   await page.goto(url, { waitUntil: 'networkidle' });
   await page.waitForTimeout(500);
-  await page.getByRole('button', { name: 'Quick War' }).click();
+  await page.getByRole('button', { name: 'A Quick Chronicle' }).click();
   await page.waitForTimeout(400);
   await page.screenshot({ path: `${outdir}/quickwar-${tag}-modal.png` });
   await page.getByRole('button', { name: /Standard/ }).click();

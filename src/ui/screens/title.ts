@@ -13,10 +13,12 @@ import { openLordGallery } from './gallery';
 import type { Difficulty } from '../../engine/types';
 import type { App } from '../app';
 
-/** Quick War: one tap, one choice, straight into the fire. A random medium
- * realm, you against three rivals, fog on, 36 seasons — the full game with
- * none of the muster table. The gentle option exists so a first evening
- * ends in a story, not a siege of the tutorial. */
+/** A Quick Chronicle: one tap, one choice, straight into the fire. A random
+ * medium realm, you against three rivals, fog on, 36 seasons — the full game
+ * with none of the muster table. Renamed from "Quick War" (2026-07-12):
+ * the fastest door in the house should not greet a newcomer with a fist.
+ * The gentle option exists so a first evening ends in a story, not a siege
+ * of the tutorial. */
 const QUICK_WARS: { label: string; blurb: string; difficulty: Difficulty }[] = [
   {
     label: 'Gentle',
@@ -52,7 +54,7 @@ function openQuickWar(app: App): void {
       veteranChronicle: false,
     });
   };
-  const modal = openModal('Quick War', h('div', { class: 'quickwar-body' },
+  const modal = openModal('A Quick Chronicle', h('div', { class: 'quickwar-body' },
     h('p', { class: 'small muted', style: { margin: '0 0 0.7rem' } },
       'A fresh realm, you and three rivals, 36 seasons, the map unexplored. Pick how hard they fight — then pick your banner.'),
     ...QUICK_WARS.map((q) =>
@@ -94,7 +96,7 @@ export function renderTitle(app: App): void {
   const menu = h(
     'div',
     { class: 'title-menu' },
-    h('button', { class: 'btn btn-seal title-btn', onclick: () => openQuickWar(app) }, 'Quick War'),
+    h('button', { class: 'btn btn-seal title-btn', onclick: () => openQuickWar(app) }, 'A Quick Chronicle'),
     h('button', { class: 'btn title-btn', onclick: () => app.toSetup() }, 'New Chronicle'),
     newest
       ? h('button', {
@@ -109,11 +111,18 @@ export function renderTitle(app: App): void {
     h('button', {
       class: 'btn title-btn',
       onclick: () => {
+        // The Week's Seed: one realm the whole table shares for seven days.
+        // ISO week from UTC, so every player worldwide forges the same land
+        // (weekly, not daily — a campaign is an evening, not a Wordle).
         const d = new Date();
-        const seed = `embermark-${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+        const utc = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
+        utc.setUTCDate(utc.getUTCDate() + 4 - (utc.getUTCDay() || 7));
+        const yearStart = new Date(Date.UTC(utc.getUTCFullYear(), 0, 1));
+        const week = Math.ceil(((utc.getTime() - yearStart.getTime()) / 86400000 + 1) / 7);
+        const seed = `embermark-${utc.getUTCFullYear()}-w${String(week).padStart(2, '0')}`;
         app.toSetup(seed);
       },
-    }, 'Seed of the Day'),
+    }, 'The Week’s Seed'),
     h('button', { class: 'btn title-btn', onclick: () => openLoadModal(app) }, 'Load a Chronicle'),
     h('button', { class: 'btn title-btn', onclick: () => openSettingsPanel(app) }, 'Settings'),
   );
