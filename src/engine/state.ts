@@ -65,8 +65,13 @@ import { NEUTRAL } from './types';
  *     seasonDigest bank draws from the Rng at roundEnd.
  * 14: recallMove — a peaceful march onto already-seen ground can be taken
  *     back the same season (armies carry lastMove; a fight, a capture, or
- *     new sight spends the season for good; the AI never recalls). */
-export const RULES_VERSION = 14;
+ *     new sight spends the season for good; the AI never recalls).
+ * 15: Allies press the same front — an allied banner beside a shared enemy's
+ *     province lowers the attack threshold and raises the prize (converging
+ *     wars, not parallel ones); and the fierce or greedy shop for war
+ *     against a ≥34% leader someone else already fights (never over a pact,
+ *     never from weakness). */
+export const RULES_VERSION = 15;
 
 export const HANDICAPS: Record<Difficulty, PlayerHandicap> = {
   squire: { incomeMult: 0.85, label: 'Squire — AI earns 15% less gold and attacks only with clear advantage.' },

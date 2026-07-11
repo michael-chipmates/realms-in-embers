@@ -187,10 +187,14 @@ export const UNITS: Record<UnitTypeId, UnitDef> = {
   },
   revenants: {
     id: 'revenants', name: 'Barrow Revenants', namePlural: 'Barrow Revenants', tier: 2,
-    atk: 5, def: 5, hits: 5, cost: 0, upkeep: 0, traits: ['terror', 'unyielding'],
+    // v15 balance: the dead march free of wages, but they swing like the
+    // dead (5/5→4/4) and the RAISING has a price — a conclusive 41% mirror
+    // winrate said a free elite standing army was two dials too generous.
+    // Still tireless; still terror; still unyielding.
+    atk: 4, def: 4, hits: 5, cost: 90, upkeep: 0, traits: ['terror', 'unyielding'],
     recruit: {}, // gated in code: Morrikan's perk + a barrow site
     icon: 'skull',
-    desc: 'The unquiet dead of the old wars. Terrifying, tireless, and very poor conversation.',
+    desc: 'The unquiet dead of the old wars. Terrifying, tireless, and very poor conversation — though the rites that wake them are not free.',
     flavor: 'The Sundering woke things that had been politely pretending to sleep.',
   },
 };

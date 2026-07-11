@@ -387,9 +387,9 @@ export const LORDS: LordDef[] = [
     },
     signature: {
       id: 'openTheDoors', name: 'Open the Doors',
-      desc: 'The dead answer at every barrow you rule: a company of Barrow Revenants rises at each (−4 order there). Without a barrow, one still answers at your seat.',
+      desc: 'The dead answer at every barrow you rule: a company of Barrow Revenants rises at each (−8 order there). Without a barrow, one still answers at your seat.',
       flavor: 'Constituents, he calls them. They vote in ranks.',
-      cooldown: 12, target: 'none', fxFamily: 'summon',
+      cooldown: 16, target: 'none', fxFamily: 'summon',
     },
     lines: {
       intro: 'Three graves could not hold me. One throne should manage nicely.',

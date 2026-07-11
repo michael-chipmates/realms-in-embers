@@ -23,7 +23,11 @@ export const SIGNATURE_TUNING = {
   branwen: { incomeCutPct: 20, seasons: 2, cooldown: 10 },
   corvas: { treasuryPct: 6, minGold: 2, cooldown: 10 },
   nyssa: { order: 15, cooldown: 6 },
-  morrikan: { companiesPerBarrow: 1, seatFallbackCompanies: 1, orderCost: 4, cooldown: 12 },
+  // v15: the doors open dearer and rarer — a permanent, wage-free elite
+  // company every 12 seasons made Morrikan a conclusive 41% in the mirror
+  // (expected 25%). The living now bolt more than shutters (−8 order), and
+  // the dead take longer to gather (cooldown 16).
+  morrikan: { companiesPerBarrow: 1, seatFallbackCompanies: 1, orderCost: 8, cooldown: 16 },
   vaelia: { plunderMult: 3, seasons: 3, cooldown: 10 },
 } as const;
 

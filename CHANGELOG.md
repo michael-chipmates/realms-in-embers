@@ -31,6 +31,12 @@ In progress. Shipped so far on `main`:
   outside expectation ±5pp fails the night conclusively; straddles are
   reported, never failed. Route attempts print beside wins so Golden Age
   rarity stays a choice. The harness judges and never tunes.
+- **Allies press the same front** (rules v15) — an allied banner beside a
+  shared enemy's province lowers the AI's attack threshold and raises the
+  prize, so allied wars converge instead of running in parallel; and the
+  fierce or greedy now shop for war against a ≥34% leader someone else
+  already fights (never over a pact, never from weakness). The sweep counts
+  converging attacks to prove it fires.
 - **recallMove** (rules v14) — a peaceful march onto already-seen ground can
   be taken back the same season. A fight, a capture, or new ground glimpsed
   spends the season for good (no free scouting through the fog), a merge or
@@ -42,9 +48,16 @@ In progress. Shipped so far on `main`:
 - Disbanding a company and releasing a hero now arm on the first press and
   act on the second — nothing irreversible on a stray tap.
 
-The enforced balance gates are unchanged: every lord p ≥ 0.01 over ≥300
-mirrored games, dominion ≤ 40% of endings, other paths ≥ 4% (Golden Age:
-reachable), signatures ≥ 1.0 uses/seat — now joined by the ±5pp ROPE gate.
+The enforced balance gates, over ≥300 mirrored games: every lord's bootstrap
+CI must touch expectation ±5pp (the ROPE gate — a CI wholly outside fails
+conclusively; bare p-values are printed evidence, never gates, because twelve
+simultaneous tests at p<0.01 would false-alarm one sweep in nine); dominion
+≤ 40% of endings; other paths ≥ 4% (Golden Age: reachable); signatures
+≥ 1.0 uses/seat. Refereed by that gate this release: Barrow Revenants swing
+like the dead (4/4/5, raising costs 90 gold — a conclusive 41% Morrikan
+winrate said a free elite standing army was too generous) and Open the Doors
+returns every 16 seasons at −8 order. Post-tune sweeps: all gates pass on
+two independent 300-game prefixes.
 
 ## [0.4.0] — the open realm (2026-07-12)
 

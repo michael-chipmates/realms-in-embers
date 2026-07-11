@@ -16,7 +16,9 @@ const script = join(root, 'scripts', 'check-doc-gates.mjs');
 describe('doc-gate drift check', () => {
   it('finds every enforced gate constant in the harness source', () => {
     const harness = readFileSync(join(root, 'src', 'sim', 'harness.ts'), 'utf8');
-    expect(harness).toMatch(/p < 0\.\d+\) gateFailures/); // per-lord fairness
+    expect(harness).toMatch(/const ROPE_PP = 0\.\d+;/); // per-lord ROPE band
+    expect(harness).toMatch(/if \(gate && outside\) gateFailures/); // ROPE is the hard gate
+    expect(harness).not.toMatch(/p < 0\.\d+\) gateFailures/); // bare p is evidence, never a gate
     expect(harness).toMatch(/share\('dominion'\) > 0\.\d+/); // dominion ceiling
     expect(harness).toMatch(/share\(path\) < 0\.\d+/); // per-path floor
     expect(harness).toMatch(/rate < \d+\.\d+\) gateFailures/); // signature floor

@@ -23,10 +23,11 @@ function gateNumber(name, re) {
   return m[1];
 }
 
-// The enforced gates, as written in the harness itself.
+// The enforced gates, as written in the harness itself. (QA-030: the
+// per-lord hard gate is the ROPE-conclusive test; bare p-values are printed
+// evidence, not gates — twelve simultaneous tests at p<0.01 would
+// false-alarm one sweep in nine.)
 const gates = {
-  // if (gate && p < 0.01) → docs must say "p ≥ 0.01"
-  pThreshold: gateNumber('per-lord p-value', /p < (0\.\d+)\) gateFailures/),
   // share('dominion') > 0.40 → docs must say "≤ 40%"
   dominionMax: gateNumber('dominion ceiling', /share\('dominion'\) > (0\.\d+)/),
   // share(path) < 0.04 → docs must say "≥ 4%"
@@ -42,7 +43,6 @@ const pct = (frac) => `${Math.round(parseFloat(frac) * 100)}%`;
 // What each doc must contain, phrased the way the docs phrase gates.
 // (≥ = ≥, ≤ = ≤ — kept literal so the docs read naturally.)
 const requirements = [
-  { text: `p ≥ ${gates.pThreshold}`, gate: 'per-lord fairness threshold' },
   { text: `≤ ${pct(gates.dominionMax)}`, gate: 'dominion ending ceiling' },
   { text: `≥ ${pct(gates.pathMin)}`, gate: 'per-path ending floor' },
   { text: `≥ ${gates.signatureFloor} uses/seat`, gate: 'signature-use floor' },
@@ -68,7 +68,7 @@ if (drifts.length > 0) {
 }
 
 console.log(
-  `doc gates in sync: p ≥ ${gates.pThreshold}, dominion ≤ ${pct(gates.dominionMax)}, ` +
+  `doc gates in sync: dominion ≤ ${pct(gates.dominionMax)}, ` +
   `paths ≥ ${pct(gates.pathMin)}, signatures ≥ ${gates.signatureFloor} uses/seat, ` +
   `ROPE ±${Math.round(parseFloat(gates.ropePp) * 100)}pp ` +
   `(checked ${docs.join(', ')})`,

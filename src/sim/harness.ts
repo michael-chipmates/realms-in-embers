@@ -36,6 +36,9 @@ interface GameRecord {
    * (a streak begun, a saga chapter reached) — so a route's rarity is a
    * choice we can see, never an accident nobody pursued. */
   attempts: { dominion: boolean; goldenAge: boolean; legend: boolean };
+  /** v15 co-attack proof: rounds in which two different players struck the
+   * same defender — converging pressure, not parallel private wars. */
+  convergedAttacks: number;
   wallMs: number;
 }
 
@@ -126,6 +129,7 @@ function playGame(i: number): GameRecord {
   let rebellions = 0;
   const signatureUses: Record<string, number> = {};
   const attempts = { dominion: false, goldenAge: false, legend: false };
+  const struckBy = new Map<string, Set<number>>();
   let lastTurnSeen = state.turn;
   let stuckCounter = 0;
 
@@ -135,7 +139,15 @@ function playGame(i: number): GameRecord {
     }
     const effects = aiTakeTurn(state);
     for (const e of effects) {
-      if (e.e === 'battle') battles++;
+      if (e.e === 'battle') {
+        battles++;
+        if (e.report.attacker.player >= 0 && e.report.defender.player >= 0) {
+          const key = `${state.turn}:${e.report.defender.player}`;
+          const prev = struckBy.get(key) ?? new Set<number>();
+          prev.add(e.report.attacker.player);
+          struckBy.set(key, prev);
+        }
+      }
       if (e.e === 'rebellion') rebellions++;
       if (e.e === 'signature') {
         const lord = state.players[e.by].lordId;
@@ -189,6 +201,7 @@ function playGame(i: number): GameRecord {
     chronicleEntries: state.chronicle.length,
     signatureUses,
     attempts,
+    convergedAttacks: [...struckBy.values()].filter((set) => set.size >= 2).length,
     wallMs: Math.round(performance.now() - started),
   };
 }
@@ -321,8 +334,12 @@ function main(): void {
       const verdict = outside ? '✗ OUTSIDE ROPE' : inside ? '✓ equivalent' : '~ inconclusive';
       ropeVerdicts[lord] = { ...ci, verdict };
       console.log(`    ${(LORD_BY_ID[lord]?.name ?? lord).padEnd(24)} ${String(s.wins).padStart(3)}/${String(s.seats).padEnd(3)} exp ${(100 * expectedShare).toFixed(0)}%  CI ${(100 * ci.lo).toFixed(0)}–${(100 * ci.hi).toFixed(0)}%  p=${p.toFixed(3)} ${verdict}`);
-      if (gate && p < 0.01) gateFailures.push(`${lord}: wins ${s.wins} vs expected ${s.expected.toFixed(1)} over ${s.seats} seats (p=${p.toFixed(4)})`);
-      if (gate && outside) gateFailures.push(`${lord}: bootstrap CI ${(100 * ci.lo).toFixed(0)}–${(100 * ci.hi).toFixed(0)}% lies wholly outside expectation ±5pp — a conclusive imbalance`);
+      // The per-lord HARD gate is the ROPE-conclusive test alone. Twelve
+      // simultaneous binomial tests at p<0.01 would false-alarm roughly one
+      // sweep in nine by construction — the p stays printed as evidence,
+      // never as a gate. (Morrikan's 41% was ROPE-conclusive; the gate has
+      // teeth exactly where imbalance is real.)
+      if (gate && outside) gateFailures.push(`${lord}: bootstrap CI ${(100 * ci.lo).toFixed(0)}–${(100 * ci.hi).toFixed(0)}% lies wholly outside expectation ±5pp — a conclusive imbalance (p=${p.toFixed(4)})`);
     }
     const byPath2 = new Map<string, number>();
     for (const r of records) byPath2.set(String(r.path), (byPath2.get(String(r.path)) ?? 0) + 1);
@@ -348,6 +365,9 @@ function main(): void {
       const wins = byPath2.get(route) ?? 0;
       console.log(`    ${route.padEnd(10)} attempted in ${att}/${records.length} games, won ${wins} (${att > 0 ? Math.round((wins / att) * 100) : 0}% of attempts)`);
     }
+    // v15 co-attacks: converging pressure must actually occur in play
+    const converged = records.reduce((s, r) => s + (r.convergedAttacks ?? 0), 0);
+    console.log(`  Converging attacks (two lords, one defender, one round): ${converged} across ${records.length} games (${(converged / Math.max(1, records.length)).toFixed(1)}/game)`);
     const sigUses2 = new Map<string, number>();
     const sigSeats = new Map<string, number>();
     for (const r of records) {

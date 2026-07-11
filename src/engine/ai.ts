@@ -661,6 +661,15 @@ function actWithArmy(state: GameState, pid: PlayerId, army: Army, nerve: number,
     let need = nerve;
     if (rebelsInMyLand) need -= 0.12; // put down risings with prejudice
     if (neutral) need -= 0.06; // free provinces are cheap meat
+    // allies press the same front (v15): a shared enemy's province with an
+    // allied banner beside it is both safer to strike and sweeter to take —
+    // two allied AIs converge instead of fighting parallel private wars
+    const allyBeside = p.owner >= 0 && p.owner !== pid && state.players.some((al) =>
+      al.alive && al.id !== pid
+      && getStance(state, pid, al.id) === 'alliance'
+      && atWar(state, al.id, p.owner)
+      && armiesOf(state, al.id).some((a2) => a2.province === p.id || p.neighbors.includes(a2.province)));
+    if (allyBeside) need -= 0.07;
 
     // supports that could join this particular assault
     const possibleSupport = idle
@@ -686,6 +695,7 @@ function actWithArmy(state: GameState, pid: PlayerId, army: Army, nerve: number,
     }
     if (preview.winChance < need) continue;
     let prize = neutral || rebelsInMyLand ? 16 : 24;
+    if (allyBeside) prize += 6; // the front our ally already bleeds on
     if (p.site) prize += 6;
     if (p.terrain === 'meadow') prize += 5;
     if (p.seatOf !== null && p.seatOf !== pid) prize += 18;
@@ -965,6 +975,21 @@ function proactiveDiplomacy(
     }
     if (bestTarget !== null && bestScore > 30) {
       dispatch({ t: 'diplomacy', kind: 'declareWar', target: bestTarget });
+    }
+  }
+
+  // war shopping (v15, A§5.4): a runaway leader already under someone
+  // else's steel is safer meat — the fierce and the greedy pile in rather
+  // than watch the realm be won. Never over a pact; never from weakness.
+  if (atWarWith.length === 0 && state.turn > 8 && !pursuesGoldenAge(state, pid) && lead !== null && lead !== pid) {
+    const leadShare = provincesOf(state, lead).length / state.provinces.length;
+    const someoneFights = state.players.some((o) => o.alive && o.id !== pid && atWar(state, o.id, lead));
+    const eager = persona.aggression >= 0.6 || persona.greed >= 0.7;
+    const borders = provincesOf(state, pid).some((p) => p.neighbors.some((n) => state.provinces[n].owner === lead));
+    if (leadShare >= 0.34 && someoneFights && eager && borders
+      && getStance(state, pid, lead) === 'peace'
+      && myPower > totalPower(state, lead) * 0.45) {
+      dispatch({ t: 'diplomacy', kind: 'declareWar', target: lead });
     }
   }
 
