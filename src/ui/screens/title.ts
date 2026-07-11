@@ -10,6 +10,7 @@ import { openOnlineLobby } from './lobby';
 import { openModal } from '../modal';
 import { openSettingsPanel } from '../panels/settingsPanel';
 import { openLordGallery } from './gallery';
+import { FIRST_EMBER_DONE_KEY, FirstEmberGuide } from '../guide';
 import type { Difficulty } from '../../engine/types';
 import type { App } from '../app';
 
@@ -76,6 +77,26 @@ function openQuickWar(app: App): void {
   ));
 }
 
+/** The First Ember: a real chronicle on a fixed, friendly seed, with a
+ * quiet guide that steps forward only when the real thing has happened.
+ * The seed is pinned so the opening always teaches: works to raise,
+ * companies to muster, a march, and a fight within reach. */
+function startFirstEmber(app: App): void {
+  app.startGame({
+    seed: 'first-ember-1',
+    mapSize: 'small',
+    players: [
+      { kind: 'human', lordId: 'random', difficulty: 'squire' },
+      { kind: 'ai', lordId: 'random', difficulty: 'squire' },
+      { kind: 'ai', lordId: 'random', difficulty: 'squire' },
+    ],
+    victoryPaths: ['conquest', 'dominion', 'goldenAge', 'legend'],
+    maxTurns: 36,
+    fogOfWar: false,
+    veteranChronicle: false,
+  }, { guide: new FirstEmberGuide() });
+}
+
 /** Osperan keeps writing between wars. A different line each visit. */
 const EPIGRAPHS = [
   'Somebody has to bury them properly.',
@@ -92,11 +113,17 @@ export function renderTitle(app: App): void {
   const canContinue = hasAnySave();
   const newest = canContinue ? newestSave() : null;
   const epigraph = EPIGRAPHS[Math.floor(Math.random() * EPIGRAPHS.length)];
+  // a stranger's first visit leads with the guided door; veterans keep theirs
+  const firstVisit = !canContinue && localStorage.getItem(FIRST_EMBER_DONE_KEY) === null;
 
   const menu = h(
     'div',
     { class: 'title-menu' },
-    h('button', { class: 'btn btn-seal title-btn', onclick: () => openQuickWar(app) }, 'A Quick Chronicle'),
+    h('button', {
+      class: `btn title-btn${firstVisit ? ' btn-seal' : ''}`,
+      onclick: () => startFirstEmber(app),
+    }, 'The First Ember', h('span', { class: 'small muted title-btn-note' }, 'a guided first game')),
+    h('button', { class: `btn title-btn${firstVisit ? '' : ' btn-seal'}`, onclick: () => openQuickWar(app) }, 'A Quick Chronicle'),
     h('button', { class: 'btn title-btn', onclick: () => app.toSetup() }, 'New Chronicle'),
     newest
       ? h('button', {

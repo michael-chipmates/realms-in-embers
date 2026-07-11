@@ -647,9 +647,11 @@ function openGoldPrompt(screen: GameScreen, title: string, onConfirm: (gold: num
 // =============================================================== LEDGER
 
 export function openLedgerOverlay(screen: GameScreen): void {
+  screen.ledgerSeen = true;
   const body = h('div', { class: 'overlay-body' });
   openModal('The Realm Ledger', body, { wide: true });
   renderLedger(screen, body);
+  screen.guide?.onUpdate(screen);
 }
 
 function renderLedger(screen: GameScreen, body: HTMLElement): void {

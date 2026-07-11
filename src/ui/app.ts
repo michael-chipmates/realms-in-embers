@@ -11,6 +11,7 @@ import { renderTitle } from './screens/title';
 import { renderSetup } from './screens/setup';
 import { GameScreen } from './screens/game';
 import type { OnlineSession } from './screens/lobby';
+import type { FirstEmberGuide } from './guide';
 import { audio } from './audio';
 
 export type ScreenName = 'title' | 'setup' | 'game';
@@ -53,7 +54,7 @@ export class App {
     renderSetup(this, presetSeed);
   }
 
-  startGame(settings: GameSettings): void {
+  startGame(settings: GameSettings, opts: { guide?: FirstEmberGuide } = {}): void {
     this.gameScreen?.dispose();
     this.gameScreen = null;
     const { state, effects } = createGame(settings);
@@ -62,8 +63,10 @@ export class App {
     if (!saved.ok) console.warn(`[saves] ${saved.message}`);
     clear(this.root);
     this.gameScreen = new GameScreen(this, state);
+    if (opts.guide) this.gameScreen.guide = opts.guide;
     this.gameScreen.mount(this.root);
     this.gameScreen.presentEffects(effects);
+    this.gameScreen.guide?.onUpdate(this.gameScreen);
     audio.enterGame();
   }
 

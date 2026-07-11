@@ -46,7 +46,11 @@ export class GameScreen {
   sel: Selection = { provinceId: null, armyId: null };
   hovered: number | null = null;
   targets: MoveTarget[] = [];
-  private el!: HTMLElement;
+  el!: HTMLElement;
+  /** The Realm Ledger has been opened at least once (the guide watches). */
+  ledgerSeen = false;
+  /** The First Ember guide, when this chronicle is the guided one. */
+  guide: { onUpdate(screen: GameScreen): void; dispose(): void } | null = null;
   private topbar!: HTMLElement;
   private sidePanel!: HTMLElement;
   private chronicleEl!: HTMLElement;
@@ -273,6 +277,8 @@ export class GameScreen {
 
   dispose(): void {
     this.disposed = true;
+    this.guide?.dispose();
+    this.guide = null;
     document.removeEventListener('keydown', this.keyHandler);
     window.removeEventListener('resize', this.resizeHandler);
     closeAllModals();
@@ -1165,6 +1171,7 @@ export class GameScreen {
 
   private renderPanels(): void {
     renderSelectionPanel(this, this.sidePanel);
+    this.guide?.onUpdate(this);
   }
 
   private renderChronicle(): void {

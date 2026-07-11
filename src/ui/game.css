@@ -111,7 +111,7 @@ body:not(.reduced-motion) .title-main {
 
 /* ---------------------------------------------------------- game shell */
 
-.game-screen { display: flex; flex-direction: column; }
+.game-screen { display: flex; flex-direction: column; position: relative; }
 
 .topbar {
   display: flex; align-items: center; gap: 0.8rem;
@@ -510,6 +510,31 @@ details.side-section:not([open]) > summary { border-bottom: none; }
   }
   .codex-nav-btn { flex: none; border-left: none; border-bottom: 2px solid transparent; border-radius: 4px; padding: 0.4rem 0.55rem; }
   .codex-nav-btn.active { border-left: none; border-bottom-color: var(--gold); }
+}
+
+/* ------------------------------------------------------ the First Ember */
+
+.guide-card {
+  position: absolute; z-index: 30;
+  left: 50%; transform: translateX(-50%); bottom: 0.8rem;
+  width: min(360px, calc(100vw - 1.2rem));
+  background: rgba(20, 14, 8, 0.96); border: 1px solid rgba(201, 162, 39, 0.5);
+  border-radius: 7px; padding: 0.55rem 0.75rem 0.5rem;
+  box-shadow: var(--shadow-deep);
+  display: flex; flex-direction: column; gap: 0.3rem;
+}
+.guide-head { display: flex; justify-content: space-between; align-items: baseline; gap: 0.6rem; }
+.guide-title { color: var(--gold-bright); }
+.guide-step-body p { margin: 0.15rem 0 0; line-height: 1.45; }
+.guide-dots { display: flex; gap: 0.3rem; }
+.guide-dot { width: 8px; height: 8px; border-radius: 999px; border: 1px solid rgba(201, 162, 39, 0.5); }
+.guide-dot-done { background: var(--gold); }
+.guide-dot-now { background: rgba(201, 162, 39, 0.35); }
+.guide-actions { display: flex; justify-content: flex-end; }
+.title-btn-note { display: block; letter-spacing: 0; text-transform: none; }
+@media (max-width: 700px) {
+  /* phones: the sheet owns the bottom — the guide docks at the map's top */
+  .guide-card { bottom: auto; top: 0.5rem; }
 }
 
 /* -------------------------------------------------------------- tooltip */
