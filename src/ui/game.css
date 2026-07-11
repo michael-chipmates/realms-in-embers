@@ -355,6 +355,19 @@ details.side-section:not([open]) > summary { border-bottom: none; }
 .ledger-table td { padding: 0.25rem 0.5rem 0.25rem 0; border-top: 1px solid rgba(201, 162, 39, 0.15); }
 .ledger-you { background: rgba(201, 162, 39, 0.08); }
 
+/* ------------------------------------------------------- spell theater */
+
+.battle-weave-glyph { color: var(--ember-bright); display: inline-block; }
+.battle-weave .battle-weave-glyph { animation: weave-flare 1.4s ease-out 1; }
+@keyframes weave-flare {
+  0% { filter: drop-shadow(0 0 0 rgba(255, 179, 92, 0)); transform: scale(1); }
+  35% { filter: drop-shadow(0 0 6px rgba(255, 179, 92, 0.9)); transform: scale(1.35); }
+  100% { filter: drop-shadow(0 0 0 rgba(255, 179, 92, 0)); transform: scale(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .battle-weave .battle-weave-glyph { animation: none; }
+}
+
 /* ------------------------------------------------------------- quick war */
 
 .quickwar-body { display: flex; flex-direction: column; gap: 0.5rem; padding: 0.2rem 0.4rem 0.6rem; }
@@ -400,6 +413,11 @@ details.side-section:not([open]) > summary { border-bottom: none; }
 .codex-entry-title { font-weight: 600; color: var(--ink); }
 .codex-spell-glyph { color: var(--ember-bright); }
 .codex-sealed { display: flex; align-items: baseline; gap: 0.35rem; margin: 0.25rem 0; }
+.codex-pager {
+  display: flex; justify-content: space-between; gap: 0.5rem;
+  margin-top: 1rem; padding-top: 0.6rem; border-top: 1px solid rgba(201, 162, 39, 0.2);
+}
+.codex-pager .btn { min-height: 44px; }
 .codex-table-wrap { overflow-x: auto; }
 .trait-line b { color: var(--gold); font-weight: 600; }
 .codex-hint { margin-top: 0.35rem; opacity: 0.75; }

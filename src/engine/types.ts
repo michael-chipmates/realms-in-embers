@@ -69,7 +69,9 @@ export interface Army {
   kind?: 'rebels' | 'marauders' | 'revenants';
 }
 
-/** Temporary named modifier on a province (spells, events). Fully visible. */
+/** Temporary named modifier on a province (spells, events). Fully visible.
+ * spellId/by let the map draw the right seal and the panel name the caster;
+ * event-born mods carry neither and fall back to a plain mark. */
 export interface ProvinceMod {
   label: string;
   order?: number;
@@ -77,6 +79,8 @@ export interface ProvinceMod {
   /** Defender strength multiplier delta, e.g. +0.15. */
   defense?: number;
   turnsLeft: number;
+  spellId?: SpellId;
+  by?: PlayerId;
 }
 
 export interface HeroArtifactSlots {

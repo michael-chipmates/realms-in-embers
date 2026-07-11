@@ -12,7 +12,7 @@ import { LORD_BY_ID } from '../../engine/content/lords';
 import { armiesIn, armiesOf, heroesOf, seenBy } from '../../engine/helpers';
 import type { Action, Army, Effect, GameState, SpellId } from '../../engine/types';
 import type { MoveTarget } from '../../engine/actions';
-import { SPELLS } from '../../engine/content/spells';
+import { SPELLS, type SpellFxFamily } from '../../engine/content/spells';
 import type { App } from '../app';
 import { audio } from '../audio';
 import { h, mount, clear } from '../dom';
@@ -343,13 +343,51 @@ export class GameScreen {
       colorblind: this.app.settings.colorblind,
       unseen,
       armies: this.armyMarkers(),
-      fx: this.ripples.length > 0 ? { ripples: this.ripples } : undefined,
+      fx: this.ripples.length > 0 || this.spellFx.length > 0
+        ? { ripples: this.ripples, spells: this.spellFx }
+        : undefined,
     });
   }
 
   /** Capture ripple: a short, self-cleaning animation layer over the map. */
   private ripples: { province: number; t: number; color: string }[] = [];
   private rippleLoop = false;
+
+  /** Spell Theater cast fx: same self-cleaning pattern as the ripples.
+   * One cast per province at a time — a re-cast replaces, never stacks. */
+  private spellFx: { province: number; t: number; family: SpellFxFamily }[] = [];
+  private spellFxLoop = false;
+
+  addSpellFx(province: number, family: SpellFxFamily): void {
+    if (this.app.settings.reducedMotion) return;
+    this.spellFx = this.spellFx.filter((f) => f.province !== province);
+    this.spellFx.push({ province, t: 0, family });
+    if (this.spellFxLoop) return;
+    this.spellFxLoop = true;
+    let last = performance.now();
+    const step = (now: number): void => {
+      if (this.disposed) { this.spellFxLoop = false; return; }
+      const dt = (now - last) / 900; // ~0.9s per cast
+      last = now;
+      for (const f of this.spellFx) f.t += dt;
+      this.spellFx = this.spellFx.filter((f) => f.t < 1);
+      this.renderNow();
+      if (this.spellFx.length > 0) requestAnimationFrame(step);
+      else this.spellFxLoop = false;
+    };
+    requestAnimationFrame(step);
+  }
+
+  /** Center the table on a province (rival casts, chronicle jumps). */
+  panTo(province: number): void {
+    const p = this.state.provinces[province];
+    if (!p) return;
+    const [sx, sy] = this.renderer.worldToScreen(p.cx, p.cy);
+    const rect = this.canvas.getBoundingClientRect();
+    this.renderer.offX += rect.width / 2 - sx;
+    this.renderer.offY += rect.height / 2 - sy;
+    this.redrawMap();
+  }
 
   addCaptureRipple(province: number, owner: number): void {
     if (this.app.settings.reducedMotion) return;
@@ -815,11 +853,27 @@ export class GameScreen {
           break;
         }
         case 'riteComplete': {
-          if (effect.by === viewer && !this.catchingUp) audio.spell();
+          if (effect.by === viewer && !this.catchingUp) audio.spell(SPELLS[effect.spell].fxFamily);
           break;
         }
         case 'spellCast': {
-          if (effect.by === viewer && !this.catchingUp) audio.spell();
+          if (this.catchingUp) break;
+          const def = SPELLS[effect.spell];
+          if (effect.by === viewer) audio.spell(def.fxFamily);
+          // the cast moment on the map — only on ground the viewer can see,
+          // and never anything the chronicle hasn't already told them
+          if (effect.province !== null) {
+            const visible = !this.state.settings.fogOfWar || seenBy(this.state, viewer).has(effect.province);
+            if (visible) {
+              this.addSpellFx(effect.province, def.fxFamily);
+              if (effect.by !== viewer && def.kind === 'realm') {
+                const caster = lordDisplay(this.state, effect.by);
+                const where = this.state.provinces[effect.province];
+                const target = effect.province;
+                this.toast(`${caster.name} weaves ${def.name} over ${where.name}.`, 'info', () => this.panTo(target));
+              }
+            }
+          }
           break;
         }
         case 'eliminated': {

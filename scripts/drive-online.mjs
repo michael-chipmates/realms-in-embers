@@ -94,7 +94,30 @@ try {
   const hb2 = await hash(b);
   if (hb2 !== ha) throw new Error('rejoined client state diverged');
 
-  console.log(errors.length ? 'ERRORS:\n' + [...new Set(errors)].join('\n') : 'online drive clean: 2 clients, 2 turns, identical state, rejoin lands mid-war');
+  // SPELL THEATER over the wire: both clients get the same test injection
+  // (spell knowledge is validated by the engine, and the injection is not in
+  // the relay log — which is also why this test runs AFTER the rejoin check;
+  // save/load persistence of mods is covered by the engine tests). Then one
+  // real cast dispatched by A must apply identically on both clients.
+  const inject = (page) => page.evaluate(() => {
+    const s = window.__game.state;
+    s.players[0].spells.push('wardOfEmbers');
+    s.players[0].emberlight = 50;
+  });
+  await inject(a);
+  await inject(b);
+  const seat0 = await a.evaluate(() => window.__game.state.players[0].seatProvince);
+  await a.evaluate((p) => window.__game.dispatch({ t: 'castSpell', spell: 'wardOfEmbers', province: p }), seat0);
+  await a.waitForTimeout(1100);
+  const modOn = (page) => page.evaluate(
+    (p) => window.__game.state.provinces[p].mods.some((m) => m.spellId === 'wardOfEmbers'), seat0);
+  if (!(await modOn(a))) throw new Error('ward mod missing on the casting client');
+  if (!(await modOn(b))) throw new Error('ward mod missing on the receiving client after the echo');
+  const [ha3, hb3] = [await hash(a), await hash(b)];
+  if (ha3 !== hb3) throw new Error(`the cast desynced the clients: ${ha3} vs ${hb3}`);
+  await a.screenshot({ path: `${outdir}/on4-a-warded.png` });
+
+  console.log(errors.length ? 'ERRORS:\n' + [...new Set(errors)].join('\n') : 'online drive clean: 2 clients, 2 turns, identical state, rejoin lands mid-war, a cast lands sealed on both');
 } finally {
   await browser.close();
   relay.kill();

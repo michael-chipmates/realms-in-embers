@@ -67,6 +67,7 @@ export function openCodexOverlay(screen: GameScreen, anchor: CodexSection = 'bat
       }, h('span', { html: iconSvg(s.icon, 15) }), s.title),
     ));
   };
+  const goTo = (id: CodexSection): void => { current = id; renderNav(); renderPage(); };
   const renderPage = (): void => {
     clear(page);
     const def = SECTIONS.find((s) => s.id === current)!;
@@ -75,11 +76,29 @@ export function openCodexOverlay(screen: GameScreen, anchor: CodexSection = 'bat
       h('h3', { class: 'codex-page-title' }, def.title),
     ));
     page.appendChild(RENDERERS[current](screen));
-    page.scrollTop = 0;
+    // leaf through like a book: the previous and next chapter, always in reach
+    const idx = SECTIONS.findIndex((s) => s.id === current);
+    const prev = SECTIONS[(idx - 1 + SECTIONS.length) % SECTIONS.length];
+    const next = SECTIONS[(idx + 1) % SECTIONS.length];
+    page.appendChild(h('div', { class: 'codex-pager' },
+      h('button', { class: 'btn compact', onclick: () => goTo(prev.id) }, `‹ ${prev.title}`),
+      h('button', { class: 'btn compact', onclick: () => goTo(next.id) }, `${next.title} ›`),
+    ));
+    // the modal panel is the scroller — a fresh chapter starts at its top
+    const scroller = body.closest('.modal-panel');
+    if (scroller) scroller.scrollTop = 0;
   };
   renderNav();
   renderPage();
   mount(body, nav, page);
+  // arrow keys leaf too, when no control inside the modal wants them
+  body.addEventListener('keydown', (e: KeyboardEvent) => {
+    const tag = (document.activeElement?.tagName ?? '').toLowerCase();
+    if (tag === 'input' || tag === 'select' || tag === 'textarea') return;
+    const idx = SECTIONS.findIndex((s) => s.id === current);
+    if (e.key === 'ArrowRight') { e.preventDefault(); goTo(SECTIONS[(idx + 1) % SECTIONS.length].id); }
+    if (e.key === 'ArrowLeft') { e.preventDefault(); goTo(SECTIONS[(idx - 1 + SECTIONS.length) % SECTIONS.length].id); }
+  });
 }
 
 // ------------------------------------------------------------------ helpers
@@ -395,7 +414,7 @@ function renderLords(): HTMLElement {
 function renderEnchant(): HTMLElement {
   const lasting = ALL_SPELLS.filter((id) => ['blessHarvest', 'sowDiscord', 'wardOfEmbers', 'veilOfNight'].includes(id));
   return h('div', {},
-    para('Some workings stay on the land after the casting. An enchanted province shows every active effect as a chip on its panel, with the seasons it has left — yours and everyone else’s alike. Nothing lingers invisibly.'),
+    para('Some workings stay on the land after the casting, and enchanted ground is marked twice over. On the map, a small wax seal sits on the province — round for a helpful working, torn for a harmful one, with a pip for each season it has left. On the province panel, every active effect is a chip naming the caster and the exact numbers. Nothing lingers invisibly, yours or anyone else’s.'),
     ...lasting.map((id) => {
       const def = SPELLS[id];
       return fact(def.name, def.desc);

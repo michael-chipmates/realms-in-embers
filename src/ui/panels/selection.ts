@@ -135,10 +135,12 @@ function renderProvinceCard(screen: GameScreen, p: Province): HTMLElement {
           const chip = h('span', { class: 'chip chip-magic' }, `${m.label} (${m.turnsLeft})`);
           tip(chip, () => h('div', { class: 'tip-plain' },
             h('b', {}, m.label),
+            m.by !== undefined ? h('p', { class: 'small muted' }, `Worked by ${lordDisplay(state, m.by).name}.`) : null,
             m.income ? h('p', { class: `small ${m.income > 0 ? 'pos' : 'neg'}` }, `${signed(m.income)} gold each season`) : null,
             m.order ? h('p', { class: `small ${m.order > 0 ? 'pos' : 'neg'}` }, `${signed(m.order)} order each season`) : null,
             m.defense ? h('p', { class: `small ${m.defense > 0 ? 'pos' : 'neg'}` }, `Defenders here ${m.defense > 0 ? '+' : ''}${Math.round(m.defense * 100)}%`) : null,
             h('p', { class: 'small muted' }, m.turnsLeft === 1 ? 'Fades after this season.' : `Lasts ${m.turnsLeft} more seasons.`),
+            h('p', { class: 'small muted' }, 'Sealed on the map while it holds.'),
           ));
           return chip;
         }))

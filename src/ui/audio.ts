@@ -368,11 +368,38 @@ class AudioEngine {
     this.noise(0.2, 0.2, 1800, 0.12);
   }
 
-  spell(): void {
+  /** Casts speak in their family's voice: blessings chime upward, curses
+   * lean on a low minor drone, wards ring like struck metal, summons breathe
+   * cold, scrying stays thin and high. File cues (spell-bless etc.) win when
+   * the manifest carries them; the synth fallback shapes each family. */
+  spell(family?: 'bless' | 'curse' | 'ward' | 'summon' | 'scry'): void {
+    if (family && this.tryFile(`spell-${family}`)) return;
     if (this.tryFile('spell')) return;
-    this.blip(520, 0.5, 'sine', 0.1);
-    this.blip(780, 0.5, 'sine', 0.08, 0.08);
-    this.blip(1040, 0.6, 'sine', 0.06, 0.16);
+    switch (family) {
+      case 'curse':
+        this.blip(220, 0.7, 'sawtooth', 0.05);
+        this.blip(208, 0.8, 'sawtooth', 0.045, 0.05);
+        this.blip(110, 0.9, 'sine', 0.06, 0.1);
+        break;
+      case 'ward':
+        this.blip(660, 0.9, 'triangle', 0.09);
+        this.blip(990, 1.1, 'sine', 0.05, 0.05);
+        break;
+      case 'summon':
+        this.blip(150, 1.0, 'sine', 0.07);
+        this.blip(300, 0.9, 'triangle', 0.04, 0.2);
+        this.blip(225, 1.1, 'sine', 0.05, 0.4);
+        break;
+      case 'scry':
+        this.blip(1320, 0.6, 'sine', 0.04);
+        this.blip(1760, 0.7, 'sine', 0.03, 0.12);
+        break;
+      default: // bless, and the classic rising figure
+        this.blip(520, 0.5, 'sine', 0.1);
+        this.blip(780, 0.5, 'sine', 0.08, 0.08);
+        this.blip(1040, 0.6, 'sine', 0.06, 0.16);
+        break;
+    }
   }
 
   bell(): void {

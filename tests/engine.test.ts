@@ -343,6 +343,34 @@ describe('victory', () => {
   });
 });
 
+describe('spell theater provenance', () => {
+  it('a cast ward seals the province with its spell and caster', () => {
+    const state = freshGame('theater-1');
+    const pid = state.current;
+    const player = state.players[pid];
+    player.spells.push('wardOfEmbers');
+    player.emberlight = 50;
+    const mine = state.provinces.find((p) => p.owner === pid)!;
+    const r = applyAction(state, { t: 'castSpell', spell: 'wardOfEmbers', province: mine.id });
+    expect(r.ok).toBe(true);
+    const mod = mine.mods.find((m) => m.spellId === 'wardOfEmbers');
+    expect(mod).toBeDefined();
+    expect(mod!.by).toBe(pid);
+    expect(mod!.turnsLeft).toBe(3);
+  });
+
+  it('old saves without mod provenance still load and play', () => {
+    const state = freshGame('theater-2');
+    const p = state.provinces.find((pp) => pp.owner === state.current)!;
+    p.mods.push({ label: 'Harbor quarantine', income: -6, turnsLeft: 2 });
+    const revived = deserializeGame(serializeGame(state));
+    const mod = revived.provinces[p.id].mods.find((m) => m.label === 'Harbor quarantine')!;
+    expect(mod.spellId).toBeUndefined();
+    const r = applyAction(revived, { t: 'endTurn' });
+    expect(r.ok).toBe(true);
+  });
+});
+
 describe('saves & replay', () => {
   function playScriptedGame(): GameState {
     const state = freshGame('replay-1', 3);

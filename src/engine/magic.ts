@@ -187,17 +187,17 @@ export function castRealmSpell(
       break;
     }
     case 'blessHarvest': {
-      p!.mods.push({ label: 'Blessed harvest', income: 6, order: 3, turnsLeft: 3 });
+      p!.mods.push({ label: 'Blessed harvest', income: 6, order: 3, turnsLeft: 3, spellId: 'blessHarvest', by: pid });
       scribe(state, { kind: 'magic', about: pid, text: `${lordName(state, pid)}'s adepts blessed the fields of ${p!.name}. The wheat leans toward the sickle, obligingly.` });
       break;
     }
     case 'sowDiscord': {
-      p!.mods.push({ label: `Discord sown by ${lordName(state, pid)}`, order: -6, turnsLeft: 3 });
+      p!.mods.push({ label: `Discord sown by ${lordName(state, pid)}`, order: -6, turnsLeft: 3, spellId: 'sowDiscord', by: pid });
       scribe(state, { kind: 'magic', about: pid, text: `Ugly rumours took root in ${p!.name} — the kind with gardeners. ${lordName(state, p!.owner)} will find the district harder to please for a while.` });
       break;
     }
     case 'wardOfEmbers': {
-      p!.mods.push({ label: 'Ward of Embers', defense: 0.2, turnsLeft: 3 });
+      p!.mods.push({ label: 'Ward of Embers', defense: 0.2, turnsLeft: 3, spellId: 'wardOfEmbers', by: pid });
       scribe(state, { kind: 'magic', about: pid, text: `A ward went up over ${p!.name}: heat-shimmer on the walls, unease in every hostile boot. It will hold three seasons.` });
       break;
     }
@@ -249,7 +249,7 @@ export function castRealmSpell(
     }
     case 'veilOfNight': {
       for (const mine of provincesOf(state, pid)) {
-        mine.mods.push({ label: 'Veil of Night', defense: 0.08, turnsLeft: 2 });
+        mine.mods.push({ label: 'Veil of Night', defense: 0.08, turnsLeft: 2, spellId: 'veilOfNight', by: pid });
       }
       scribe(state, { kind: 'magic', about: pid, text: `Night came down over ${lordName(state, pid)}'s whole realm like a drawn curtain. Maps of it are suddenly unreliable; attacks on it, briefly, more so.` });
       break;

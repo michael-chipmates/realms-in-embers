@@ -10,7 +10,8 @@
  * hashed from stable ids so the map never flickers between frames.
  */
 import { hash32, Rng } from '../engine/rng';
-import type { Province, Terrain } from '../engine/types';
+import type { Province, ProvinceMod, Terrain } from '../engine/types';
+import { SPELLS, type SpellFxFamily } from '../engine/content/spells';
 import { LORD_BY_ID } from '../engine/content/lords';
 
 export interface MapView {
@@ -41,8 +42,13 @@ export interface RenderOptions {
   colorblind?: boolean;
   /** Army markers to draw (owner -1 = leaderless). */
   armies?: { province: number; owner: number; strength: number; hasHero: boolean; kind?: string }[];
-  /** Transient animation layer: capture ripples (t runs 0→1). UI-only. */
-  fx?: { ripples?: { province: number; t: number; color: string }[] };
+  /** Transient animation layer (t runs 0→1). UI-only — never reads rng,
+   * never writes state, and everything here is fog-gated on draw. */
+  fx?: {
+    ripples?: { province: number; t: number; color: string }[];
+    /** Spell Theater: the cast moment, inked onto the vellum by family. */
+    spells?: { province: number; t: number; family: SpellFxFamily }[];
+  };
 }
 
 interface Loop {
@@ -61,6 +67,24 @@ const INK = '#3a2e1c';
 const INK_SOFT = 'rgba(58, 46, 28, 0.65)';
 const SEA_DEEP = '#5e7178';
 const SEA_SHALLOW = '#8fa3a3';
+
+/** Spell Theater palettes: warm gold for blessings, iron-gall murk for
+ * curses, pale steel for wards, cold barrow-green for summons, thin pale
+ * rings for scrying. Beneficial vs harmful is ALSO told by seal shape
+ * (round vs torn), never by color alone. */
+const FX_FAMILY: Record<SpellFxFamily, { core: string; edge: string }> = {
+  bless: { core: '#ffd98a', edge: '#c9832e' },
+  curse: { core: '#8f9a4a', edge: '#3d3448' },
+  ward: { core: '#cfe0e2', edge: '#7a97a0' },
+  summon: { core: '#9fdcc8', edge: '#3f6f63' },
+  scry: { core: '#e8eef2', edge: '#95a7b4' },
+};
+
+/** Does a lingering effect help the province it sits on? Torn seals for
+ * anything that hurts; round seals for the rest. */
+function modHelps(mod: ProvinceMod): boolean {
+  return (mod.order ?? 0) >= 0 && (mod.income ?? 0) >= 0 && (mod.defense ?? 0) >= 0;
+}
 
 export class MapRenderer {
   readonly canvas: HTMLCanvasElement;
@@ -317,6 +341,15 @@ export class MapRenderer {
       if (p.seatOf !== null && p.seatOf >= 0 && view.playerColors) {
         this.drawBanner(ctx, sx, sy - this.scale * 1.15, view.playerColors[p.seatOf]);
       }
+      // enchantment seals: lasting effects stay visible on the land itself
+      if (p.mods.length > 0) {
+        const shown = p.mods.slice(0, 2);
+        shown.forEach((mod, i) => {
+          this.drawEnchantSeal(ctx,
+            sx - this.scale * (0.85 + i * 0.75) + (p.site ? 0 : this.scale * 0.45),
+            sy + this.scale * 0.78, mod);
+        });
+      }
     }
 
     // --- sea-lane hints for the selected harbor army
@@ -393,6 +426,146 @@ export class MapRenderer {
         ctx.globalAlpha = 1;
       }
     }
+    if (opts.fx?.spells) {
+      for (const cast of opts.fx.spells) {
+        const p = view.provinces[cast.province];
+        if (!p || opts.unseen?.has(cast.province)) continue;
+        const [cx, cy] = this.worldToScreen(p.cx + 0.5, p.cy + 0.5);
+        this.drawSpellCast(ctx, cx, cy, cast.family, Math.min(1, Math.max(0, cast.t)), cast.province);
+      }
+    }
+  }
+
+  /** The cast moment, by family: gold bloom, ink blot, inscribed ward
+   * circle, rising wisps, or scrying rings. Deterministic — phase offsets
+   * come from the province id, never from Math.random. */
+  private drawSpellCast(ctx: CanvasRenderingContext2D, cx: number, cy: number, family: SpellFxFamily, t: number, seedId: number): void {
+    const s = this.scale;
+    const ease = 1 - (1 - t) * (1 - t);
+    const { core, edge } = FX_FAMILY[family];
+    ctx.save();
+    ctx.lineCap = 'round';
+    if (family === 'bless') {
+      const grd = ctx.createRadialGradient(cx, cy, 0, cx, cy, s * (0.6 + ease * 2.2));
+      grd.addColorStop(0, core);
+      grd.addColorStop(1, 'rgba(255, 217, 138, 0)');
+      ctx.globalAlpha = (1 - ease) * 0.55;
+      ctx.fillStyle = grd;
+      ctx.beginPath();
+      ctx.arc(cx, cy, s * (0.6 + ease * 2.2), 0, Math.PI * 2);
+      ctx.fill();
+      // motes rise like sparks off a stirred fire
+      for (let i = 0; i < 6; i++) {
+        const ang = ((seedId * 37 + i * 61) % 360) * (Math.PI / 180);
+        const mx = cx + Math.cos(ang) * s * (0.4 + (i % 3) * 0.3);
+        const my = cy - ease * s * (1.2 + (i % 4) * 0.5);
+        ctx.globalAlpha = (1 - ease) * 0.8;
+        ctx.fillStyle = core;
+        ctx.beginPath();
+        ctx.arc(mx, my, Math.max(1, s * 0.07), 0, Math.PI * 2);
+        ctx.fill();
+      }
+    } else if (family === 'curse') {
+      // iron-gall ink bleeding into the ground
+      for (let i = 0; i < 5; i++) {
+        const ang = ((seedId * 53 + i * 72) % 360) * (Math.PI / 180);
+        const d = s * (0.3 + ease * (0.7 + (i % 3) * 0.35));
+        ctx.globalAlpha = (1 - ease) * 0.4;
+        ctx.fillStyle = i % 2 === 0 ? edge : core;
+        ctx.beginPath();
+        ctx.arc(cx + Math.cos(ang) * d, cy + Math.sin(ang) * d * 0.7, s * (0.25 + ease * 0.45), 0, Math.PI * 2);
+        ctx.fill();
+      }
+    } else if (family === 'ward') {
+      // a circle inscribed by hand, with a compass wobble
+      const r = s * 1.35;
+      const sweep = ease * Math.PI * 2;
+      ctx.globalAlpha = t < 0.8 ? 0.85 : 0.85 * (1 - (t - 0.8) / 0.2);
+      ctx.strokeStyle = core;
+      ctx.lineWidth = Math.max(1.5, s * 0.1);
+      ctx.beginPath();
+      const steps = Math.max(16, Math.floor(sweep * 20));
+      for (let i = 0; i <= steps; i++) {
+        const a = -Math.PI / 2 + (sweep * i) / steps;
+        const wob = 1 + Math.sin(a * 3 + seedId) * 0.04;
+        const x = cx + Math.cos(a) * r * wob;
+        const y = cy + Math.sin(a) * r * wob;
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+    } else if (family === 'summon') {
+      // cold wisps rise from the ground
+      ctx.strokeStyle = core;
+      ctx.lineWidth = Math.max(1.2, s * 0.08);
+      for (let i = 0; i < 3; i++) {
+        const x0 = cx + (i - 1) * s * 0.55;
+        const rise = ease * s * (1.4 + i * 0.3);
+        ctx.globalAlpha = (1 - ease) * 0.75;
+        ctx.beginPath();
+        ctx.moveTo(x0, cy + s * 0.4);
+        ctx.quadraticCurveTo(x0 + s * 0.35 * (i % 2 === 0 ? 1 : -1), cy + s * 0.4 - rise * 0.5, x0, cy + s * 0.4 - rise);
+        ctx.stroke();
+      }
+    } else {
+      // scry: fine concentric rings, staggered
+      ctx.strokeStyle = core;
+      for (const lag of [0, 0.25, 0.5]) {
+        const rt = Math.min(1, Math.max(0, ease - lag) / (1 - lag));
+        if (rt <= 0) continue;
+        ctx.globalAlpha = (1 - rt) * 0.6;
+        ctx.lineWidth = Math.max(1, s * 0.06);
+        ctx.beginPath();
+        ctx.arc(cx, cy, s * (0.4 + rt * 2.4), 0, Math.PI * 2);
+        ctx.stroke();
+      }
+    }
+    ctx.restore();
+  }
+
+  /** A small wax seal on enchanted ground: round for helpful workings,
+   * torn (diamond) for harmful ones — shape first, color second, so the
+   * distinction survives colorblindness. Pips count the seasons left. */
+  private drawEnchantSeal(ctx: CanvasRenderingContext2D, x: number, y: number, mod: ProvinceMod): void {
+    const s = this.scale;
+    const r = Math.max(6.5, s * 0.36);
+    const family: SpellFxFamily = mod.spellId ? SPELLS[mod.spellId].fxFamily : (modHelps(mod) ? 'bless' : 'curse');
+    const { core, edge } = FX_FAMILY[family];
+    ctx.save();
+    ctx.beginPath();
+    if (modHelps(mod)) {
+      ctx.arc(x, y, r, 0, Math.PI * 2);
+    } else {
+      // a torn seal: four ragged points
+      ctx.moveTo(x, y - r * 1.15);
+      ctx.lineTo(x + r * 0.85, y - r * 0.1);
+      ctx.lineTo(x + r * 0.25, y + r * 0.25);
+      ctx.lineTo(x + r * 0.55, y + r * 1.0);
+      ctx.lineTo(x - r * 0.45, y + r * 0.55);
+      ctx.lineTo(x - r * 0.95, y + r * 0.3);
+      ctx.lineTo(x - r * 0.4, y - r * 0.35);
+      ctx.closePath();
+    }
+    ctx.fillStyle = edge;
+    ctx.globalAlpha = 0.92;
+    ctx.fill();
+    ctx.globalAlpha = 1;
+    ctx.strokeStyle = 'rgba(30, 22, 12, 0.85)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    ctx.fillStyle = core;
+    ctx.beginPath();
+    ctx.arc(x, y, r * 0.42, 0, Math.PI * 2);
+    ctx.fill();
+    // pips: one dot per season left, capped at three
+    const pips = Math.min(3, mod.turnsLeft);
+    for (let i = 0; i < pips; i++) {
+      ctx.beginPath();
+      ctx.arc(x - (pips - 1) * r * 0.35 + i * r * 0.7, y + r * 1.45, Math.max(1, r * 0.16), 0, Math.PI * 2);
+      ctx.fillStyle = core;
+      ctx.fill();
+    }
+    ctx.restore();
   }
 
   /** Crossed swords (battle) or a marching chevron (free move) on a wax disc. */

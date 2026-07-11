@@ -47,8 +47,10 @@ import { NEUTRAL } from './types';
  *     with one duelist, paying events clamp at an empty purse, the AI's
  *     endTurn escapes its action budget and chapter 5 finds its own
  *     Emberheart, rites never double-teach, rebel bands besiege the
- *     garrison in their own province, splitArmy (never reachable) removed. */
-export const RULES_VERSION = 9;
+ *     garrison in their own province, splitArmy (never reachable) removed.
+ * 10: Spell Theater — province mods carry spellId/by so the map can seal
+ *     enchanted ground and the panel can name the caster. */
+export const RULES_VERSION = 10;
 
 export const HANDICAPS: Record<Difficulty, PlayerHandicap> = {
   squire: { incomeMult: 0.85, label: 'Squire — AI earns 15% less gold and attacks only with clear advantage.' },

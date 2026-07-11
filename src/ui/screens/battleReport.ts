@@ -98,7 +98,10 @@ export function openBattleReport(screen: GameScreen, report: BattleReport): void
 
   const eventsEl = report.events.length > 0
     ? h('div', { class: 'battle-events', style: reduced ? {} : { opacity: '0', transition: 'opacity 300ms' } },
-        ...report.events.map((e) => h('p', { class: `small battle-event battle-event-${e.kind}` }, e.text)))
+        ...report.events.map((e) => h('p', { class: `small battle-event battle-event-${e.kind}${e.kind === 'spell' && !reduced ? ' battle-weave' : ''}` },
+          e.kind === 'spell' ? h('span', { class: 'battle-weave-glyph', html: iconSvg('ember', 13) }) : null,
+          e.kind === 'spell' ? ' ' : null,
+          e.text)))
     : null;
   const capturedEl = report.captured
     ? h('p', { class: 'battle-captured small-caps', style: reduced ? {} : { opacity: '0', transition: 'opacity 300ms' } }, `${report.provinceName} changes hands.`)

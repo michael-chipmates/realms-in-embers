@@ -17,10 +17,15 @@ export interface BattleSpellFx {
   calmGround?: boolean;
 }
 
+/** Visual family for the war-table cast animation and the Codex's
+ * illuminated spell cards. UI-only — the engine never reads it. */
+export type SpellFxFamily = 'bless' | 'curse' | 'ward' | 'summon' | 'scry';
+
 export interface SpellDef {
   id: SpellId;
   name: string;
   kind: 'battle' | 'realm';
+  fxFamily: SpellFxFamily;
   /** Emberlight to cast (battle spells auto-cast at this price when armed). */
   cost: number;
   /** Rounds before this spell may be cast again (realm spells). */
@@ -38,110 +43,110 @@ export interface SpellDef {
 export const SPELLS: Record<SpellId, SpellDef> = {
   // ------------------------------------------------------------- battle
   cinderbolt: {
-    id: 'cinderbolt', name: 'Cinderbolt', kind: 'battle', cost: 6, cooldown: 0, riteCost: 0,
+    id: 'cinderbolt', name: 'Cinderbolt', kind: 'battle', fxFamily: 'bless', cost: 6, cooldown: 0, riteCost: 0,
     target: 'none', battle: { powerMult: 1.12 }, icon: 'bolt',
     desc: 'Battle: your side fights +12% stronger. Auto-woven when you field casters and can pay.',
     flavor: 'The first spell every adept learns, and the last thing many enemies do.',
   },
   shieldOfAsh: {
-    id: 'shieldOfAsh', name: 'Shield of Ash', kind: 'battle', cost: 6, cooldown: 0, riteCost: 22,
+    id: 'shieldOfAsh', name: 'Shield of Ash', kind: 'battle', fxFamily: 'ward', cost: 6, cooldown: 0, riteCost: 22,
     target: 'none', creedAffinity: 'ash', battle: { lossMult: 0.75 }, icon: 'ashshield',
     desc: 'Battle: your side takes 25% fewer casualties.',
     flavor: 'Ash remembers being wood, and wood remembers standing.',
   },
   panicWhisper: {
-    id: 'panicWhisper', name: 'Panic Whisper', kind: 'battle', cost: 8, cooldown: 0, riteCost: 26,
+    id: 'panicWhisper', name: 'Panic Whisper', kind: 'battle', fxFamily: 'curse', cost: 8, cooldown: 0, riteCost: 26,
     target: 'none', creedAffinity: 'umbra', battle: { enemyMult: 0.9 }, icon: 'whisper',
     desc: 'Battle: the enemy fights 10% weaker.',
     flavor: 'It says nothing in particular. That is what makes it unanswerable.',
   },
   emberVeil: {
-    id: 'emberVeil', name: 'Ember Veil', kind: 'battle', cost: 9, cooldown: 0, riteCost: 28,
+    id: 'emberVeil', name: 'Ember Veil', kind: 'battle', fxFamily: 'ward', cost: 9, cooldown: 0, riteCost: 28,
     target: 'none', battle: { powerMult: 1.06, lossMult: 0.85 }, icon: 'veil',
     desc: 'Battle: +6% strength and 15% fewer casualties.',
     flavor: 'A curtain of warm light between your people and the arrows.',
   },
   rousingFlame: {
-    id: 'rousingFlame', name: 'Rousing Flame', kind: 'battle', cost: 7, cooldown: 0, riteCost: 24,
+    id: 'rousingFlame', name: 'Rousing Flame', kind: 'battle', fxFamily: 'bless', cost: 7, cooldown: 0, riteCost: 24,
     target: 'none', creedAffinity: 'flame', battle: { powerMult: 1.1 }, icon: 'rouse',
     desc: 'Battle: your side fights +10% stronger.',
     flavor: 'It does not make soldiers braver. It reminds them they already were.',
   },
   graspingMire: {
-    id: 'graspingMire', name: 'Grasping Mire', kind: 'battle', cost: 8, cooldown: 0, riteCost: 26,
+    id: 'graspingMire', name: 'Grasping Mire', kind: 'battle', fxFamily: 'curse', cost: 8, cooldown: 0, riteCost: 26,
     target: 'none', creedAffinity: 'ash', battle: { enemyMult: 0.95, calmGround: true }, icon: 'mire',
     desc: 'Battle: enemy −5%, and their charges and ambushes fail.',
     flavor: 'The ground grows opinions about anyone moving quickly across it.',
   },
   sunlance: {
-    id: 'sunlance', name: 'Sunlance', kind: 'battle', cost: 12, cooldown: 0, riteCost: 38,
+    id: 'sunlance', name: 'Sunlance', kind: 'battle', fxFamily: 'bless', cost: 12, cooldown: 0, riteCost: 38,
     target: 'none', creedAffinity: 'flame', battle: { powerMult: 1.2 }, icon: 'sunlance',
     desc: 'Battle: your side fights +20% stronger. The heaviest battle-magic known.',
     flavor: 'For one breath, noon. Wherever you point it.',
   },
   gloomCall: {
-    id: 'gloomCall', name: 'Gloom-Call', kind: 'battle', cost: 12, cooldown: 0, riteCost: 38,
+    id: 'gloomCall', name: 'Gloom-Call', kind: 'battle', fxFamily: 'curse', cost: 12, cooldown: 0, riteCost: 38,
     target: 'none', creedAffinity: 'umbra', battle: { enemyMult: 0.85 }, icon: 'gloom',
     desc: 'Battle: the enemy fights 15% weaker.',
     flavor: 'Every soldier owns a private dark. This merely opens all of them at once.',
   },
   // -------------------------------------------------------------- realm
   scryingSmoke: {
-    id: 'scryingSmoke', name: 'Scrying Smoke', kind: 'realm', cost: 5, cooldown: 2, riteCost: 18,
+    id: 'scryingSmoke', name: 'Scrying Smoke', kind: 'realm', fxFamily: 'scry', cost: 5, cooldown: 2, riteCost: 18,
     target: 'anyProvince', icon: 'smoke',
     desc: 'Reveal a province and its neighbors, and report every company standing there.',
     flavor: 'The smoke shows what is. Interpretation, as ever, is extra.',
   },
   blessHarvest: {
-    id: 'blessHarvest', name: 'Bless the Harvest', kind: 'realm', cost: 10, cooldown: 3, riteCost: 24,
+    id: 'blessHarvest', name: 'Bless the Harvest', kind: 'realm', fxFamily: 'bless', cost: 10, cooldown: 3, riteCost: 24,
     target: 'ownProvince', icon: 'sheaf',
     desc: 'A province of yours gains +6 gold and +3 order each season, for 3 seasons.',
     flavor: 'The wheat stands taller. The tithe-reeve smiles. Suspicion drops to a five-year low.',
   },
   sowDiscord: {
-    id: 'sowDiscord', name: 'Sow Discord', kind: 'realm', cost: 12, cooldown: 3, riteCost: 30,
+    id: 'sowDiscord', name: 'Sow Discord', kind: 'realm', fxFamily: 'curse', cost: 12, cooldown: 3, riteCost: 30,
     target: 'enemyProvince', creedAffinity: 'umbra', icon: 'discord',
     desc: 'An enemy province suffers −6 order each season for 3 seasons.',
     flavor: 'Three rumors, one forged letter, and a shortage of good ale. Kingdoms have fallen to less.',
   },
   wardOfEmbers: {
-    id: 'wardOfEmbers', name: 'Ward of Embers', kind: 'realm', cost: 8, cooldown: 2, riteCost: 22,
+    id: 'wardOfEmbers', name: 'Ward of Embers', kind: 'realm', fxFamily: 'ward', cost: 8, cooldown: 2, riteCost: 22,
     target: 'ownProvince', icon: 'ward',
     desc: 'A province of yours defends +20% for 3 seasons.',
     flavor: 'Attackers describe a heat-shimmer, a wrongness, a strong preference for being elsewhere.',
   },
   beaconMarch: {
-    id: 'beaconMarch', name: 'Beacon March', kind: 'realm', cost: 14, cooldown: 4, riteCost: 34,
+    id: 'beaconMarch', name: 'Beacon March', kind: 'realm', fxFamily: 'bless', cost: 14, cooldown: 4, riteCost: 34,
     target: 'ownArmy', creedAffinity: 'flame', icon: 'beacon',
     desc: 'One of your armies that has already marched may march again this season.',
     flavor: 'Light the high fires and the road walks with you.',
   },
   barrowCall: {
-    id: 'barrowCall', name: 'Barrow-Call', kind: 'realm', cost: 16, cooldown: 5, riteCost: 36,
+    id: 'barrowCall', name: 'Barrow-Call', kind: 'realm', fxFamily: 'summon', cost: 16, cooldown: 5, riteCost: 36,
     target: 'ownProvince', creedAffinity: 'umbra', icon: 'barrowcall',
     desc: 'Raise two companies of Barrow Revenants at a barrow province you rule.',
     flavor: 'The old dead ask only two questions: who, and how many.',
   },
   seersFlame: {
-    id: 'seersFlame', name: "Seer's Flame", kind: 'realm', cost: 10, cooldown: 4, riteCost: 26,
+    id: 'seersFlame', name: "Seer's Flame", kind: 'realm', fxFamily: 'scry', cost: 10, cooldown: 4, riteCost: 26,
     target: 'none', icon: 'seer',
     desc: 'A private report: every rival’s treasury, income, armies, and heroes, as they stand today.',
     flavor: 'Stare into the flame long enough and it starts doing the accounting for you.',
   },
   quenchling: {
-    id: 'quenchling', name: 'Quenchling', kind: 'realm', cost: 9, cooldown: 2, riteCost: 22,
+    id: 'quenchling', name: 'Quenchling', kind: 'realm', fxFamily: 'bless', cost: 9, cooldown: 2, riteCost: 22,
     target: 'ownProvince', creedAffinity: 'ash', icon: 'quench',
     desc: 'A province of yours gains +15 order at once, and forgets it was recently conquered.',
     flavor: 'A small grey spirit that drinks grudges. It is always full and never satisfied.',
   },
   emberTithe: {
-    id: 'emberTithe', name: 'Ember Tithe', kind: 'realm', cost: 0, cooldown: 2, riteCost: 20,
+    id: 'emberTithe', name: 'Ember Tithe', kind: 'realm', fxFamily: 'bless', cost: 0, cooldown: 2, riteCost: 20,
     target: 'none', icon: 'tithe',
     desc: 'Convert 40 gold into 10 Emberlight.',
     flavor: 'Gold burns badly, but it burns.',
   },
   veilOfNight: {
-    id: 'veilOfNight', name: 'Veil of Night', kind: 'realm', cost: 15, cooldown: 5, riteCost: 32,
+    id: 'veilOfNight', name: 'Veil of Night', kind: 'realm', fxFamily: 'ward', cost: 15, cooldown: 5, riteCost: 32,
     target: 'none', creedAffinity: 'umbra', icon: 'nightveil',
     desc: 'For 2 seasons, every province you rule is +8% harder to attack (confusion in the dark).',
     flavor: 'The realm does not vanish. It simply stops answering to its name.',
