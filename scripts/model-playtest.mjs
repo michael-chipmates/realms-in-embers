@@ -19,7 +19,7 @@ import { createGame, applyAction } from '../src/engine/engine.ts';
 import { aiTakeTurn } from '../src/engine/ai.ts';
 import { previewBattle } from '../src/engine/combat.ts';
 import { moveTargets } from '../src/engine/actions.ts';
-import { incomeReport, leaderId } from '../src/engine/economy.ts';
+import { incomeReport, isDefiant, leaderId, strainOf } from '../src/engine/economy.ts';
 import { attitudeOf } from '../src/engine/diplo.ts';
 import { sagaGate, questStat } from '../src/engine/quests.ts';
 import { heroDerived } from '../src/engine/heroFx.ts';
@@ -67,6 +67,9 @@ function view(state, pid, rejections) {
   const needed = Math.round(dominionShareAt(state) * 100);
   L.push(`VICTORY RACE — dominion needs ${needed}% of ${state.provinces.length} provinces for 3 seasons${state.turn > 38 ? ' (eroding each season!)' : ''}; golden age needs richest+900 gold+order 65 for 4; legend needs saga chapter 5 (you: ${me.sagaChapter}/5).`);
 
+  if (isDefiant(state, pid)) L.push(`DEFIANT (underdog boon): your musters cost 15% less and every province stands +2 order while you trail the leader badly.`);
+  const strain = strainOf(state, pid);
+  if (strain > 0) L.push(`STRAIN OF RULE: your realm is large — every province drifts −${strain} order/season.`);
   L.push(`\nYOUR PROVINCES (${provincesOf(state, pid).length}):`);
   for (const p of provincesOf(state, pid)) {
     const q = [p.buildQueue ? `building ${p.buildQueue.id}` : '', p.recruitQueue ? `mustering ${p.recruitQueue.unit}` : ''].filter(Boolean).join(', ');
@@ -93,6 +96,18 @@ function view(state, pid, rejections) {
     }
   }
 
+  const nearIds = new Set();
+  for (const p of provincesOf(state, pid)) { nearIds.add(p.id); for (const n of p.neighbors) nearIds.add(n); }
+  const hostiles = Object.values(state.armies)
+    .filter((a) => a.owner !== pid && nearIds.has(a.province) && (!visible || visible.has(a.province)))
+    .slice(0, 12);
+  if (hostiles.length) {
+    L.push(`\nFOREIGN ARMIES IN OR BESIDE YOUR REALM (a human sees these markers on the map):`);
+    for (const a of hostiles) {
+      const who = a.owner === -1 ? 'leaderless' : LORD_BY_ID[state.players[a.owner].lordId].name;
+      L.push(`  at #${a.province} ${state.provinces[a.province].name}: ${who}, ${fmtUnits(a.units)}`);
+    }
+  }
   L.push(`\nYOUR HEROES:`);
   for (const hh of heroesOf(state, pid)) {
     const d = heroDerived(state, hh);
@@ -115,7 +130,7 @@ function view(state, pid, rejections) {
   } else if (gate.reason) L.push(`SAGA CLOSED: ${gate.reason}`);
 
   L.push(`\nSPELLS KNOWN: ${me.spells.map((s) => `${s} (${SPELLS[s].kind}${SPELLS[s].target !== 'none' ? ', needs province' : ''})`).join('; ') || 'none'}`);
-  if (me.rite) L.push(`RITE IN PROGRESS: learning ${me.rite.spellId ?? me.rite.spell ?? JSON.stringify(me.rite)} — pledge emberlight to speed it.`);
+  if (me.rite) L.push(`RITE IN PROGRESS: learning ${me.rite.spellId ?? me.rite.spell ?? ''} — ${me.rite.paid ?? 0} of ${me.rite.cost ?? '?'} emberlight pledged; pledge more to finish sooner.`);
   if (me.riteOffers.length) L.push(`RITES OFFERED (startRite to begin learning): ${me.riteOffers.join(', ')}`);
 
   L.push(`\nRIVALS:`);
@@ -123,7 +138,8 @@ function view(state, pid, rejections) {
     if (o.id === pid || !o.alive) continue;
     const att = attitudeOf(state, o.id, pid).total;
     const oSig = LORD_BY_ID[o.lordId].signature;
-    L.push(`  player${o.id} ${LORD_BY_ID[o.lordId].name} (${getStance(state, pid, o.id)}): holds ${provincesOf(state, o.id).length} provinces, regards you ${att >= 0 ? '+' : ''}${att}, saga ${o.sagaChapter}/5, signature ${oSig.name} ${(o.signatureCooldownLeft ?? 0) === 0 ? 'ready' : `in ${o.signatureCooldownLeft}`}`);
+    L.push(`  player${o.id} ${LORD_BY_ID[o.lordId].name} (${getStance(state, pid, o.id)}): holds ${provincesOf(state, o.id).length} provinces, regards you ${att >= 0 ? '+' : ''}${att}, saga ${o.sagaChapter}/5`);
+    L.push(`    their signature ${oSig.name} (${(o.signatureCooldownLeft ?? 0) === 0 ? 'READY' : `in ${o.signatureCooldownLeft}`}): ${oSig.desc}`);
   }
   const lead = leaderId(state);
   if (lead !== null) L.push(`  Realm leader by land: player${lead}${lead === pid ? ' (YOU — expect a coalition if you pass 40%)' : ''}`);
@@ -140,6 +156,12 @@ function view(state, pid, rejections) {
     L.push(`\nEVENT AWAITING CHOICE event#${ev.id} "${def.title}": ${text}\n  ${chc}`);
   }
 
+  const recent = state.chronicle.slice(-40).filter((c) =>
+    c.turn >= state.turn - 1 && (!c.privateTo || c.privateTo === pid) && c.kind !== 'teaching');
+  if (recent.length) {
+    L.push(`\nTHE CHRONICLE SINCE LAST SEASON (why things changed):`);
+    for (const c of recent.slice(-8)) L.push(`  [${c.kind}] ${String(c.text).slice(0, 170)}`);
+  }
   if (rejections.length) {
     L.push(`\nREJECTED LAST SEASON (learn from these): ${rejections.map((r) => `${r.action.t}: ${r.error}`).join('; ')}`);
   }
