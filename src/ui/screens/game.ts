@@ -10,7 +10,7 @@ import type { OnlineSession } from './lobby';
 import { emberlightIncome, incomeReport } from '../../engine/economy';
 import { LORD_BY_ID } from '../../engine/content/lords';
 import { armiesIn, armiesOf, heroesOf, seenBy } from '../../engine/helpers';
-import type { Action, Army, Effect, GameState, SpellId } from '../../engine/types';
+import type { Action, Army, BattlePreview, BattleReport, Effect, GameState, SpellId } from '../../engine/types';
 import type { MoveTarget } from '../../engine/actions';
 import { SPELLS, type SpellFxFamily } from '../../engine/content/spells';
 import type { App } from '../app';
@@ -74,6 +74,9 @@ export class GameScreen {
   private clockExpiredSent = false;
   /** Replaying a relay backlog: present its effects quietly (no modal storms). */
   private catchingUp = false;
+  /** The odds the player accepted at "Give battle", so the theater's stakes
+   * and aftermath can quote them. One battle only; cleared on use. */
+  private stakesPreview: { province: number; turn: number; winChance: number; aExpectedLoss: number; dExpectedLoss: number } | null = null;
   private resizeHandler = (): void => {
     if (this.disposed) return;
     this.renderer.resize();
@@ -665,9 +668,11 @@ export class GameScreen {
       );
 
     const content = h('div', { class: 'odds-body' });
+    let latestPreview: BattlePreview | null = null;
     const render = (): void => {
       const preview = previewBattle(this.state, army.id, target.to, target.viaSea, 240, [...chosen], fervor);
       if (!preview) return;
+      latestPreview = preview;
       const pct = Math.round(preview.winChance * 100);
       // 240 trials cannot promise certainty: a clean sweep reads "at least
       // 99%", a washout "at most 1%" — the honest edges of a sampled forecast
@@ -726,6 +731,17 @@ export class GameScreen {
             class: 'btn btn-seal',
             onclick: () => {
               modal.close();
+              // carried to the theater's stakes/aftermath cards: what the
+              // augurs promised for exactly this battle
+              if (latestPreview) {
+                this.stakesPreview = {
+                  province: target.to,
+                  turn: this.state.turn,
+                  winChance: latestPreview.winChance,
+                  aExpectedLoss: latestPreview.aExpectedLoss,
+                  dExpectedLoss: latestPreview.dExpectedLoss,
+                };
+              }
               this.dispatch({
                 t: 'moveArmy', armyId: army.id, to: target.to, viaSea: target.viaSea,
                 ...(chosen.size > 0 ? { support: [...chosen] } : {}),
@@ -840,6 +856,17 @@ export class GameScreen {
   }
 
   // ------------------------------------------------------------ effects
+
+  /** Hand the theater the odds the player accepted for exactly this battle
+   * — same province, same season, viewer attacking — or nothing. */
+  takeStakesPreview(report: BattleReport): { winChance: number; aExpectedLoss: number; dExpectedLoss: number } | null {
+    const held = this.stakesPreview;
+    if (!held) return null;
+    if (held.province !== report.province || held.turn !== report.turn) return null;
+    if (report.attacker.player !== this.viewerId()) return null;
+    this.stakesPreview = null;
+    return { winChance: held.winChance, aExpectedLoss: held.aExpectedLoss, dExpectedLoss: held.dExpectedLoss };
+  }
 
   presentEffects(effects: Effect[]): void {
     const viewer = this.viewerId();

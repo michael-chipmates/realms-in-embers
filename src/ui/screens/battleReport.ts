@@ -10,9 +10,16 @@ import { lordDisplay } from '../format';
 import { iconSvg } from '../icons';
 import { openModal } from '../modal';
 import { audio } from '../audio';
+import { openBattleTheater } from './battleTheater';
 import type { GameScreen } from './game';
 
 export function openBattleReport(screen: GameScreen, report: BattleReport): void {
+  // The theater stages the same report as a scene; reduced motion keeps
+  // this still page, which shows everything at once.
+  if (!screen.app.settings.reducedMotion) {
+    openBattleTheater(screen, report, screen.takeStakesPreview(report));
+    return;
+  }
   const state = screen.state;
   const atk = lordDisplay(state, report.attacker.player);
   const def = lordDisplay(state, report.defender.player);

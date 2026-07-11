@@ -53,6 +53,8 @@ jobs:
         run: node scripts/drive.mjs http://localhost:5199 /tmp
       - name: Mobile drive (touch via CDP)
         run: node scripts/drive-mobile.mjs http://localhost:5199 /tmp
+      - name: Battle theater drive (playback + reduced-motion fallback)
+        run: node scripts/drive-battle.mjs http://localhost:5199 /tmp
       - name: Upload drive screenshots
         if: always()
         uses: actions/upload-artifact@v4
