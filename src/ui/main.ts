@@ -30,6 +30,9 @@ if (fromHash) {
   sessionStorage.setItem('rie-war', `${fromHash.roomId}.${fromHash.key}`);
   history.replaceState(null, '', location.pathname);
 }
+// a shared seed link (#seed=…) opens the muster table with that realm
+// pinned — it carries nothing but the seed
+const seedMatch = location.hash.match(/#seed=([^&]+)/);
 if (invite) {
   // a truncated or tampered invite key must fail into the hall, not a blank room
   openOnlineLobby(app, invite).catch(() => {
@@ -37,9 +40,21 @@ if (invite) {
     history.replaceState(null, '', location.pathname);
     app.toTitle();
   });
+} else if (seedMatch) {
+  history.replaceState(null, '', location.pathname);
+  app.toSetup(decodeURIComponent(seedMatch[1]).slice(0, 128));
 } else {
   app.toTitle();
 }
+
+// a seed link pasted over the OPEN app is a same-document navigation; honor
+// it — but never over a live chronicle, which a stray link must not destroy
+window.addEventListener('hashchange', () => {
+  const m = location.hash.match(/#seed=([^&]+)/);
+  if (!m || app.gameScreen) return;
+  history.replaceState(null, '', location.pathname);
+  app.toSetup(decodeURIComponent(m[1]).slice(0, 128));
+});
 
 // offline keeper: after first visit the whole game works with no network.
 // The registration is staged — see swUpdate.ts for the BOOT_OK handshake.

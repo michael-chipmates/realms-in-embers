@@ -14,6 +14,7 @@ import { buildWarTimeline } from '../timeline';
 import { openModal } from '../modal';
 import { breakdown, tip } from '../tooltip';
 import { buildSaga, downloadSaga } from '../saga';
+import { downloadShareCard, seedLink } from '../shareCard';
 import { audio } from '../audio';
 import type { GameScreen } from './game';
 
@@ -24,6 +25,57 @@ const PATH_TEXT: Record<string, string> = {
   legend: 'by legend — the Ember Throne rekindled',
   chronicle: 'by the judgment of the Chronicle',
 };
+
+/** Turning points, read deterministically off the season stats: the great
+ * land-grabs, the banners that left the map, and the season the winner took
+ * a lead they never returned. Facts only — the judgment quotes these. */
+function turningPoints(state: import('../../engine/types').GameState): string[] {
+  const stats = state.stats;
+  const winner = state.victory.winner;
+  if (stats.length < 2 || winner === null) return [];
+  const out: string[] = [];
+  const name = (pid: number): string => LORD_BY_ID[state.players[pid].lordId].name;
+
+  // the single greatest season-on-season land swing anyone managed
+  let swing = 0;
+  let swingAt = 0;
+  let swingWho = winner;
+  for (let i = 1; i < stats.length; i++) {
+    for (const pp of stats[i].perPlayer) {
+      const prev = stats[i - 1].perPlayer.find((x) => x.player === pp.player)?.provinces ?? 0;
+      const d = pp.provinces - prev;
+      if (Math.abs(d) > Math.abs(swing)) { swing = d; swingAt = stats[i].turn; swingWho = pp.player; }
+    }
+  }
+  if (Math.abs(swing) >= 2) {
+    out.push(swing > 0
+      ? `Season ${swingAt}: ${name(swingWho)} took ${swing} provinces in a single season — the map never quite recovered.`
+      : `Season ${swingAt}: ${name(swingWho)} lost ${-swing} provinces in one season — the kind of arithmetic no treasury survives.`);
+  }
+  // every banner that left the map, in order
+  for (const p of state.players) {
+    if (p.alive) continue;
+    let fell: number | null = null;
+    for (const s of stats) {
+      const held = s.perPlayer.find((x) => x.player === p.id)?.provinces ?? 0;
+      if (held === 0) { fell = s.turn; break; }
+      fell = null;
+    }
+    if (fell !== null) out.push(`Season ${fell}: ${name(p.id)}'s banner left the map.`);
+  }
+  // the season the winner took the lead for good
+  let leadFrom: number | null = null;
+  for (const s of stats) {
+    const mine = s.perPlayer.find((x) => x.player === winner)?.provinces ?? 0;
+    const best = Math.max(...s.perPlayer.filter((x) => x.player !== winner).map((x) => x.provinces), 0);
+    if (mine > best) leadFrom ??= s.turn;
+    else leadFrom = null;
+  }
+  if (leadFrom !== null && leadFrom > stats[0].turn) {
+    out.push(`From season ${leadFrom}, ${name(winner)} led the land and never gave it back.`);
+  }
+  return out.slice(0, 4);
+}
 
 export function showGameEnd(screen: GameScreen): void {
   const state = screen.state;
@@ -73,6 +125,18 @@ export function showGameEnd(screen: GameScreen): void {
         ? `The realm is yours, ${PATH_TEXT[path]}. Osperan's pen rests at last.`
         : `${winnerLord.name}, ${winnerLord.epithet}, has won the realm ${PATH_TEXT[path]}. Your part in the chronicle is written.`),
     graph,
+    (() => {
+      const points = turningPoints(state);
+      if (points.length === 0) return null;
+      return h('div', { class: 'gameend-turns' },
+        h('h3', { class: 'settings-head' }, 'Where the war turned'),
+        ...points.map((t) => h('p', { class: 'small' }, `※ ${t}`)),
+        h('p', { class: 'small italic muted', style: { marginTop: '0.3rem' } },
+          `Osperan's judgment: ${viewerWon
+            ? 'the pen concedes that this one was earned — the record above will say how.'
+            : `the record will show ${winnerLord.name} did not luck into this. The turning seasons are listed; so, quietly, are the ones where it could have gone otherwise.`}`),
+      );
+    })(),
     h('div', { class: 'overlay-columns' },
       h('div', { class: 'overlay-col' },
         h('h3', { class: 'settings-head' }, 'Final standings'),
@@ -93,6 +157,24 @@ export function showGameEnd(screen: GameScreen): void {
       }, 'Read the finished Saga'),
       h('button', { class: 'btn', onclick: () => downloadSaga(state) }, 'Save the Saga to a file'),
       h('button', { class: 'btn', onclick: () => openWarReplay(screen) }, 'Watch the war again'),
+      h('button', {
+        class: 'btn',
+        onclick: (e: Event) => {
+          const btn = e.currentTarget as HTMLButtonElement;
+          btn.disabled = true;
+          void downloadShareCard(state, screen.app.settings.colorblind).then((ok) => {
+            btn.disabled = false;
+            btn.textContent = ok ? 'Share card saved' : 'The card would not render';
+          });
+        },
+      }, 'Keep a share card (PNG)'),
+      h('button', {
+        class: 'btn',
+        onclick: (e: Event) => {
+          void navigator.clipboard?.writeText(seedLink(state));
+          (e.currentTarget as HTMLButtonElement).textContent = 'Seed link copied';
+        },
+      }, 'Copy the seed link'),
       h('button', {
         class: 'btn',
         onclick: () => {

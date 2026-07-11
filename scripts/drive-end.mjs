@@ -41,12 +41,37 @@ for (let i = 0; i < 10; i++) {
 }
 await page.waitForTimeout(1000);
 await page.screenshot({ path: `${outdir}/e2-gameend.png` });
+
+// the debrief: turning points render when the stats gave any, and the share
+// card must actually produce a PNG download
+const endText = await page.locator('.gameend-body').textContent().catch(() => '');
+if (!/Final standings/.test(endText ?? '')) { console.error('end screen missing standings'); process.exit(1); }
+const shareBtn = page.getByRole('button', { name: 'Keep a share card (PNG)' });
+if (!(await shareBtn.isVisible().catch(() => false))) { console.error('share card button missing'); process.exit(1); }
+const download = page.waitForEvent('download', { timeout: 15000 });
+await shareBtn.click();
+const dl = await download;
+if (!/realms-in-embers-.*\.png/.test(dl.suggestedFilename())) {
+  console.error(`share card produced ${dl.suggestedFilename()}, wanted a realm PNG`); process.exit(1);
+}
+const seedBtn = page.getByRole('button', { name: 'Copy the seed link' });
+if (!(await seedBtn.isVisible().catch(() => false))) { console.error('seed link button missing'); process.exit(1); }
+
 const sagaBtn = page.getByRole('button', { name: 'Read the finished Saga' });
 if (await sagaBtn.isVisible().catch(() => false)) {
   await sagaBtn.click();
   await page.waitForTimeout(600);
   await page.screenshot({ path: `${outdir}/e3-saga.png` });
 }
-console.log(errors.length ? 'ERRORS:\n' + errors.join('\n') : 'no page errors', '| event seen:', eventShot);
+
+// a seed link opens the muster table with the realm pinned (fresh load —
+// a hash-only goto would be a same-document navigation)
+await page.goto('about:blank');
+await page.goto(`${url}/#seed=drive-end-2`, { waitUntil: 'networkidle' });
+await page.waitForTimeout(700);
+const pinned = await page.locator('#setup-seed').inputValue().catch(() => '');
+if (pinned !== 'drive-end-2') { console.error(`seed link did not pin the seed (got "${pinned}")`); process.exit(1); }
+
+console.log(errors.length ? 'ERRORS:\n' + errors.join('\n') : 'no page errors', '| event seen:', eventShot, '| share card + seed link ok');
 if (errors.length) process.exitCode = 1;
 await browser.close();
