@@ -18,10 +18,21 @@ document.getElementById('landing')?.remove();
 
 preloadArtManifest();
 const app = new App(root);
-const invite = parseInvite(location.hash);
+// The invite key comes off the address bar the moment it's read (round-2
+// audit): screenshots, history sync, and shoulder surfing see a clean URL.
+// The war survives a reload through session storage; "Copy invite" in the
+// lobby reconstructs the full link deliberately.
+const fromHash = parseInvite(location.hash);
+const stashed = sessionStorage.getItem('rie-war');
+const invite = fromHash ?? (stashed ? parseInvite(`#war=${stashed}`) : null);
+if (fromHash) {
+  sessionStorage.setItem('rie-war', `${fromHash.roomId}.${fromHash.key}`);
+  history.replaceState(null, '', location.pathname);
+}
 if (invite) {
   // a truncated or tampered invite key must fail into the hall, not a blank room
   openOnlineLobby(app, invite).catch(() => {
+    sessionStorage.removeItem('rie-war');
     history.replaceState(null, '', location.pathname);
     app.toTitle();
   });

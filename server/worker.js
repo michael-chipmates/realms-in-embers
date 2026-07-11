@@ -96,15 +96,45 @@ export class RelayRoom {
       return;
     }
     if (msg.t === 'append' && typeof msg.data === 'string' && msg.data.length <= MAX_BLOB) {
+      // per-socket token bucket (burst 20, refill 2/s); in-memory is fine —
+      // hibernation resetting the bucket only ever errs friendly
+      this.buckets ??= new Map();
+      const now = Date.now();
+      const b = this.buckets.get(ws) ?? { tokens: 20, at: now };
+      b.tokens = Math.min(20, b.tokens + ((now - b.at) / 1000) * 2);
+      b.at = now;
+      if (b.tokens < 1) {
+        this.buckets.set(ws, b);
+        ws.send(JSON.stringify({ t: 'error', error: 'slow down' }));
+        return;
+      }
+      b.tokens -= 1;
+      this.buckets.set(ws, b);
       const meta = await this.meta();
+      const mid = typeof msg.mid === 'string' && msg.mid.length <= 24 ? msg.mid : null;
+      // retransmission of a stored append (lost ack): replay the original
+      // entry to this socket only — never a duplicate in the log
+      if (mid && meta.mids && meta.mids[mid] !== undefined) {
+        const seq = meta.mids[mid];
+        const data = await this.state.storage.get(`e:${seq}`);
+        if (typeof data === 'string') ws.send(JSON.stringify({ t: 'entry', seq, data }));
+        return;
+      }
       if (meta.count >= MAX_LOG || meta.bytes + msg.data.length > MAX_ROOM_BYTES) {
         ws.send(JSON.stringify({ t: 'error', error: 'room log full' }));
         return;
       }
       const seq = meta.count;
+      const mids = meta.mids ?? {};
+      const midOrder = meta.midOrder ?? [];
+      if (mid) {
+        mids[mid] = seq;
+        midOrder.push(mid);
+        if (midOrder.length > 400) delete mids[midOrder.shift()];
+      }
       await this.state.storage.put({
         [`e:${seq}`]: msg.data,
-        meta: { count: seq + 1, bytes: meta.bytes + msg.data.length },
+        meta: { count: seq + 1, bytes: meta.bytes + msg.data.length, mids, midOrder },
       });
       await this.touch();
       const out = JSON.stringify({ t: 'entry', seq, data: msg.data });

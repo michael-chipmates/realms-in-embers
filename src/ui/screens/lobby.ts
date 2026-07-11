@@ -14,8 +14,9 @@ import type { GameSettings, PlayerSetup } from '../../engine/types';
 import { h, mount, clear } from '../dom';
 import { sigilShield } from '../heraldry';
 import {
-  CLOCK_PRESETS, NetClient, inviteLink, makeRoomKey, randomRoomId, relayUrl,
-  type ClockConfig, type NetEntry, type NetPayload,
+  AD_FRESH_MS, AD_HEARTBEAT_MS, CLOCK_PRESETS, NetClient, PROTOCOL_VERSION, RULES_VERSION,
+  WAYHOUSE_KEY, WAYHOUSE_ROOM, inviteLink, makeRoomKey, openTables, parseInvite, randomRoomId, relayUrl,
+  type ClockConfig, type NetEntry,
 } from '../net';
 import type { App } from '../app';
 
@@ -33,7 +34,7 @@ export interface OnlineSession {
   cursor: number;
 }
 
-interface LobbyPeer { cid: string; name: string; seat: number | null; lordId: string | null; lastSeq: number }
+interface LobbyPeer { cid: string; name: string; seat: number | null; lordId: string | null; lastSeq: number; rules: number | null }
 
 function myCid(): string {
   let cid = localStorage.getItem('rie-cid');
@@ -54,7 +55,8 @@ function tableFrom(entries: NetEntry[]): LobbyPeer[] {
   for (const e of entries) {
     const p = e.payload;
     if (p.kind === 'hello') {
-      peers.set(p.cid, { cid: p.cid, name: p.name, seat: p.seat, lordId: p.lordId ?? null, lastSeq: e.seq });
+      // a hello without `rules` is a pre-v2 client — mark it, don't guess
+      peers.set(p.cid, { cid: p.cid, name: p.name, seat: p.seat, lordId: p.lordId ?? null, lastSeq: e.seq, rules: p.rules ?? null });
     }
   }
   return [...peers.values()];
@@ -85,15 +87,17 @@ export async function openOnlineLobby(app: App, invite?: { roomId: string; key: 
   const status = h('p', { class: 'small muted', 'aria-live': 'polite' }, 'Reaching the relay…');
   const tableEl = h('div', { class: 'lobby-table' });
   const controls = h('div', { class: 'lobby-controls' });
+  const wayEl = h('div', { class: 'lobby-table' });
   const nameInput = h('input', {
     class: 'input', type: 'text', maxlength: '24', placeholder: 'Your name at the table', 'aria-label': 'Your name at the table',
     value: myName(),
   }) as HTMLInputElement;
 
   const link = inviteLink(roomId, key);
-  // the creator's own address bar must carry the war too — a reload
-  // without it would orphan the lobby
-  if (!invite) history.replaceState(null, '', link);
+  // the key stays OUT of the address bar (screenshots, history sync); the
+  // war survives a reload through session storage instead, and Copy invite
+  // reconstructs the full link only on purpose
+  sessionStorage.setItem('rie-war', `${roomId}.${key}`);
   const screen = h('div', { class: 'room title-screen' },
     h('div', { class: 'title-center lobby-center' },
       h('p', { class: 'title-over muted italic' }, 'A war among friends'),
@@ -114,6 +118,7 @@ export async function openOnlineLobby(app: App, invite?: { roomId: string; key: 
       status,
       tableEl,
       controls,
+      wayEl,
       h('button', {
         class: 'btn btn-quiet', style: { marginTop: '1rem' },
         onclick: async () => {
@@ -121,8 +126,10 @@ export async function openOnlineLobby(app: App, invite?: { roomId: string; key: 
           try {
             await client.send({ kind: 'hello', cid, name: nameInput.value.trim() || 'A nameless lord', seat: null });
           } catch { /* leaving anyway */ }
+          closeWayhouse(true);
           client.close();
-          history.replaceState(null, '', location.pathname); // drop the war fragment
+          sessionStorage.removeItem('rie-war');
+          history.replaceState(null, '', location.pathname); // belt and braces
           app.toTitle();
         },
       }, 'Leave the table'),
@@ -137,12 +144,73 @@ export async function openOnlineLobby(app: App, invite?: { roomId: string; key: 
   let aiFill = 0;
   let fog = true;
 
+  // ---- the Wayhouse: the room where strangers find each other -----------
+  // (docs/design/open-tables.md). A second NetClient on the well-known room
+  // with the PUBLISHED key — posting a table there is posting it to the
+  // public, and the UI says so in plain words before the host agrees.
+  const wayhouse = new NetClient(WAYHOUSE_ROOM, WAYHOUSE_KEY);
+  let posted = false;
+  let lastAdTaken = -1;
+  let heartbeat: number | null = null;
+  const seatedNow = (): number => tableFrom(client.list()).filter((p) => p.seat !== null).length;
+  const postAd = (gone = false): void => {
+    if (!posted && !gone) return;
+    lastAdTaken = seatedNow();
+    void wayhouse.send({
+      kind: 'ad', v: 1,
+      name: (nameInput.value.trim() || 'A nameless lord') + '’s table',
+      size: mapSize, seats: MAX_SEATS, taken: seatedNow(),
+      clockLabel: CLOCK_PRESETS[clockIdx].label, fog, courier: false,
+      invite: link, at: Date.now(), roomId, gone: gone || undefined, rules: RULES_VERSION,
+    });
+  };
+  const closeWayhouse = (gone: boolean): void => {
+    if (gone && posted) postAd(true);
+    posted = false;
+    if (heartbeat !== null) window.clearInterval(heartbeat);
+    heartbeat = null;
+    wayhouse.close();
+  };
+  const sitDownElsewhere = (invite2: string): void => {
+    const parsed = parseInvite(invite2.slice(invite2.indexOf('#')));
+    if (!parsed) return;
+    closeWayhouse(posted);
+    client.close();
+    sessionStorage.setItem('rie-war', `${parsed.roomId}.${parsed.key}`);
+    void openOnlineLobby(app, parsed);
+  };
+  const renderWayhouse = (): void => {
+    if (started) return;
+    const tables = openTables(wayhouse.list(), Date.now(), roomId);
+    mount(wayEl,
+      h('h3', { class: 'settings-head' }, 'The Wayhouse — open tables'),
+      ...(tables.length === 0
+        ? [h('p', { class: 'small muted italic' },
+            'No tables at this hour. Post yours below and keep your lamp lit — or the AI rivals are always willing. Embers burn brightest on Sunday evenings.')]
+        : tables.map((ad) => {
+            const mins = Math.max(0, Math.round((Date.now() - ad.at) / 60000));
+            const foreign = ad.rules !== undefined && ad.rules !== RULES_VERSION;
+            return h('div', { class: 'lobby-row' },
+              h('b', {}, ad.name),
+              h('span', { class: 'small muted' },
+                `${ad.size} realm · ${ad.taken} of ${ad.seats} seated · ${ad.clockLabel.split(' — ')[0]}${ad.fog ? ' · fog' : ''} · ${mins < 1 ? 'just posted' : `${mins} min ago`}`),
+              foreign
+                ? h('span', { class: 'small muted italic' }, 'a different edition')
+                : h('button', { class: 'btn compact', onclick: () => sitDownElsewhere(ad.invite) }, 'Sit down'),
+            );
+          })),
+    );
+  };
+  wayhouse.onBacklogReady = renderWayhouse;
+  wayhouse.onEntry = (e) => { if (e.payload.kind === 'ad') renderWayhouse(); };
+  void wayhouse.connect();
+
   const sendHello = (seat: number | null, lordId?: string | null): void => {
     const name = nameInput.value.trim() || 'A nameless lord';
     localStorage.setItem('rie-name', name);
     // an unnamed lordId keeps the current pick; standing up clears it
     const current = tableFrom(client.list()).find((p) => p.cid === cid)?.lordId ?? null;
-    void client.send({ kind: 'hello', cid, name, seat, lordId: seat === null ? null : (lordId !== undefined ? lordId : current) });
+    void client.send({ kind: 'hello', cid, name, seat, lordId: seat === null ? null : (lordId !== undefined ? lordId : current), proto: PROTOCOL_VERSION, rules: RULES_VERSION });
   };
 
   // a renamed lord re-announces (debounced) so the table sees the new name
@@ -170,6 +238,12 @@ export async function openOnlineLobby(app: App, invite?: { roomId: string; key: 
       status.textContent = 'A war needs a second claimant — invite someone, or add an AI rival.';
       return;
     }
+    // a mixed-edition table would desync on the first act — refuse politely
+    const mismatched = seated.filter((p) => p.rules !== RULES_VERSION);
+    if (mismatched.length > 0) {
+      status.textContent = `${mismatched.map((p) => p.name).join(', ')} ${mismatched.length === 1 ? 'plays' : 'play'} a different edition of the rules — everyone must reload to the same version before the war can begin.`;
+      return;
+    }
     const seatCids = seated.map((p) => p.cid);
     const totalSeats = Math.min(MAX_SEATS, seatCids.length + aiFill);
     const players: PlayerSetup[] = [];
@@ -194,14 +268,21 @@ export async function openOnlineLobby(app: App, invite?: { roomId: string; key: 
       fogOfWar: fog,
       players,
     };
-    void client.send({ kind: 'start', settings, clock: CLOCK_PRESETS[clockIdx], seatCids });
+    void client.send({ kind: 'start', settings, clock: CLOCK_PRESETS[clockIdx], seatCids, rules: RULES_VERSION });
   };
 
   const startGame = (startEntry: NetEntry): void => {
     if (started) return;
     const payload = startEntry.payload;
     if (payload.kind !== 'start') return;
+    // an incompatible start must block HERE: replaying a foreign edition's
+    // war would silently diverge on the first rules difference
+    if (payload.rules !== undefined && payload.rules !== RULES_VERSION) {
+      status.textContent = `This war runs rules v${payload.rules}; your edition speaks v${RULES_VERSION}. Reload the page to fetch the current edition, then follow the invite again.`;
+      return;
+    }
     started = true;
+    closeWayhouse(true); // the table is no longer open; withdraw the ad
     const mySeat = payload.seatCids.indexOf(cid); // −1 = spectator, honestly
     const session: OnlineSession = {
       client,
@@ -219,6 +300,8 @@ export async function openOnlineLobby(app: App, invite?: { roomId: string; key: 
 
   const render = (): void => {
     if (started) return;
+    // a posted ad stays truthful: seats filled or freed re-announce themselves
+    if (posted && seatedNow() !== lastAdTaken) postAd();
     const peers = tableFrom(client.list());
     const seated = peers.filter((p) => p.seat !== null).sort((a, b) => (a.seat! - b.seat!));
     const unseated = peers.filter((p) => p.seat === null);
@@ -295,6 +378,28 @@ export async function openOnlineLobby(app: App, invite?: { roomId: string; key: 
             })),
             labeled('AI rivals', select(['0', '1', '2', '3'], String(aiFill), (v) => { aiFill = parseInt(v, 10); })),
             labeled('Fog of war', select(['on', 'off'], fog ? 'on' : 'off', (v) => { fog = v === 'on'; })),
+            h('label', { class: 'lobby-field', style: { cursor: 'pointer' } },
+              h('span', { class: 'small muted' }, 'Post in the Wayhouse'),
+              h('input', {
+                type: 'checkbox', checked: posted ? 'checked' : undefined,
+                onchange: (e: Event) => {
+                  posted = (e.target as HTMLInputElement).checked;
+                  if (posted) {
+                    postAd();
+                    if (heartbeat === null) heartbeat = window.setInterval(() => postAd(), AD_HEARTBEAT_MS);
+                    status.textContent = 'Posted. Anyone may sit down — a posted table is public. Untick to withdraw it.';
+                  } else {
+                    postAd(true);
+                    if (heartbeat !== null) window.clearInterval(heartbeat);
+                    heartbeat = null;
+                    status.textContent = 'Withdrawn from the Wayhouse.';
+                  }
+                },
+              }),
+            ),
+            posted && seatedNow() < 2
+              ? h('p', { class: 'small muted italic' }, 'While the lamp burns: you can always call in AI rivals and begin — a posted table never strands its host.')
+              : null,
             h('button', { class: 'btn btn-seal', style: { marginTop: '0.6rem' }, onclick: tryStart },
               'Begin the war'),
             h('p', { class: 'small muted' }, 'Unclaimed banners are dealt by fate when the war begins.'),

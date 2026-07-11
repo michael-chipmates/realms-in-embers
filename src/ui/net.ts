@@ -19,6 +19,16 @@
  *   chat    {name, text}                              — table talk
  */
 import type { Action, GameSettings } from '../engine/types';
+import { RULES_VERSION } from '../engine/state';
+
+/** Wire-protocol level. v2 (2026-07-12): hellos carry protocol+rules versions
+ * so mixed-edition tables refuse cleanly instead of desyncing; appends carry a
+ * client message id the relay dedupes, so a lost ack can never duplicate an
+ * action. Old (v1) clients ignore the new fields and still interoperate —
+ * the lobby marks them as "an older edition" and the host cannot start with
+ * them seated. */
+export const PROTOCOL_VERSION = 2;
+export { RULES_VERSION };
 
 export interface ClockConfig {
   /** Seconds added to the bank each of your turns; 0 = no clock. */
@@ -37,14 +47,59 @@ export const CLOCK_PRESETS: ClockConfig[] = [
 
 export type NetPayload =
   /** lordId rides along since the gallery (2026-07-11); old clients ignore
-   * unknown JSON fields, so the wire stays compatible in both directions. */
-  | { kind: 'hello'; cid: string; name: string; seat: number | null; lordId?: string | null }
-  | { kind: 'start'; settings: GameSettings; clock: ClockConfig; seatCids: string[] }
-  | { kind: 'act'; seat: number; action: Action }
-  | { kind: 'chat'; name: string; text: string }
-  /** A relay entry that failed to decrypt — recorded so the log has no
-   * permanent gap; every consumer skips it. */
+   * unknown JSON fields, so the wire stays compatible in both directions.
+   * `mid` (v2) is the client message id — random, meaningless, used only to
+   * spot our own echo and to let the relay drop retransmitted duplicates.
+   * `proto`/`rules` (v2) ride the hello for the compatibility handshake. */
+  | { kind: 'hello'; cid: string; name: string; seat: number | null; lordId?: string | null; proto?: number; rules?: number; mid?: string }
+  | { kind: 'start'; settings: GameSettings; clock: ClockConfig; seatCids: string[]; rules?: number; mid?: string }
+  | { kind: 'act'; seat: number; action: Action; mid?: string }
+  | { kind: 'chat'; name: string; text: string; mid?: string }
+  /** An open-table ad in the Wayhouse room (encrypted with the PUBLISHED
+   * wayhouse key — public by design; see docs/design/open-tables.md). */
+  | { kind: 'ad'; v: 1; name: string; size: GameSettings['mapSize']; seats: number; taken: number; clockLabel: string; fog: boolean; courier: boolean; invite: string; at: number; roomId: string; gone?: boolean; rules?: number; mid?: string }
+  /** A relay entry that failed to decrypt or validate — recorded so the log
+   * has no permanent gap. Every honest client holds the same key and runs
+   * the same checks on the same bytes, so every honest client tombstones the
+   * SAME entries: skipping is consistent, never a fork. */
   | { kind: 'corrupt' };
+
+/** Runtime validation of decrypted payloads: an authenticated blob can still
+ * carry malformed or oversized data from anyone holding the room key. Bounds
+ * here; legality stays with the engine (applyAction rejects illegal acts). */
+export function validatePayload(p: unknown): NetPayload | null {
+  if (typeof p !== 'object' || p === null) return null;
+  const o = p as Record<string, unknown>;
+  const str = (v: unknown, max: number): v is string => typeof v === 'string' && v.length <= max;
+  const int = (v: unknown, lo: number, hi: number): v is number => typeof v === 'number' && Number.isInteger(v) && v >= lo && v <= hi;
+  switch (o.kind) {
+    case 'hello':
+      if (!str(o.cid, 64) || !str(o.name, 48)) return null;
+      if (o.seat !== null && !int(o.seat, 0, 15)) return null;
+      return o as NetPayload;
+    case 'start': {
+      const s = o.settings as Record<string, unknown> | null;
+      if (typeof s !== 'object' || s === null) return null;
+      if (!str(s.seed, 128) || !Array.isArray(s.players) || s.players.length < 1 || s.players.length > 8) return null;
+      if (!Array.isArray(o.seatCids) || o.seatCids.length > 8 || !(o.seatCids as unknown[]).every((c) => str(c, 64))) return null;
+      if (typeof o.clock !== 'object' || o.clock === null) return null;
+      return o as NetPayload;
+    }
+    case 'act':
+      if (!int(o.seat, 0, 15)) return null;
+      if (typeof o.action !== 'object' || o.action === null || !str((o.action as Record<string, unknown>).t, 40)) return null;
+      return o as NetPayload;
+    case 'chat':
+      if (!str(o.name, 48) || !str(o.text, 500)) return null;
+      return o as NetPayload;
+    case 'ad':
+      if (!str(o.name, 40) || !str(o.invite, 300) || !str(o.roomId, 64) || !str(o.clockLabel, 60)) return null;
+      if (!int(o.seats, 1, 8) || !int(o.taken, 0, 8) || typeof o.at !== 'number') return null;
+      return o as NetPayload;
+    default:
+      return null;
+  }
+}
 
 export interface NetEntry {
   seq: number;
@@ -120,6 +175,39 @@ export function randomRoomId(): string {
   return b64(bytes);
 }
 
+/** Client message id: random, content-free, exists so the relay can drop a
+ * retransmitted append and we can spot our own echo in a backlog. */
+function newMid(): string {
+  return b64(crypto.getRandomValues(new Uint8Array(6)));
+}
+
+// ------------------------------------------------------------- the wayhouse
+/** The Wayhouse: one well-known room per relay where hosts who WANT
+ * strangers post their open tables. Its key is published on purpose —
+ * "public" is simply "everyone holds the key", which keeps one code path
+ * and keeps the relay as blind as ever. Full design:
+ * docs/design/open-tables.md. */
+export const WAYHOUSE_ROOM = 'wayhouse-v1';
+export const WAYHOUSE_KEY = '2wdsABPfe2y15qUqlwLm4A';
+/** Ads older than this are treated as cold and hidden. Hosts re-post a
+ * heartbeat while their table stays open. */
+export const AD_FRESH_MS = 30 * 60 * 1000;
+export const AD_HEARTBEAT_MS = 10 * 60 * 1000;
+
+export type WayhouseAd = Extract<NetPayload, { kind: 'ad' }>;
+
+/** Latest ad per room, freshest first; cold, closed, and full tables drop out. */
+export function openTables(entries: NetEntry[], now: number, exceptRoom?: string): WayhouseAd[] {
+  const latest = new Map<string, WayhouseAd>();
+  for (const e of entries) {
+    if (e.payload.kind === 'ad') latest.set(e.payload.roomId, e.payload); // seq order: later wins
+  }
+  return [...latest.values()]
+    .filter((ad) => !ad.gone && ad.roomId !== exceptRoom && now - ad.at < AD_FRESH_MS && ad.taken < ad.seats)
+    .sort((a, b) => b.at - a.at)
+    .slice(0, 50);
+}
+
 /** The whole invite: room id + key ride the fragment, never any wire. */
 export function inviteLink(roomId: string, key: string): string {
   const base = `${location.origin}${location.pathname}`;
@@ -143,6 +231,12 @@ export class NetClient {
   private pump: Promise<void> = Promise.resolve();
   /** Payloads composed while the socket was down; flushed after (re)join. */
   private outbox: NetPayload[] = [];
+  /** Sent-but-unechoed payloads by mid. If the socket dies between the relay
+   * storing an append and us seeing the echo, the backlog replay tells us
+   * (our mid appears) — anything still unaccounted for is retransmitted, and
+   * the relay's mid-dedupe makes retransmission a no-op if it DID land. This
+   * closes the lost-ack duplicate for good. */
+  private pending = new Map<string, NetPayload>();
   /** Decrypted entries INDEXED BY SEQ (dense from the relay; gaps only while
    * a blob is still decrypting — consumers must treat undefined as "wait"). */
   readonly entries: (NetEntry | undefined)[] = [];
@@ -204,24 +298,30 @@ export class NetClient {
     if (msg.t === 'joined' && Array.isArray(msg.log)) {
       for (let i = 0; i < msg.log.length; i++) {
         if (this.entries[i]) continue; // already decrypted (live entry beat us)
-        const payload = await decrypt(this.key!, this.roomId, msg.log[i]);
-        // an unreadable blob becomes a tombstone, not a forever-gap that
-        // would stall every consumer waiting on this seq
-        this.entries[i] = { seq: i, payload: payload ?? { kind: 'corrupt' } };
-        if (!payload) this.onError?.(`Entry ${i} of the war log could not be read and was skipped.`);
+        const payload = await this.readBlob(msg.log[i], i);
+        this.entries[i] = { seq: i, payload };
       }
       this.joined = true;
+      // settle the unacked ledger against the backlog: whatever landed is
+      // cleared; whatever didn't goes back on the wire (same mid — the relay
+      // dedupes, so this is safe even if the entry arrives twice)
+      for (const e of this.entries) {
+        const mid = e && 'mid' in e.payload ? e.payload.mid : undefined;
+        if (mid) this.pending.delete(mid);
+      }
+      const unacked = [...this.pending.values()];
+      this.pending.clear();
       this.onBacklogReady?.();
-      const pending = this.outbox.splice(0);
-      for (const payload of pending) void this.send(payload);
+      const queued = this.outbox.splice(0);
+      for (const payload of [...unacked, ...queued]) void this.send(payload);
       return;
     }
     if (msg.t === 'entry' && typeof msg.data === 'string' && typeof msg.seq === 'number') {
       if (this.entries[msg.seq]) return;
-      const payload = await decrypt(this.key!, this.roomId, msg.data);
-      const entry: NetEntry = { seq: msg.seq, payload: payload ?? { kind: 'corrupt' } };
+      const payload = await this.readBlob(msg.data, msg.seq);
+      const entry: NetEntry = { seq: msg.seq, payload };
       this.entries[msg.seq] = entry;
-      if (!payload) this.onError?.(`Entry ${msg.seq} of the war log could not be read and was skipped.`);
+      if ('mid' in payload && payload.mid) this.pending.delete(payload.mid);
       this.onEntry?.(entry);
       return;
     }
@@ -240,7 +340,18 @@ export class NetClient {
     return task;
   }
 
+  /** Decrypt + validate; anything unreadable or out of bounds becomes a
+   * tombstone. Same key + same bytes + same checks on every honest client
+   * means every honest client tombstones identically — no forks. */
+  private async readBlob(blob: string, seq: number): Promise<NetPayload> {
+    const raw = await decrypt(this.key!, this.roomId, blob);
+    const valid = raw === null ? null : validatePayload(raw);
+    if (valid === null) this.onError?.(`Entry ${seq} of the war log could not be read and was skipped.`);
+    return valid ?? { kind: 'corrupt' };
+  }
+
   private async sendNow(payload: NetPayload): Promise<void> {
+    if (payload.kind !== 'corrupt' && !payload.mid) payload = { ...payload, mid: newMid() };
     if (!this.key) { this.outbox.push(payload); return; }
     if (!this.ws || this.ws.readyState !== 1 || !this.joined) {
       this.outbox.push(payload);
@@ -252,7 +363,9 @@ export class NetClient {
       this.outbox.push(payload);
       return;
     }
-    this.ws.send(JSON.stringify({ t: 'append', data }));
+    const mid = payload.kind !== 'corrupt' ? payload.mid : undefined;
+    if (mid) this.pending.set(mid, payload);
+    this.ws.send(JSON.stringify({ t: 'append', data, mid }));
   }
 
   close(): void {
