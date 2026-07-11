@@ -49,7 +49,7 @@ if (await skip.isVisible().catch(() => false)) await skip.click();
 await page.waitForTimeout(400);
 await scan('war table');
 
-for (const [key, label] of [['l', 'ledger'], ['p', 'navigator'], ['c', 'codex'], ['?', 'keys']]) {
+for (const [key, label] of [['l', 'ledger'], ['p', 'navigator'], ['b', 'brief'], ['c', 'codex'], ['?', 'keys']]) {
   await page.keyboard.press(key);
   await page.waitForTimeout(500);
   await scan(label);

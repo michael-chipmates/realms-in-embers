@@ -512,6 +512,19 @@ details.side-section:not([open]) > summary { border-bottom: none; }
   .codex-nav-btn.active { border-left: none; border-bottom-color: var(--gold); }
 }
 
+/* ------------------------------------------------------ the Council Brief */
+
+.brief-body { display: flex; flex-direction: column; gap: 0.5rem; max-width: min(620px, 92vw); }
+.brief-card { padding: 0.55rem 0.7rem; }
+.brief-card p { margin: 0.2rem 0 0; }
+.brief-link {
+  display: flex; align-items: center; gap: 0.3rem; width: 100%;
+  border: none; background: transparent; color: var(--gold);
+  padding: 0.25rem 0; text-align: left; cursor: pointer; font-size: 0.86rem;
+}
+.brief-link:hover { color: var(--gold-bright); }
+.brief-intents { display: flex; flex-wrap: wrap; gap: 0.25rem; margin-top: 0.35rem; }
+
 /* -------------------------------------------------- NET-033 desync freeze */
 
 .desync-veil {

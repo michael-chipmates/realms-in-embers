@@ -28,6 +28,7 @@ import { renderChronicleFeed } from '../panels/chronicleFeed';
 import { openCourtOverlay, openDiplomacyOverlay, openLedgerOverlay, openMagicOverlay, openQuestsOverlay, openMenuOverlay } from '../panels/overlays';
 import { openCodexOverlay } from '../panels/codex';
 import { openKeysOverlay, openNavigatorOverlay } from '../panels/navigator';
+import { openBriefOverlay, seasonOmissions } from '../panels/brief';
 import { anyModalOpen, closeAllModals, openModal } from '../modal';
 import { openBattleReport } from './battleReport';
 import { maybeOpenEventModal } from './eventModal';
@@ -1172,6 +1173,9 @@ export class GameScreen {
       ),
       h('div', { class: 'topbar-stats' }, goldEl, emberEl, seasonEl),
       h('div', { class: 'topbar-actions' },
+        this.iconAction('scale', 'The Council Brief — the season at a glance',
+          () => openBriefOverlay(this),
+          seasonOmissions(this).length > 0 ? String(seasonOmissions(this).length) : undefined),
         this.iconAction('hero', 'Court & heroes', () => openCourtOverlay(this), heroesReady > 0 ? String(heroesReady) : undefined),
         this.iconAction('ember', 'Magic & rites', () => openMagicOverlay(this)),
         this.iconAction('quest', 'Quests & the Saga', () => openQuestsOverlay(this)),
@@ -1198,16 +1202,29 @@ export class GameScreen {
       this.online && this.online.clock.perTurn > 0
         ? (this.clockEl = h('div', { class: 'stat turn-clock', 'aria-label': 'Season clock' }))
         : null,
-      h('button', {
-        class: 'btn btn-seal end-turn',
-        disabled: this.aiRunning || this.state.phase === 'ended' || this.current().kind !== 'human'
-          || (this.online !== null && this.state.current !== this.online.mySeat),
-        onclick: () => void this.endTurn(),
-      }, this.aiRunning
-        ? 'The rivals move…'
-        : this.online && this.state.current !== this.online.mySeat && this.state.phase === 'playing'
-          ? `${LORD_BY_ID[this.current().lordId].name.split(' ')[0]} moves…`
-          : 'End the Season'),
+      (() => {
+        const btn = h('button', {
+          class: 'btn btn-seal end-turn',
+          disabled: this.aiRunning || this.state.phase === 'ended' || this.current().kind !== 'human'
+            || (this.online !== null && this.state.current !== this.online.mySeat),
+          onclick: () => void this.endTurn(),
+        }, this.aiRunning
+          ? 'The rivals move…'
+          : this.online && this.state.current !== this.online.mySeat && this.state.phase === 'playing'
+            ? `${LORD_BY_ID[this.current().lordId].name.split(' ')[0]} moves…`
+            : 'End the Season');
+        // the restrained checklist: only true omissions, only as a whisper —
+        // the button never blocks, the tooltip names what the season leaves
+        tip(btn, () => {
+          const left = seasonOmissions(this);
+          if (left.length === 0) return 'The desk is clear.';
+          return h('div', { class: 'tip-plain' },
+            h('b', {}, 'The season would leave behind:'),
+            ...left.map((o) => h('p', { class: 'small' }, `· ${o.text}`)),
+          );
+        });
+        return btn;
+      })(),
     );
     // Update the live region's text only now that it is back in the DOM, and
     // only when the season actually changed: mutations inside an attached
@@ -1306,6 +1323,9 @@ export class GameScreen {
         break;
       case 'p':
         openNavigatorOverlay(this);
+        break;
+      case 'b':
+        openBriefOverlay(this);
         break;
       case 'c':
         openCodexOverlay(this);

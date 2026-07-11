@@ -107,6 +107,25 @@ await page.keyboard.press('Escape');
 await page.keyboard.press('Escape');
 await page.waitForTimeout(200);
 
+// the Council Brief: forecast, developments, open items, race, intention —
+// and its deep-links must land on the surface that acts
+await page.keyboard.press('b');
+await page.waitForTimeout(500);
+const briefText = await page.locator('.brief-body').textContent();
+for (const needle of ['The season ahead', 'Developments', 'Standing open', 'The race', 'The intention']) {
+  if (!briefText.includes(needle)) { console.error(`brief is missing its "${needle}" card`); process.exit(1); }
+}
+if (!/Next season brings/.test(briefText)) { console.error('brief has no resource forecast'); process.exit(1); }
+await page.screenshot({ path: `${outdir}/9c-brief.png` });
+const ledgerLink = page.locator('.brief-link', { hasText: 'Ledger' });
+await ledgerLink.click();
+await page.waitForTimeout(400);
+if (!(await page.getByText('The Realm Ledger').isVisible().catch(() => false))) {
+  console.error('brief deep-link did not open the Ledger'); process.exit(1);
+}
+await page.keyboard.press('Escape');
+await page.waitForTimeout(200);
+
 // end a turn and let the AI move
 await page.keyboard.press('e');
 await page.waitForTimeout(3500);

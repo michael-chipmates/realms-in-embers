@@ -23,6 +23,7 @@ export function openKeysOverlay(screen: GameScreen): void {
   void screen;
   const KEYS: [string, string][] = [
     ['E', 'End the Season'],
+    ['B', 'The Council Brief'],
     ['H', 'Court & heroes'],
     ['M', 'Magic & rites'],
     ['Q', 'Quests & the Saga'],
