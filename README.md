@@ -21,7 +21,7 @@
 
 ## Play
 
-**[realms-in-embers.pages.dev](https://realms-in-embers.pages.dev)** — free, no account, nothing to install. Works on phones, installs from the browser as an app, and the whole game keeps working offline after the first load. A full campaign fills an evening; a short chronicle fits a lunch break.
+**[rie.gg](https://rie.gg)** — free, no account, nothing to install. ([realmsinembers.com](https://realmsinembers.com) gets you there too.) Works on phones, installs from the browser as an app, and the whole game keeps working offline after the first load. A full campaign fills an evening; a short chronicle fits a lunch break.
 
 ## The game in one paragraph
 
