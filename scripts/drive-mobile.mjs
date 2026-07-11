@@ -9,6 +9,24 @@ page.on('pageerror', (e) => errors.push(String(e)));
 await page.goto(url, { waitUntil: 'networkidle' });
 await page.getByRole('button', { name: 'New Chronicle' }).click();
 await page.waitForTimeout(500);
+
+// Michel's phone bugs (2026-07-11): setup must fit the viewport width and
+// must scroll under a real touch gesture; the sheet must too (below).
+const cdp = await page.context().newCDPSession(page);
+const touchScroll = async (x, y, dy) => {
+  await cdp.send('Input.synthesizeScrollGesture', { x, y, yDistance: dy, speed: 800, gestureSourceType: 'touch' });
+  await page.waitForTimeout(350);
+};
+const wide = await page.evaluate(() =>
+  [...document.querySelectorAll('.setup-screen *')]
+    .filter((n) => n.getBoundingClientRect().right > window.innerWidth + 1 && n.getBoundingClientRect().width > 30)
+    .map((n) => `${n.tagName}.${n.className}`).slice(0, 8));
+if (wide.length) { console.error('setup overflows viewport width:', wide); process.exit(1); }
+await touchScroll(200, 500, -300);
+const setupScrolled = await page.evaluate(() => document.querySelector('.setup-screen').scrollTop);
+if (setupScrolled === 0) { console.error('setup did not scroll under touch'); process.exit(1); }
+await touchScroll(200, 400, 600); // back to the top
+
 await page.locator('#setup-seed').fill('mobile-loop-4');
 await page.waitForTimeout(300);
 await page.screenshot({ path: `${outdir}/m1-setup.png` });
@@ -29,6 +47,21 @@ const seat = await page.evaluate(() => {
 await page.touchscreen.tap(seat.x, seat.y);
 await page.waitForTimeout(500);
 await page.screenshot({ path: `${outdir}/m2-province-sheet.png` });
+
+// the bottom sheet: must be its own touch surface (pointer-events auto) and
+// must scroll so recruit/move/build stay reachable on phones
+const sheetCheck = await page.evaluate(() => {
+  const el = document.querySelector('.side-panel');
+  const cs = getComputedStyle(el);
+  return { pe: cs.pointerEvents, top: el.getBoundingClientRect().top, scrollable: el.scrollHeight > el.clientHeight };
+});
+if (sheetCheck.pe !== 'auto') { console.error('sheet is not a touch surface (pointer-events)'); process.exit(1); }
+if (sheetCheck.scrollable) {
+  await touchScroll(195, sheetCheck.top + 120, -200);
+  const sheetScrolled = await page.evaluate(() => document.querySelector('.side-panel').scrollTop);
+  if (sheetScrolled === 0) { console.error('sheet did not scroll under touch'); process.exit(1); }
+  await touchScroll(195, sheetCheck.top + 120, 400);
+}
 
 // select army + tap a hostile target -> odds modal
 const target = await page.evaluate(() => {

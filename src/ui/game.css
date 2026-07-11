@@ -57,34 +57,40 @@ body:not(.reduced-motion) .title-main {
   flex-wrap: wrap;
 }
 .setup-grid {
-  display: grid; grid-template-columns: minmax(360px, 460px) 1fr;
+  /* minmax(0, 1fr), never bare 1fr: a bare 1fr track's auto minimum inherits
+     the max-content width of the non-wrapping config row, which blew the whole
+     column out to ~780px on a 390px phone and clipped it (Michel, 2026-07-11) */
+  display: grid; grid-template-columns: minmax(360px, 460px) minmax(0, 1fr);
   gap: 1rem; padding: 0 1rem 1rem; flex: 1; min-height: 0;
   position: relative; z-index: 1;
 }
 .setup-left {
-  overflow-y: auto; min-height: 0; padding-right: 0.3rem;
+  overflow-y: auto; min-height: 0; min-width: 0; padding-right: 0.3rem;
   scrollbar-width: thin; scrollbar-color: var(--gold-dim) transparent;
 }
 .setup-config {
   padding: 0.7rem 0.9rem; display: flex; gap: 0.7rem;
   flex-wrap: wrap; align-items: flex-end;
 }
+.setup-config .field { min-width: 0; max-width: 100%; }
+.setup-config .input, .setup-config select { max-width: 100%; }
 .setup-config .input { min-height: 40px; }
 .setup-right { min-height: 240px; }
 @media (max-width: 1000px) {
   /* the screen itself scrolls; body stays clipped, so height must remain fixed */
-  .setup-screen { overflow-y: auto; }
-  .setup-grid { grid-template-columns: 1fr; flex: none; }
+  .setup-screen { overflow-y: auto; overscroll-behavior: contain; }
+  .setup-grid { grid-template-columns: minmax(0, 1fr); flex: none; }
   .setup-left { overflow: visible; }
   .setup-right { min-height: 300px; height: 46vh; }
 }
 .setup-players { display: flex; flex-direction: column; }
 .setup-player-row {
   display: flex; gap: 0.45rem; align-items: center;
-  padding: 0.35rem 0.9rem;
+  padding: 0.35rem 0.9rem; flex-wrap: wrap;
 }
 .setup-player-row select { min-height: 38px; }
-.setup-player-row select:nth-of-type(2) { flex: 1; min-width: 0; }
+/* the lord select claims a readable line: wraps whole rather than truncating */
+.setup-player-row select:nth-of-type(2) { flex: 1 1 190px; min-width: 0; }
 .creed-dot {
   width: 14px; height: 14px; border-radius: 50%;
   border: 1px solid rgba(0, 0, 0, 0.5); flex-shrink: 0;
@@ -97,6 +103,11 @@ body:not(.reduced-motion) .title-main {
 .victory-option { display: flex; gap: 0.5rem; align-items: center; min-height: 38px; cursor: pointer; }
 .input.compact { min-height: 36px; padding: 0.25rem 0.4rem; font-size: 0.9rem; }
 .btn.compact { min-height: 34px; padding: 0.25rem 0.7rem; font-size: 0.88rem; }
+/* iOS Safari auto-zooms (and stays zoomed) when a focused control is under
+   16px — on touch devices every form control clears that bar */
+@media (pointer: coarse) {
+  input.input, select.input, .input.compact, textarea.input { font-size: max(16px, 1rem); }
+}
 
 /* ---------------------------------------------------------- game shell */
 
@@ -627,6 +638,12 @@ body.reduced-motion .battle-round-live .battle-round-losses .neg { animation: no
     left: 0; right: 0; top: auto; bottom: 0; width: 100%;
     max-height: 42vh; padding: 0.3rem 0.5rem calc(0.5rem + env(safe-area-inset-bottom));
     background: linear-gradient(0deg, rgba(10, 7, 3, 0.92) 75%, transparent);
+    /* On phones the sheet is a solid surface, so it takes its own touches:
+       iOS refuses touch-scrolling a pointer-events:none container (Chrome
+       allows it, which is why drives never caught this — Michel, 2026-07-11).
+       Bonus: no more tap-through misclicks onto the map between cards. */
+    pointer-events: auto; overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
   }
   .sheet-handle {
     display: flex; flex-direction: column; align-items: center; gap: 0.15rem;
