@@ -13,6 +13,7 @@ import { HERO_CLASSES, MAX_HERO_LEVEL, xpForLevel } from '../../engine/heroes';
 import { SKILLS, SKILLS_BY_CLASS, SKILL_LEVELS } from '../../engine/content/skills';
 import { ARTIFACTS, ARTIFACT_IDS } from '../../engine/content/artifacts';
 import { QUESTS, SAGA_QUESTS, TIER_DEATH_RISK, TIER_NAMES } from '../../engine/content/quests';
+import { LORDS } from '../../engine/content/lords';
 import { TAX_FX } from '../../engine/economy';
 import { TEACHINGS } from '../../engine/teachings';
 import {
@@ -30,7 +31,7 @@ import type { GameScreen } from '../screens/game';
 
 export type CodexSection =
   | 'battle' | 'units' | 'works' | 'realm' | 'magic' | 'heroes'
-  | 'quests' | 'artifacts' | 'lords' | 'enchant' | 'victory' | 'marginalia';
+  | 'quests' | 'artifacts' | 'twelve' | 'lords' | 'enchant' | 'victory' | 'marginalia';
 
 const SECTIONS: { id: CodexSection; icon: string; title: string }[] = [
   { id: 'battle', icon: 'swords', title: 'The Field of Battle' },
@@ -41,6 +42,7 @@ const SECTIONS: { id: CodexSection; icon: string; title: string }[] = [
   { id: 'heroes', icon: 'hero', title: 'The Court' },
   { id: 'quests', icon: 'quest', title: 'Quests & the Saga' },
   { id: 'artifacts', icon: 'vault', title: 'Artifacts' },
+  { id: 'twelve', icon: 'crownSmall', title: 'The Twelve Lords' },
   { id: 'lords', icon: 'handshake', title: 'The Other Lords' },
   { id: 'enchant', icon: 'ward', title: 'Enchantments' },
   { id: 'victory', icon: 'laurel', title: 'The Five Endings' },
@@ -385,6 +387,26 @@ function renderArtifacts(): HTMLElement {
   );
 }
 
+// ------------------------------------------------------------------ twelve
+
+function renderTwelve(): HTMLElement {
+  return h('div', {},
+    para('Twelve claimants, and no two play alike. Each carries two abilities: a legacy that is always true of them, and a signature — one order that is theirs alone, used on a cooldown, and loud enough that the whole realm hears it. A rival’s card on the Lords screen (d) shows both, and whether their signature is ready. Nothing here is hidden from anyone.'),
+    ...LORDS.map((lord) => h('div', { class: 'codex-entry' },
+      artSlot(`lord-${lord.id}`, h('span', { class: 'codex-entry-glyph', html: iconSvg('crownSmall', 22) }), { className: 'art-codex-entry', alt: lord.name }),
+      h('div', { class: 'codex-entry-body' },
+        h('div', { class: 'codex-entry-title' }, `${lord.name}, ${lord.epithet}`,
+          h('span', { class: 'small muted' }, ` ${CREEDS[lord.creed].name} · favors ${TERRAIN[lord.favoredTerrain].name}`)),
+        h('p', { class: 'small' }, lord.blurb),
+        h('p', { class: 'small trait-line' }, h('b', {}, `${lord.perk.label} (legacy). `), lord.perk.desc),
+        h('p', { class: 'small trait-line' }, h('b', {}, `${lord.signature.name} (signature, every ${lord.signature.cooldown + 1} seasons). `),
+          lord.signature.desc),
+        h('p', { class: 'small italic muted' }, lord.signature.flavor),
+      ),
+    )),
+  );
+}
+
 // ------------------------------------------------------------------- lords
 
 function renderLords(): HTMLElement {
@@ -481,6 +503,7 @@ const RENDERERS: Record<CodexSection, (screen: GameScreen) => HTMLElement> = {
   heroes: () => renderHeroes(),
   quests: () => renderQuests(),
   artifacts: () => renderArtifacts(),
+  twelve: () => renderTwelve(),
   lords: () => renderLords(),
   enchant: () => renderEnchant(),
   victory: (screen) => renderVictory(screen),

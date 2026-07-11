@@ -52,6 +52,8 @@ export function deserializeGame(json: string): GameState {
     || !Array.isArray(state.rng) || !Array.isArray(state.provinces)) {
     throw new Error('The save is damaged or from a newer age — the chronicle cannot be reopened.');
   }
+  // saves from before rules v11 predate signature abilities
+  for (const p of state.players) p.signatureCooldownLeft ??= 0;
   return state;
 }
 

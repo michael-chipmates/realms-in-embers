@@ -14,6 +14,7 @@ import {
   addDeed, armiesIn, atWar, getStance, lordName, lordOf, setStance,
 } from './helpers';
 import { say, scribe } from './narrator';
+import { applySignature, signatureSeasonActive } from './signature';
 import { teach } from './teachings';
 import { Rng } from './rng';
 import { beginTurn, endTurnAdvance } from './turn';
@@ -72,11 +73,14 @@ export function moveTargets(state: GameState, army: Army): MoveTarget[] {
     seen.add(n);
   }
 
-  // road march: origin (yours, roads) -> intermediate (yours, roads, calm) -> its neighbors
-  if (pid >= 0 && origin.owner === pid && origin.buildings.includes('roads')) {
+  // road march: origin (yours, roads) -> intermediate (yours, roads, calm) -> its neighbors.
+  // Ulvra's Deep Roads open the same second step everywhere for one season.
+  const deepRoads = pid >= 0 && signatureSeasonActive(state, pid) && lordOf(state.players[pid]).signature.id === 'deepRoads';
+  if (pid >= 0 && origin.owner === pid && (origin.buildings.includes('roads') || deepRoads)) {
     for (const mid of origin.neighbors) {
       const m = state.provinces[mid];
-      if (m.owner !== pid || !m.buildings.includes('roads')) continue;
+      if (m.owner !== pid) continue;
+      if (!deepRoads && (!m.buildings.includes('roads') || !origin.buildings.includes('roads'))) continue;
       if (armiesIn(state, mid).some((a) => hostileTo(state, pid, a.owner))) continue;
       for (const far of m.neighbors) {
         if (far === origin.id || seen.has(far)) continue;
@@ -384,6 +388,14 @@ export function applyAction(state: GameState, action: Action): ActionResult {
     case 'castSpell':
     case 'eventChoice': {
       return applyAdvancedAction(state, rng, pid, action, effects);
+    }
+
+    case 'signature': {
+      const result = applySignature(state, rng, pid, action);
+      if (!result.ok) return fail(result.error);
+      effects.push(...result.effects);
+      log(state, action);
+      return { ok: true, effects };
     }
 
     default:

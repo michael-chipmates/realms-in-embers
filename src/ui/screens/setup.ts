@@ -143,7 +143,8 @@ export function renderSetup(app: App, presetSeed?: string): void {
           tip(row, () => h('div', { class: 'tip-plain', style: { maxWidth: '300px' } },
             h('strong', {}, `${lord.name}, ${lord.epithet}`),
             h('p', { class: 'small', style: { margin: '0.3em 0' } }, lord.blurb),
-            h('p', { class: 'small' }, h('em', {}, `${lord.perk.label}: `), lord.perk.desc),
+            h('p', { class: 'small' }, h('em', {}, `${lord.perk.label} (legacy): `), lord.perk.desc),
+            h('p', { class: 'small' }, h('em', {}, `${lord.signature.name} (signature): `), lord.signature.desc),
           ));
         }
         return row;

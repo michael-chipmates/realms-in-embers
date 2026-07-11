@@ -58,6 +58,8 @@ export class GameScreen {
   private keyHandler = (e: KeyboardEvent): void => this.onKey(e);
   private mapDirty = true;
   pendingSpell: SpellId | null = null;
+  /** The lord's signature is armed and waits for a province on the map. */
+  pendingSignature = false;
   /** Mobile: the selection bottom-sheet collapsed to a slim bar. */
   sheetCollapsed = false;
   /** Online war session; null for local/hotseat play. */
@@ -537,6 +539,16 @@ export class GameScreen {
       }
       return;
     }
+    // the signature is armed: this click names its province
+    if (this.pendingSignature && pid === null) {
+      this.clearSignatureTargeting();
+      return;
+    }
+    if (this.pendingSignature && pid !== null) {
+      this.clearSignatureTargeting();
+      this.dispatch({ t: 'signature', province: pid });
+      return;
+    }
     if (pid === null) {
       this.select(null, null);
       return;
@@ -856,6 +868,30 @@ export class GameScreen {
           if (effect.by === viewer && !this.catchingUp) audio.spell(SPELLS[effect.spell].fxFamily);
           break;
         }
+        case 'signature': {
+          if (this.catchingUp) break;
+          const caster = this.state.players[effect.by];
+          const lord = LORD_BY_ID[caster.lordId];
+          const family = lord.signature.fxFamily;
+          if (effect.by === viewer) audio.spell(family);
+          // the theater: realm-wide signatures wash over the caster's land,
+          // targeted ones land on their mark — visible ground only
+          const visible = (p: number): boolean =>
+            !this.state.settings.fogOfWar || seenBy(this.state, viewer).has(p);
+          const stages: number[] = effect.province !== null
+            ? [effect.province]
+            : this.state.provinces.filter((p) => p.owner === effect.by).map((p) => p.id).slice(0, 8);
+          stages.filter(visible).forEach((p, i) => {
+            window.setTimeout(() => { if (!this.disposed) this.addSpellFx(p, family); }, i * 70);
+          });
+          if (effect.by !== viewer) {
+            const where = effect.province !== null ? ` — ${this.state.provinces[effect.province].name}` : '';
+            const target = effect.province;
+            this.toast(`${lord.name}: ${lord.signature.name}${where}!`, 'war',
+              target !== null ? () => this.panTo(target) : undefined);
+          }
+          break;
+        }
         case 'spellCast': {
           if (this.catchingUp) break;
           const def = SPELLS[effect.spell];
@@ -917,6 +953,72 @@ export class GameScreen {
     this.hideAiBanner();
   }
 
+  // -------------------------------------------------- the lord's signature
+
+  /** The seal modal: the ability card, and the way to use it. */
+  openSignatureModal(): void {
+    const state = this.state;
+    const viewer = state.players[this.viewerId()];
+    const lord = LORD_BY_ID[viewer.lordId];
+    const sig = lord.signature;
+    const cd = viewer.signatureCooldownLeft ?? 0;
+    const canAct = this.current().kind === 'human' && state.current === this.viewerId()
+      && state.phase === 'playing' && (this.online === null || state.current === this.online.mySeat);
+    const ready = canAct && cd === 0;
+
+    const body = h('div', { class: 'signature-body' },
+      h('div', { class: 'signature-head' },
+        sigilShield(viewer.lordId, 40),
+        h('div', {},
+          h('div', { class: 'side-card-title' }, sig.name),
+          h('div', { class: 'small muted' }, `${lord.name}'s signature · returns ${sig.cooldown} seasons after use`),
+        ),
+      ),
+      h('p', { class: 'codex-p' }, sig.desc),
+      h('p', { class: 'small italic muted' }, sig.flavor),
+      cd > 0 ? h('p', { class: 'small' }, `It gathers strength for ${cd} more ${cd === 1 ? 'season' : 'seasons'}.`) : null,
+    );
+
+    const modal = openModal('The Signature', body, {});
+    if (!ready) return;
+
+    if (sig.target === 'none') {
+      body.appendChild(h('button', {
+        class: 'btn btn-seal', style: { marginTop: '0.6rem' },
+        onclick: () => {
+          modal.close();
+          this.dispatch({ t: 'signature' });
+        },
+      }, `${sig.name} — now`));
+    } else if (sig.target === 'rival') {
+      body.appendChild(h('p', { class: 'small muted', style: { marginTop: '0.5rem' } }, 'Against whom?'));
+      for (const rival of state.players.filter((p) => p.alive && p.id !== viewer.id)) {
+        const rl = LORD_BY_ID[rival.lordId];
+        body.appendChild(h('button', {
+          class: 'btn', style: { marginTop: '0.3rem', width: '100%', justifyContent: 'flex-start' },
+          onclick: () => {
+            modal.close();
+            this.dispatch({ t: 'signature', targetPlayer: rival.id });
+          },
+        }, sigilShield(rival.lordId, 22), ` ${rl.name}, ${rl.epithet}`));
+      }
+    } else {
+      body.appendChild(h('button', {
+        class: 'btn btn-seal', style: { marginTop: '0.6rem' },
+        onclick: () => {
+          modal.close();
+          this.pendingSignature = true;
+          this.showAiBanner(`Choose a rival province bordering your realm for ${sig.name} — Esc lets it rest.`);
+        },
+      }, `${sig.name} — choose the province`));
+    }
+  }
+
+  private clearSignatureTargeting(): void {
+    this.pendingSignature = false;
+    this.hideAiBanner();
+  }
+
   // ------------------------------------------------------------ renders
 
   refresh(): void {
@@ -965,6 +1067,21 @@ export class GameScreen {
         this.iconAction('handshake', 'The other lords', () => openDiplomacyOverlay(this)),
         this.iconAction('book', 'Ledger & victory', () => openLedgerOverlay(this)),
         this.iconAction('codex', 'The Codex — every rule of the realm', () => openCodexOverlay(this)),
+        (() => {
+          const cd = viewer.signatureCooldownLeft ?? 0;
+          const btn = h('button', {
+            class: `btn btn-quiet topbar-icon signature-btn ${cd === 0 ? 'signature-ready' : ''}`,
+            'aria-label': `${lord.signature.name} — your signature`,
+            onclick: () => this.openSignatureModal(),
+          }, sigilShield(viewer.lordId, 20));
+          if (cd > 0) btn.appendChild(h('span', { class: 'badge badge-quiet' }, String(cd)));
+          tip(btn, () => h('div', { class: 'tip-plain' },
+            h('b', {}, `${lord.signature.name} — your signature`),
+            h('p', { class: 'small' }, lord.signature.desc),
+            h('p', { class: 'small muted' }, cd === 0 ? 'Ready.' : `Returns in ${cd} ${cd === 1 ? 'season' : 'seasons'}.`),
+          ));
+          return btn;
+        })(),
       ),
       this.online && this.online.clock.perTurn > 0
         ? (this.clockEl = h('div', { class: 'stat turn-clock', 'aria-label': 'Season clock' }))
@@ -1072,6 +1189,8 @@ export class GameScreen {
       case 'escape':
         if (this.pendingSpell !== null) {
           this.clearSpellTargeting();
+        } else if (this.pendingSignature) {
+          this.clearSignatureTargeting();
         } else {
           this.select(null, null);
         }

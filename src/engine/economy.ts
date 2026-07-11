@@ -8,7 +8,8 @@ import { BUILDINGS, CREEDS, COASTAL_INCOME, TERRAIN } from './content/world';
 import { UNITS } from './content/units';
 import { HERO_CLASSES } from './heroes';
 import { heroDerived } from './heroFx';
-import { armiesIn, armiesOf, clamp, creedOf, heroesOf, heroProvince, lordOf, provincesOf } from './helpers';
+import { armiesIn, armiesOf, clamp, creedOf, heroesOf, heroProvince, lordName, lordOf, provincesOf } from './helpers';
+import { SIGNATURE_TUNING } from './signature';
 import type { GameState, IncomeReport, Player, PlayerId, Province, TaxLevel } from './types';
 
 export const TAX_FX: Record<TaxLevel, { mult: number; order: number; label: string }> = {
@@ -128,6 +129,12 @@ export function incomeReport(state: GameState, pid: PlayerId): IncomeReport {
   if (player.handicap.incomeMult !== 1) {
     const delta = Math.round(gross * (player.handicap.incomeMult - 1));
     lines.push({ label: `Handicap (${player.handicap.incomeMult > 1 ? '+' : ''}${Math.round((player.handicap.incomeMult - 1) * 100)}%)`, amount: delta });
+    gross += delta;
+  }
+  if (player.embargo && player.embargo.turnsLeft > 0) {
+    const cut = SIGNATURE_TUNING.branwen.incomeCutPct / 100;
+    const delta = -Math.round(gross * cut);
+    lines.push({ label: `The Embargo — ${lordName(state, player.embargo.by)} closed the salt roads (−${SIGNATURE_TUNING.branwen.incomeCutPct}%)`, amount: delta });
     gross += delta;
   }
   const upkeep = upkeepOf(state, pid);

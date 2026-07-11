@@ -5,6 +5,8 @@ import { incomeReport, orderDrift, provinceIncome } from '../src/engine/economy'
 import { defaultSettings } from '../src/engine/state';
 import { makeUnits, newArmy } from '../src/engine/helpers';
 import { EVENT_BY_ID } from '../src/engine/content/events';
+import { LORD_BY_ID } from '../src/engine/content/lords';
+import { SIGNATURE_TUNING } from '../src/engine/signature';
 import { Rng } from '../src/engine/rng';
 import type { GameSettings, GameState } from '../src/engine/types';
 
@@ -368,6 +370,164 @@ describe('spell theater provenance', () => {
     expect(mod.spellId).toBeUndefined();
     const r = applyAction(revived, { t: 'endTurn' });
     expect(r.ok).toBe(true);
+  });
+});
+
+describe('signature abilities', () => {
+  function gameWithLords(seed: string, lordIds: string[]): GameState {
+    const s: GameSettings = { ...defaultSettings(), seed };
+    s.players = lordIds.map((lordId) => ({ kind: 'ai' as const, lordId, difficulty: 'knight' as const }));
+    return createGame(s).state;
+  }
+
+  it('every signature desc states the numbers the engine uses', () => {
+    const T = SIGNATURE_TUNING;
+    const descOf = (id: string): string => LORD_BY_ID[id].signature.desc;
+    expect(descOf('seraphine')).toContain(`+${T.seraphine.order}`);
+    expect(descOf('halvard')).toContain(`${Math.round(T.halvard.defense * 100)}%`);
+    expect(descOf('lyra')).toContain(`+${T.lyra.atkPct}%`);
+    expect(descOf('lyra')).toContain(`${T.lyra.seasons} seasons`);
+    expect(descOf('maera')).toContain(`${Math.round(T.maera.defense * 100)}%`);
+    expect(descOf('maera')).toContain(`${T.maera.seasons} seasons`);
+    expect(descOf('cormac')).toContain(`+${Math.round((T.cormac.atkMult - 1) * 100)}%`);
+    expect(descOf('branwen')).toContain(`${T.branwen.incomeCutPct}%`);
+    expect(descOf('branwen')).toContain(`${T.branwen.seasons} seasons`);
+    expect(descOf('corvas')).toContain(`${T.corvas.treasuryPct}%`);
+    expect(descOf('nyssa')).toContain(`${T.nyssa.order} order`);
+    expect(descOf('morrikan')).toContain(`−${T.morrikan.orderCost}`);
+    expect(descOf('vaelia')).toContain(`${T.vaelia.seasons} seasons`);
+    for (const id of Object.keys(T)) {
+      expect(LORD_BY_ID[id].signature.cooldown).toBe(T[id as keyof typeof T].cooldown);
+    }
+  });
+
+  it('the Great Vigil lifts order everywhere and starts the cooldown', () => {
+    const state = gameWithLords('sig-vigil', ['seraphine', 'aldric', 'vaelia']);
+    const mine = state.provinces.filter((p) => p.owner === 0);
+    const before = mine.map((p) => p.order);
+    const r = applyAction(state, { t: 'signature' });
+    expect(r.ok).toBe(true);
+    mine.forEach((p, i) => expect(p.order).toBe(Math.min(100, before[i] + SIGNATURE_TUNING.seraphine.order)));
+    expect(state.players[0].signatureCooldownLeft).toBe(SIGNATURE_TUNING.seraphine.cooldown);
+    const again = applyAction(state, { t: 'signature' });
+    expect(again.ok).toBe(false);
+  });
+
+  it('the cooldown ticks down at the lord’s own seasons', () => {
+    const state = gameWithLords('sig-cd', ['seraphine', 'aldric', 'vaelia']);
+    applyAction(state, { t: 'signature' });
+    const start = state.players[0].signatureCooldownLeft;
+    cycleTo(state, 0);
+    expect(state.players[0].signatureCooldownLeft).toBe(start - 1);
+  });
+
+  it('Royal Muster raises knights at the seat, free', () => {
+    const state = gameWithLords('sig-muster', ['aldric', 'seraphine', 'vaelia']);
+    const gold = state.players[0].gold;
+    const r = applyAction(state, { t: 'signature' });
+    expect(r.ok).toBe(true);
+    const seatArmies = Object.values(state.armies).filter((a) => a.owner === 0 && a.province === state.players[0].seatProvince);
+    expect(seatArmies.some((a) => a.units.some((u) => u.type === 'knights'))).toBe(true);
+    expect(state.players[0].gold).toBe(gold);
+  });
+
+  it('Stand Fast wards every province for one season', () => {
+    const state = gameWithLords('sig-stand', ['halvard', 'seraphine', 'vaelia']);
+    const r = applyAction(state, { t: 'signature' });
+    expect(r.ok).toBe(true);
+    const mine = state.provinces.filter((p) => p.owner === 0);
+    for (const p of mine) {
+      const mod = p.mods.find((m) => m.label === 'Stand Fast');
+      expect(mod).toBeDefined();
+      expect(mod!.defense).toBe(SIGNATURE_TUNING.halvard.defense);
+      expect(mod!.fam).toBe('ward');
+    }
+  });
+
+  it('the Dawn Oath needs a rival and burns out on schedule', () => {
+    const state = gameWithLords('sig-oath', ['lyra', 'vaelia', 'corvas']);
+    expect(applyAction(state, { t: 'signature' }).ok).toBe(false);
+    const r = applyAction(state, { t: 'signature', targetPlayer: 1 });
+    expect(r.ok).toBe(true);
+    expect(state.players[0].crusade).toEqual({ target: 1, turnsLeft: SIGNATURE_TUNING.lyra.seasons });
+    for (let i = 0; i < SIGNATURE_TUNING.lyra.seasons; i++) cycleTo(state, 0);
+    expect(state.players[0].crusade).toBeNull();
+  });
+
+  it('the Deep Roads reach further for one season', () => {
+    const state = gameWithLords('sig-roads', ['ulvra', 'seraphine', 'vaelia']);
+    const army = Object.values(state.armies).find((a) => a.owner === 0)!;
+    const before = moveTargets(state, army).length;
+    const r = applyAction(state, { t: 'signature' });
+    expect(r.ok).toBe(true);
+    expect(moveTargets(state, army).length).toBeGreaterThanOrEqual(before);
+  });
+
+  it('the Embargo cuts the victim’s income and is itemized honestly', () => {
+    const state = gameWithLords('sig-embargo', ['branwen', 'corvas', 'vaelia']);
+    const before = incomeReport(state, 1).gold;
+    const r = applyAction(state, { t: 'signature', targetPlayer: 1 });
+    expect(r.ok).toBe(true);
+    const after = incomeReport(state, 1);
+    expect(after.gold).toBeLessThan(before);
+    expect(after.lines.some((l) => l.label.includes('Embargo'))).toBe(true);
+  });
+
+  it('Call in the Debts moves treasury from every rival', () => {
+    const state = gameWithLords('sig-debts', ['corvas', 'branwen', 'vaelia']);
+    state.players[1].gold = 200;
+    state.players[2].gold = 100;
+    const mine = state.players[0].gold;
+    const r = applyAction(state, { t: 'signature' });
+    expect(r.ok).toBe(true);
+    expect(state.players[1].gold).toBe(200 - 12);
+    expect(state.players[2].gold).toBe(100 - 6);
+    expect(state.players[0].gold).toBe(mine + 18);
+  });
+
+  it('a Whisper Campaign needs a bordering rival province', () => {
+    const state = gameWithLords('sig-whisper', ['nyssa', 'seraphine', 'vaelia']);
+    const bordering = state.provinces.find((p) =>
+      p.owner > 0 && p.neighbors.some((n) => state.provinces[n].owner === 0));
+    if (bordering) {
+      const before = bordering.order;
+      const r = applyAction(state, { t: 'signature', province: bordering.id });
+      expect(r.ok).toBe(true);
+      expect(bordering.order).toBe(Math.max(0, before - SIGNATURE_TUNING.nyssa.order));
+    } else {
+      const far = state.provinces.find((p) => p.owner > 0
+        && !p.neighbors.some((n) => state.provinces[n].owner === 0))!;
+      expect(applyAction(state, { t: 'signature', province: far.id }).ok).toBe(false);
+    }
+  });
+
+  it('Open the Doors refuses without a barrow and answers with one', () => {
+    const state = gameWithLords('sig-doors', ['morrikan', 'seraphine', 'vaelia']);
+    const mine = state.provinces.filter((p) => p.owner === 0);
+    for (const p of mine) p.site = null;
+    expect(applyAction(state, { t: 'signature' }).ok).toBe(false);
+    mine[0].site = 'barrow';
+    const r = applyAction(state, { t: 'signature' });
+    expect(r.ok).toBe(true);
+    const risen = Object.values(state.armies).filter((a) => a.owner === 0 && a.province === mine[0].id)
+      .flatMap((a) => a.units).filter((u) => u.type === 'revenants');
+    expect(risen.length).toBe(SIGNATURE_TUNING.morrikan.companiesPerBarrow);
+  });
+
+  it('a mark for the crows is set and expires', () => {
+    const state = gameWithLords('sig-mark', ['vaelia', 'seraphine', 'corvas']);
+    const r = applyAction(state, { t: 'signature', targetPlayer: 2 });
+    expect(r.ok).toBe(true);
+    expect(state.players[0].mark).toEqual({ target: 2, turnsLeft: SIGNATURE_TUNING.vaelia.seasons });
+  });
+
+  it('old saves gain a zeroed cooldown on load', () => {
+    const state = gameWithLords('sig-oldsave', ['seraphine', 'aldric', 'vaelia']);
+    const raw = JSON.parse(serializeGame(state));
+    for (const p of raw.state.players) delete p.signatureCooldownLeft;
+    const revived = deserializeGame(JSON.stringify(raw));
+    expect(revived.players[0].signatureCooldownLeft).toBe(0);
+    expect(applyAction(revived, { t: 'signature' }).ok).toBe(true);
   });
 });
 

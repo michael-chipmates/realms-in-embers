@@ -69,9 +69,15 @@ export interface Army {
   kind?: 'rebels' | 'marauders' | 'revenants';
 }
 
-/** Temporary named modifier on a province (spells, events). Fully visible.
- * spellId/by let the map draw the right seal and the panel name the caster;
- * event-born mods carry neither and fall back to a plain mark. */
+/** Visual family of a working — drives the war-table cast animation, the
+ * map seal, and the Codex spell cards. Lives here so mods and signatures can
+ * carry it without importing content. */
+export type SpellFxFamily = 'bless' | 'curse' | 'ward' | 'summon' | 'scry';
+
+/** Temporary named modifier on a province (spells, events, signatures).
+ * Fully visible. spellId/by let the map draw the right seal and the panel
+ * name the caster; fam overrides the seal family for non-spell workings;
+ * event-born mods carry none of it and fall back to a plain mark. */
 export interface ProvinceMod {
   label: string;
   order?: number;
@@ -81,6 +87,7 @@ export interface ProvinceMod {
   turnsLeft: number;
   spellId?: SpellId;
   by?: PlayerId;
+  fam?: SpellFxFamily;
 }
 
 export interface HeroArtifactSlots {
@@ -335,6 +342,16 @@ export interface Player {
   seen: ProvinceId[];
   /** Persistent bag of one-time flags (teaching, event chains). */
   flags: Record<string, boolean>;
+  /** Signature ability (rules v11): seasons until it may be used again. */
+  signatureCooldownLeft: number;
+  /** The season the signature last fired — one-season effects check it. */
+  signatureTurn?: number | null;
+  /** Lyra: sworn crusade against one rival. */
+  crusade?: { target: PlayerId; turnsLeft: number } | null;
+  /** Vaelia: a rival marked for the crows. */
+  mark?: { target: PlayerId; turnsLeft: number } | null;
+  /** Branwen's embargo pressing on THIS player's trade. */
+  embargo?: { by: PlayerId; turnsLeft: number } | null;
 }
 
 export interface CourtOffer {
@@ -396,6 +413,7 @@ export type Action =
   | { t: 'startRite'; spellId: SpellId }
   | { t: 'pledgeEmberlight'; amount: number }
   | { t: 'castSpell'; spell: SpellId; province?: ProvinceId; targetPlayer?: PlayerId }
+  | { t: 'signature'; province?: ProvinceId; targetPlayer?: PlayerId }
   | { t: 'diplomacy'; kind: 'declareWar' | 'offerPeace' | 'offerPact' | 'offerAlliance' | 'gift' | 'demand' | 'breakPact' | 'joinWar'; target: PlayerId; gold?: number; against?: PlayerId }
   | { t: 'respond'; proposalId: number; accept: boolean }
   | { t: 'eventChoice'; eventId: number; choiceIdx: number }
@@ -418,6 +436,7 @@ export type Effect =
   | { e: 'heroHired'; heroId: number }
   | { e: 'questDone'; heroId: number; questDefId: string; outcome: 'triumph' | 'success' | 'setback' | 'disaster'; summary: string }
   | { e: 'spellCast'; spell: SpellId; by: PlayerId; province: ProvinceId | null }
+  | { e: 'signature'; by: PlayerId; province: ProvinceId | null; targetPlayer: PlayerId | null }
   | { e: 'riteComplete'; spell: SpellId; by: PlayerId }
   | { e: 'artifactFound'; artifactId: number; by: PlayerId }
   | { e: 'rebellion'; province: ProvinceId }

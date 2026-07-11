@@ -355,6 +355,14 @@ details.side-section:not([open]) > summary { border-bottom: none; }
 .ledger-table td { padding: 0.25rem 0.5rem 0.25rem 0; border-top: 1px solid rgba(201, 162, 39, 0.15); }
 .ledger-you { background: rgba(201, 162, 39, 0.08); }
 
+/* ------------------------------------------------------------ signature */
+
+.signature-btn { position: relative; }
+.signature-btn.signature-ready { box-shadow: 0 0 0 1.5px var(--gold), 0 0 9px rgba(230, 179, 74, 0.45); }
+.badge-quiet { background: rgba(58, 46, 28, 0.9); color: var(--ink-soft); }
+.signature-body { padding: 0.2rem 0.5rem 0.6rem; max-width: 420px; }
+.signature-head { display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.5rem; }
+
 /* ------------------------------------------------------- spell theater */
 
 .battle-weave-glyph { color: var(--ember-bright); display: inline-block; }

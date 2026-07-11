@@ -37,6 +37,8 @@ export const TEACHINGS: Record<string, string> = {
     'Marginalia — on salt roads: harbors link your coasts — an army may sail between them once a season, though storming ashore against a defended coast costs 15% of its strength. The sea asks no creed.',
   firstEvent:
     'Marginalia — on the realm answering back: events state their costs truthfully, and so do I. What they occasionally hide is a consequence with a longer stride. Choose like a ruler; the chronicle keeps the receipts.',
+  firstSignature:
+    'Marginalia — on signatures: every lord carries one order that is theirs alone, loud enough that the whole realm hears it used (this page included). It returns after its cooldown, counted in your seasons. The seal button in the bar shows when; the Codex shows everyone else’s, because your rivals read this chronicle too.',
 };
 
 /** Write a teaching once per player. No-op if already taught or veteran mode. */

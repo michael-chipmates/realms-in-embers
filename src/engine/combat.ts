@@ -21,6 +21,7 @@ import {
   addDeed, armiesIn, atWar, clamp, creedOf, getStance, lordName, lordOf, removeArmy,
 } from './helpers';
 import { say, scribe } from './narrator';
+import { SIGNATURE_TUNING, signatureSeasonActive } from './signature';
 import { QUESTS } from './content/quests';
 import { teach } from './teachings';
 import { Rng } from './rng';
@@ -441,6 +442,27 @@ function addCreedGrudgeMod(state: GameState, side: Side, enemyPlayer: PlayerId):
   }
 }
 
+/** Signature battle bonuses: Lyra's sworn crusade, Cormac's season of
+ * ambushes. Previewed like everything else — the odds never lie. */
+function addSignatureMods(state: GameState, side: Side, enemyPlayer: PlayerId, ctx: FightCtx, fromProvince: number | null): void {
+  if (side.player < 0) return;
+  const player = state.players[side.player];
+  const lord = lordOf(player);
+  if (player.crusade && enemyPlayer >= 0 && player.crusade.target === enemyPlayer) {
+    const mult = 1 + SIGNATURE_TUNING.lyra.atkPct / 100;
+    side.mods.push({ label: `Dawn Oath (${player.crusade.turnsLeft} ${player.crusade.turnsLeft === 1 ? 'season' : 'seasons'} left)`, mult });
+    side.mult *= mult;
+  }
+  if (side.role === 'attacker' && lord.signature.id === 'greenwoodAmbush' && signatureSeasonActive(state, side.player)) {
+    const touchesForest = ctx.province.terrain === 'forest'
+      || (fromProvince !== null && state.provinces[fromProvince].terrain === 'forest');
+    if (touchesForest) {
+      side.mods.push({ label: 'Greenwood Ambush', mult: SIGNATURE_TUNING.cormac.atkMult });
+      side.mult *= SIGNATURE_TUNING.cormac.atkMult;
+    }
+  }
+}
+
 /** Battle magic: each side auto-weaves its strongest affordable spell. */
 function weaveSpells(
   state: GameState,
@@ -518,6 +540,8 @@ export function previewBattle(state: GameState, armyId: number, targetProvince: 
     }
     addCreedGrudgeMod(state, aSide, dSide.player);
     addCreedGrudgeMod(state, dSide, aSide.player);
+    addSignatureMods(state, aSide, dSide.player, ctx, army.province);
+    addSignatureMods(state, dSide, aSide.player, ctx, null);
     // spells must be affordability-checked against the post-fervor pool,
     // exactly as resolveBattle will see it — deduct, weave, restore
     if (fervorPaid) state.players[army.owner].emberlight -= FERVOR_COST;
@@ -610,6 +634,8 @@ export function resolveBattle(
   }
   addCreedGrudgeMod(state, aSide, dSide.player);
   addCreedGrudgeMod(state, dSide, aSide.player);
+  addSignatureMods(state, aSide, dSide.player, ctx, fromProvince);
+  addSignatureMods(state, dSide, aSide.player, ctx, null);
   weaveSpells(state, aSide, dSide, atkArmies, defenders, true, spellNotes);
 
   const beforeUnitsA = summarizeUnits(aSide);
@@ -719,11 +745,11 @@ export function resolveBattle(
     }
   }
 
-  // ---- plunder perks
+  // ---- plunder perks (and Vaelia's mark, which feeds the crows threefold)
   if (attackerWon && attacker >= 0) {
-    plunder(state, attacker);
+    plunder(state, attacker, dSide.player);
   } else if (!attackerWon && dSide.player >= 0) {
-    plunder(state, dSide.player);
+    plunder(state, dSide.player, aSide.player);
   }
 
   // ---- report
@@ -1037,12 +1063,15 @@ export function eliminatePlayer(state: GameState, rng: Rng, pid: PlayerId, by: s
   }, { about: pid });
 }
 
-function plunder(state: GameState, pid: PlayerId): void {
+function plunder(state: GameState, pid: PlayerId, defeated: PlayerId): void {
   const player = state.players[pid];
   let gold = 0;
   if (creedOf(player) === 'umbra') gold += 10;
   const fx = lordOf(player).perk.fx;
   if (fx.plunderWinGold) gold += fx.plunderWinGold;
+  if (player.mark && defeated >= 0 && player.mark.target === defeated) {
+    gold *= SIGNATURE_TUNING.vaelia.plunderMult;
+  }
   player.gold += gold;
 }
 

@@ -49,8 +49,11 @@ import { NEUTRAL } from './types';
  *     Emberheart, rites never double-teach, rebel bands besiege the
  *     garrison in their own province, splitArmy (never reachable) removed.
  * 10: Spell Theater — province mods carry spellId/by so the map can seal
- *     enchanted ground and the panel can name the caster. */
-export const RULES_VERSION = 10;
+ *     enchanted ground and the panel can name the caster.
+ * 11: Signature abilities — every lord gains an active order with a cooldown
+ *     (engine/signature.ts); players carry signatureCooldownLeft and the
+ *     timed states (crusade, mark, embargo, signatureTurn). */
+export const RULES_VERSION = 11;
 
 export const HANDICAPS: Record<Difficulty, PlayerHandicap> = {
   squire: { incomeMult: 0.85, label: 'Squire — AI earns 15% less gold and attacks only with clear advantage.' },
@@ -203,6 +206,7 @@ export function initGame(settings: GameSettings): GameState {
       courtOffers: [],
       seen: [],
       flags: {},
+      signatureCooldownLeft: 0,
     };
     state.players.push(player);
 

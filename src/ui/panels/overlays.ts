@@ -520,6 +520,21 @@ function renderDiplomacy(screen: GameScreen, body: HTMLElement, focusPlayer?: Pl
 
     const actions: HTMLElement[] = [];
     if (canAct && other.alive) {
+      // the viewer's rival-aimed signature, right where the rival is
+      const myLord = LORD_BY_ID[player.lordId];
+      if (myLord.signature.target === 'rival' && (player.signatureCooldownLeft ?? 0) === 0) {
+        const sigBtn = h('button', {
+          class: 'btn btn-seal compact',
+          onclick: () => {
+            if (screen.dispatch({ t: 'signature', targetPlayer: other.id })) refresh();
+          },
+        }, `${myLord.signature.name}`);
+        tip(sigBtn, () => h('div', { class: 'tip-plain' },
+          h('b', {}, `${myLord.signature.name} — your signature, aimed here`),
+          h('p', { class: 'small' }, myLord.signature.desc),
+        ));
+        actions.push(sigBtn);
+      }
       if (stance === 'war') {
         actions.push(h('button', { class: 'btn compact', onclick: () => openGoldPrompt(screen, 'Sweeten the peace with gold?', (gold) => {
           if (screen.dispatch({ t: 'diplomacy', kind: 'offerPeace', target: other.id, gold })) refresh();
@@ -587,6 +602,13 @@ function renderDiplomacy(screen: GameScreen, body: HTMLElement, focusPlayer?: Pl
         h('div', { style: { display: 'flex', gap: '0.4rem', alignItems: 'center' } }, stanceChip, other.alive ? attEl : null),
       ),
       h('p', { class: 'small italic muted', style: { padding: '0 0.8rem' } }, lord.blurb),
+      h('p', { class: 'small', style: { padding: '0 0.8rem', margin: '0.15rem 0' } },
+        h('b', { style: { color: 'var(--gold)' } }, `${lord.perk.label}. `), lord.perk.desc),
+      h('p', { class: 'small', style: { padding: '0 0.8rem', margin: '0.15rem 0' } },
+        h('b', { style: { color: 'var(--ember-bright)' } }, `${lord.signature.name}. `), lord.signature.desc,
+        other.alive && (other.signatureCooldownLeft ?? 0) > 0
+          ? h('span', { class: 'muted' }, ` (returns in ${other.signatureCooldownLeft})`)
+          : null),
       h('p', { class: 'small lord-intro-quote', style: { padding: '0 0.8rem', margin: '0.2rem 0 0.4rem' } },
         `“${lord.lines.intro}”`),
       other.alive && actions.length > 0

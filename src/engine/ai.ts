@@ -69,6 +69,7 @@ export function aiTakeTurn(state: GameState): Effect[] {
   buildSomething(state, pid, dispatch); // second project if rich
   recruitTroops(state, pid, dispatch);
   runMagic(state, pid, dispatch);
+  maybeUseSignature(state, pid, dispatch);
   runQuests(state, pid, dispatch);
   marshalHeroes(state, pid, dispatch);
   consolidateArmies(state, pid, dispatch);
@@ -785,6 +786,100 @@ function threatAgainst(state: GameState, p: Province): number {
 
 function totalPower(state: GameState, pid: PlayerId): number {
   return armiesOf(state, pid).reduce((s, a) => s + roughArmyPower(a), 0);
+}
+
+/** Fire the lord's signature when its moment is genuinely here — each lord
+ * reads a different moment, so rivals learn twelve rhythms, not one. */
+function maybeUseSignature(state: GameState, pid: PlayerId, dispatch: (a: Action) => boolean): void {
+  const player = state.players[pid];
+  if ((player.signatureCooldownLeft ?? 0) > 0) return;
+  const lord = lordOf(player);
+  const mine = provincesOf(state, pid);
+  if (mine.length === 0) return;
+  const atWarWith = state.players.filter((o) => o.alive && o.id !== pid && atWar(state, pid, o.id));
+  const warTarget = atWarWith.length > 0
+    ? atWarWith.reduce((a, b) => (totalPower(state, b.id) > totalPower(state, a.id) ? b : a))
+    : null;
+  const use = (action?: Partial<Action & { t: 'signature' }>): boolean =>
+    dispatch({ t: 'signature', ...action });
+
+  switch (lord.id) {
+    case 'seraphine': {
+      const avg = mine.reduce((s, p) => s + p.order, 0) / mine.length;
+      if (avg < 55 || mine.some((p) => p.order < 30)) use();
+      break;
+    }
+    case 'aldric': {
+      // muster when a war is on and the seat is his to call from
+      if (warTarget && state.provinces[player.seatProvince].owner === pid) use();
+      break;
+    }
+    case 'halvard': {
+      // enemies at the gates: hostile armies standing in or beside his land
+      const threatened = mine.some((p) =>
+        [p.id, ...p.neighbors].some((n) =>
+          armiesIn(state, n).some((a) => a.owner !== pid && (a.owner === NEUTRAL || atWar(state, pid, a.owner)))));
+      if (threatened) use();
+      break;
+    }
+    case 'lyra': {
+      if (warTarget) use({ targetPlayer: warTarget.id });
+      break;
+    }
+    case 'ulvra': {
+      // the roads open when she has fresh armies and a war to march to
+      if (warTarget && armiesOf(state, pid).some((a) => !a.moved)) use();
+      break;
+    }
+    case 'maera': {
+      if (warTarget || (state.settings.fogOfWar && state.turn >= 8)) use();
+      break;
+    }
+    case 'cormac': {
+      const forestFoot = armiesOf(state, pid).some((a) => !a.moved && state.provinces[a.province].terrain === 'forest');
+      if (warTarget && forestFoot) use();
+      break;
+    }
+    case 'branwen': {
+      // embargo the richest lord she is at war with, or a hated richer rival
+      const candidates = state.players.filter((o) => o.alive && o.id !== pid
+        && (atWar(state, pid, o.id) || (attitudeOf(state, pid, o.id).total < -20 && o.gold > player.gold)));
+      if (candidates.length > 0) {
+        const richest = candidates.reduce((a, b) => (b.gold > a.gold ? b : a));
+        if (richest.gold >= 120) use({ targetPlayer: richest.id });
+      }
+      break;
+    }
+    case 'corvas': {
+      const takings = state.players
+        .filter((o) => o.alive && o.id !== pid)
+        .reduce((s, o) => s + Math.floor(o.gold * 0.06), 0);
+      if (takings >= 25) use();
+      break;
+    }
+    case 'nyssa': {
+      // the softest bordering enemy province, pushed toward the brink
+      let best: Province | null = null;
+      for (const p of state.provinces) {
+        if (p.owner < 0 || p.owner === pid) continue;
+        if (!p.neighbors.some((n) => state.provinces[n].owner === pid)) continue;
+        if (!atWar(state, pid, p.owner) && attitudeOf(state, pid, p.owner).total > -10) continue;
+        if (!best || p.order < best.order) best = p;
+      }
+      if (best && best.order < 55) use({ province: best.id });
+      break;
+    }
+    case 'morrikan': {
+      if (mine.some((p) => p.site === 'barrow') && (warTarget || state.turn >= 10)) use();
+      break;
+    }
+    case 'vaelia': {
+      if (warTarget) use({ targetPlayer: warTarget.id });
+      break;
+    }
+    default:
+      break;
+  }
 }
 
 function strongestThreat(state: GameState, pid: PlayerId): number {

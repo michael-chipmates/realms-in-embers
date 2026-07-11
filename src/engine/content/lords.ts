@@ -3,7 +3,7 @@
  * Personalities are engine inputs (the AI weights read them directly), not
  * flavor: an aggression 0.85 lord genuinely plays like one.
  */
-import type { Creed, SpellId, Terrain, UnitTypeId } from '../types';
+import type { Creed, SpellFxFamily, SpellId, Terrain, UnitTypeId } from '../types';
 
 export type SigilPattern = 'plain' | 'stripes' | 'dots' | 'checks' | 'waves' | 'crosshatch';
 
@@ -45,6 +45,22 @@ export interface LordPerkEffects {
   seaMoveFree?: boolean;
 }
 
+/** The active half of a lord's identity (rules v11). The passive perk gives
+ * a lord their SHAPE; the signature gives them a DECISION — an order with a
+ * cooldown, announced to the whole table when it fires. Magnitudes live in
+ * SIGNATURE_TUNING (engine/signature.ts); a test pins each desc to them. */
+export interface LordSignature {
+  id: string;
+  name: string;
+  /** Rules voice: what it does, exactly. */
+  desc: string;
+  flavor: string;
+  /** Seasons between uses. */
+  cooldown: number;
+  target: 'none' | 'rival' | 'enemyProvince';
+  fxFamily: SpellFxFamily;
+}
+
 export interface LordDef {
   id: string;
   name: string;
@@ -59,6 +75,7 @@ export interface LordDef {
   pattern: SigilPattern;
   sigil: string;
   perk: { label: string; desc: string; fx: LordPerkEffects };
+  signature: LordSignature;
   lines: {
     intro: string;
     taunt: string;
@@ -84,6 +101,12 @@ export const LORDS: LordDef[] = [
       desc: 'Hearthshrines cost half. All your provinces gain +1 order each season.',
       fx: { buildingDiscountId: 'temple', buildingDiscountPct: 50, orderAll: 1 },
     },
+    signature: {
+      id: 'greatVigil', name: 'The Great Vigil',
+      desc: 'Every province you rule gains +8 order at once, and newly conquered folk forget their grief.',
+      flavor: 'One night, every hearth in the realm tended by someone who prays like she means it.',
+      cooldown: 8, target: 'none', fxFamily: 'bless',
+    },
     lines: {
       intro: 'The realm is cold, my lords. I intend to warm it — with hearths where possible.',
       taunt: 'I lit a candle for you. I light one for everyone I am about to ruin.',
@@ -105,6 +128,12 @@ export const LORDS: LordDef[] = [
       label: 'The Old Blood',
       desc: 'Your capital yields +20% gold. Banner Knights cost 15% less.',
       fx: { capitalIncomePct: 20, unitDiscountId: 'knights', unitDiscountPct: 15 },
+    },
+    signature: {
+      id: 'royalMuster', name: 'Royal Muster',
+      desc: 'A full company of Banner Knights musters at your seat, at once and without cost.',
+      flavor: 'The Old Blood calls; the old families still answer. Mostly out of habit, which is the strongest reason there is.',
+      cooldown: 10, target: 'none', fxFamily: 'bless',
     },
     lines: {
       intro: 'Twice crowned, gentlemen. The third time I shall not even need to sit down.',
@@ -128,6 +157,12 @@ export const LORDS: LordDef[] = [
       desc: 'Walls cost 30% less. Your troops fight +14% harder defending your own provinces.',
       fx: { wallDiscountPct: 30, defendOwnPct: 14 },
     },
+    signature: {
+      id: 'standFast', name: 'Stand Fast',
+      desc: 'Every province you rule defends +25% until your next season.',
+      flavor: 'No speech. He walks the wall once, and the wall understands.',
+      cooldown: 8, target: 'none', fxFamily: 'ward',
+    },
     lines: {
       intro: 'I held one gate for three days. I have since acquired more gates.',
       taunt: 'Come, then. Bring ladders. Bring friends. Bring stretchers.',
@@ -149,6 +184,12 @@ export const LORDS: LordDef[] = [
       label: 'Dawn Crusade',
       desc: 'Your troops fight +12% harder against Umbra lords.',
       fx: { atkVsCreed: 'umbra', atkVsCreedPct: 12 },
+    },
+    signature: {
+      id: 'dawnOath', name: 'Dawn Oath',
+      desc: 'Swear a crusade against one lord: your attacks on them strike +15% harder for 3 seasons.',
+      flavor: 'She swears it at sunrise, loudly and off-key. By noon the whole realm knows whose walls are next.',
+      cooldown: 12, target: 'rival', fxFamily: 'bless',
     },
     lines: {
       intro: 'Up with the sun, lords! The realm won’t save itself, and you certainly won’t.',
@@ -173,6 +214,12 @@ export const LORDS: LordDef[] = [
       desc: 'Mountain provinces yield +4 gold. Cragguard may also be raised in hill provinces.',
       fx: { incomeTerrainId: 'mountain', incomeTerrainAdd: 4, cragguardInHills: true },
     },
+    signature: {
+      id: 'deepRoads', name: 'The Deep Roads',
+      desc: 'This season your armies march one province further — the under-mountain ways open.',
+      flavor: 'The mountain keeps roads it never mentions. Guests use them once, blindfolded, and arrive very surprised.',
+      cooldown: 8, target: 'none', fxFamily: 'ward',
+    },
     lines: {
       intro: 'The mountain did not want this war. The mountain will nonetheless win it.',
       taunt: 'Come up, if you like. The path is narrow and my patience is wide.',
@@ -194,6 +241,12 @@ export const LORDS: LordDef[] = [
       label: 'Fen-Cunning',
       desc: 'Moor provinces yield +9 gold. Spells cost 25% less Emberlight. You begin knowing Scrying Smoke.',
       fx: { incomeTerrainId: 'moor', incomeTerrainAdd: 9, spellDiscountPct: 25, startingSpell: 'scryingSmoke' },
+    },
+    signature: {
+      id: 'fenLights', name: 'Fen Lights',
+      desc: 'Lights walk your borders: every province you rule defends +12% for 2 seasons, and everything bordering your realm is revealed.',
+      flavor: 'Follow the lights, the children are told. The lights lead soldiers somewhere else entirely.',
+      cooldown: 9, target: 'none', fxFamily: 'scry',
     },
     lines: {
       intro: 'The bog told me how this ends. I’m only here to make sure it keeps its word.',
@@ -217,6 +270,12 @@ export const LORDS: LordDef[] = [
       desc: 'Forest provinces defend +15% harder. Greenwood Wardens cost 20% less.',
       fx: { defenseTerrainId: 'forest', defenseTerrainPct: 15, unitDiscountId: 'wardens', unitDiscountPct: 20 },
     },
+    signature: {
+      id: 'greenwoodAmbush', name: 'Greenwood Ambush',
+      desc: 'This season your attacks strike +12% harder wherever the battle touches forest — theirs or yours.',
+      flavor: 'The wood goes quiet a day before. Woodcutters know to take a holiday.',
+      cooldown: 8, target: 'none', fxFamily: 'curse',
+    },
     lines: {
       intro: 'I have buried three of these wars under leaf-mold. Shall we begin the fourth?',
       taunt: 'The wood is patient. I, regrettably for you, am the wood.',
@@ -238,6 +297,12 @@ export const LORDS: LordDef[] = [
       label: 'Salt Roads',
       desc: 'Harborworks yield +4 extra gold. Sailing between harbors does not end an army’s march.',
       fx: { harborIncomeAdd: 4, seaMoveFree: true },
+    },
+    signature: {
+      id: 'embargo', name: 'The Embargo',
+      desc: 'Close the salt roads against one rival: their provinces yield 20% less gold for 2 seasons.',
+      flavor: 'No fleet, no fuss. One letter to the guilds, and a realm discovers what it imports.',
+      cooldown: 10, target: 'rival', fxFamily: 'curse',
     },
     lines: {
       intro: 'I’ve run the numbers, lords. Most of you are liabilities.',
@@ -262,6 +327,12 @@ export const LORDS: LordDef[] = [
       desc: 'Demands and tribute bring +25% more gold. Shadecloaks cost 20% less.',
       fx: { demandBonusPct: 25, unitDiscountId: 'shadecloaks', unitDiscountPct: 20 },
     },
+    signature: {
+      id: 'callTheDebts', name: 'Call in the Debts',
+      desc: 'Every living rival immediately pays you 6% of their treasury. None of them thanks you for it.',
+      flavor: 'The appendix, gentlemen. Nobody reads the appendix. The appendix reads you.',
+      cooldown: 10, target: 'none', fxFamily: 'curse',
+    },
     lines: {
       intro: 'Peace, war — details of scheduling. Shall we discuss terms?',
       taunt: 'I already own the ground you’re standing on. Ask your treasurer.',
@@ -283,6 +354,12 @@ export const LORDS: LordDef[] = [
       label: 'The Long Ear',
       desc: 'Your heroes gain +2 guile on quests. Sow Discord costs half. You begin knowing it.',
       fx: { questGuileAdd: 2, discordDiscountPct: 50, startingSpell: 'sowDiscord' },
+    },
+    signature: {
+      id: 'whisperCampaign', name: 'Whisper Campaign',
+      desc: 'A rival province bordering your realm loses 15 order, at once.',
+      flavor: 'Three dinners, one funeral, and a rumor with excellent posture.',
+      cooldown: 6, target: 'enemyProvince', fxFamily: 'curse',
     },
     lines: {
       intro: 'Go on with your speeches. I’ve already read the drafts.',
@@ -306,6 +383,12 @@ export const LORDS: LordDef[] = [
       desc: 'You may raise Barrow Revenants in provinces with a barrow. Your armies are immune to terror.',
       fx: { revenantsAtBarrows: true, terrorImmune: true },
     },
+    signature: {
+      id: 'openTheDoors', name: 'Open the Doors',
+      desc: 'The dead answer at every barrow you rule: two companies of Barrow Revenants rise at each (−4 order there).',
+      flavor: 'Constituents, he calls them. They vote in ranks.',
+      cooldown: 10, target: 'none', fxFamily: 'summon',
+    },
     lines: {
       intro: 'Three graves could not hold me. One throne should manage nicely.',
       taunt: 'I have more soldiers under your fields than you have upon them.',
@@ -327,6 +410,12 @@ export const LORDS: LordDef[] = [
       label: 'War Feeds Her',
       desc: 'Winning any battle plunders +15 extra gold. Wolfshead bands never raid your lands.',
       fx: { plunderWinGold: 15, wolfsheadSafe: true },
+    },
+    signature: {
+      id: 'markForCrows', name: 'Marked for the Crows',
+      desc: 'Mark one lord: for 3 seasons, every battle you win against them is plundered threefold.',
+      flavor: 'The crows learn a new sigil. They are quick studies, and always hungry.',
+      cooldown: 10, target: 'rival', fxFamily: 'curse',
     },
     lines: {
       intro: 'The realm broke itself, sweetlings. I’m only here for the marrow.',

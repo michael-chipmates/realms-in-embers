@@ -34,7 +34,7 @@ async function boot(page) {
   if (!(await dialog.isVisible())) throw new Error('Codex did not open on hotkey c');
   await page.screenshot({ path: `${outdir}/codex-1-battle.png` });
   const chapters = ['Companies', 'Works & Ground', 'Coin & Order', 'Emberlight', 'The Court',
-    'Quests & the Saga', 'Artifacts', 'The Other Lords', 'Enchantments', 'The Five Endings', 'Marginalia'];
+    'Quests & the Saga', 'Artifacts', 'The Twelve Lords', 'The Other Lords', 'Enchantments', 'The Five Endings', 'Marginalia'];
   for (const c of chapters) {
     await dialog.getByRole('button', { name: c, exact: true }).click();
     await page.waitForTimeout(250);

@@ -8,6 +8,7 @@ import { decayDeeds } from './diplo';
 import { drawEvent } from './events';
 import { refreshRiteOffers } from './magic';
 import { refreshQuestOffers, tickQuests } from './quests';
+import { tickSignatures } from './signature';
 import { teach } from './teachings';
 import { incomeReport, isDefiant, orderDrift, prosperityStep, leaderId, strainOf } from './economy';
 import { makeCourtOffer, makeTroubleName } from './state';
@@ -100,6 +101,9 @@ export function beginTurn(state: GameState, rng: Rng, effects: Effect[]): void {
     if (left <= 0) delete player.spellCooldowns[key];
     else player.spellCooldowns[key] = left;
   }
+
+  // signature cooldown and timed signature states
+  tickSignatures(state, pid);
 
   // the court turns over
   player.courtOffers = player.courtOffers.filter((o) => o.expiresTurn >= state.turn);
