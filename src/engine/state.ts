@@ -62,8 +62,11 @@ import { NEUTRAL } from './types';
  *     rejected instead of silently rewritten.
  * 13: Season Digest — Osperan closes every round with one digest entry
  *     (ChronicleEntry.digest; routine ledger lines carry minor); the new
- *     seasonDigest bank draws from the Rng at roundEnd. */
-export const RULES_VERSION = 13;
+ *     seasonDigest bank draws from the Rng at roundEnd.
+ * 14: recallMove — a peaceful march onto already-seen ground can be taken
+ *     back the same season (armies carry lastMove; a fight, a capture, or
+ *     new sight spends the season for good; the AI never recalls). */
+export const RULES_VERSION = 14;
 
 export const HANDICAPS: Record<Difficulty, PlayerHandicap> = {
   squire: { incomeMult: 0.85, label: 'Squire — AI earns 15% less gold and attacks only with clear advantage.' },

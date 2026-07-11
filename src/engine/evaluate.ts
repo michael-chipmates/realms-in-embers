@@ -142,6 +142,7 @@ function withNotes(name: string, lines: string[]): string {
 function codexOf(action: Action): CodexRef | null {
   switch (action.t) {
     case 'moveArmy':
+    case 'recallMove':
     case 'setStance':
     case 'mergeArmies':
     case 'disband':

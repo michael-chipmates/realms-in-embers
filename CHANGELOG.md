@@ -1,7 +1,7 @@
 # Changelog
 
 All notable changes to Realms in Embers. The game's rules carry their own
-version (`RULES_VERSION` in `src/engine/state.ts`, currently v13) — bumped
+version (`RULES_VERSION` in `src/engine/state.ts`, currently v14) — bumped
 whenever engine semantics change, with a frozen replay fixture as the canary.
 
 ## [Unreleased] — 0.5.0
@@ -31,6 +31,14 @@ In progress. Shipped so far on `main`:
   outside expectation ±5pp fails the night conclusively; straddles are
   reported, never failed. Route attempts print beside wins so Golden Age
   rarity stays a choice. The harness judges and never tunes.
+- **recallMove** (rules v14) — a peaceful march onto already-seen ground can
+  be taken back the same season. A fight, a capture, or new ground glimpsed
+  spends the season for good (no free scouting through the fog), a merge or
+  hero change spends it too, and the AI never recalls. The army card offers
+  the recall exactly when the engine would allow it.
+- **The Council Brief** (`b`) — next season's coin itemized, recent
+  developments, open items with deep-links, the race, and a pinned intention;
+  the End button whispers true omissions and never blocks.
 - Disbanding a company and releasing a hero now arm on the first press and
   act on the second — nothing irreversible on a stray tap.
 

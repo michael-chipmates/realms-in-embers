@@ -105,12 +105,16 @@ export function moveTargets(state: GameState, army: Army): MoveTarget[] {
   return out;
 }
 
-function grantSight(state: GameState, pid: PlayerId, provinceId: number): void {
-  if (pid < 0) return;
+/** Returns true when anything NEW came out of the fog — a march that saw
+ * fresh ground is a season spent, whatever else it did (recallMove). */
+function grantSight(state: GameState, pid: PlayerId, provinceId: number): boolean {
+  if (pid < 0) return false;
   const seen = state.players[pid].seen;
   const p = state.provinces[provinceId];
-  if (!seen.includes(p.id)) seen.push(p.id);
-  for (const n of p.neighbors) if (!seen.includes(n)) seen.push(n);
+  let gained = false;
+  if (!seen.includes(p.id)) { seen.push(p.id); gained = true; }
+  for (const n of p.neighbors) if (!seen.includes(n)) { seen.push(n); gained = true; }
+  return gained;
 }
 
 // ------------------------------------------------------------- applyAction
@@ -189,6 +193,7 @@ export function applyAction(state: GameState, action: Action): ActionResult {
       const army = state.armies[action.armyId];
       if (!army || army.owner !== pid) return fail('Not your army.');
       if (action.index < 0 || action.index >= army.units.length) return fail('No such company.');
+      delete army.lastMove; // the banner that marched is no longer this banner
       army.units.splice(action.index, 1);
       if (army.units.length === 0 && army.heroIds.length === 0) delete state.armies[army.id];
       else if (army.units.length === 0) {
@@ -242,6 +247,22 @@ export function applyAction(state: GameState, action: Action): ActionResult {
       return { ok: true, effects };
     }
 
+    case 'recallMove': {
+      const army = state.armies[action.armyId];
+      if (!army || army.owner !== pid) return fail('Not your army.');
+      if (!army.moved && !army.seaMoved) return fail('The army has not marched this season.');
+      const recall = army.lastMove;
+      if (!recall || recall.turn !== state.turn) {
+        return fail('That march cannot be recalled — a fight, a capture, or new ground seen makes a season spent.');
+      }
+      army.province = recall.from;
+      if (recall.setMoved) army.moved = false;
+      if (recall.setSeaMoved) army.seaMoved = false;
+      delete army.lastMove;
+      log(state, action);
+      return { ok: true, effects };
+    }
+
     case 'mergeArmies': {
       const from = state.armies[action.from];
       const into = state.armies[action.into];
@@ -250,6 +271,7 @@ export function applyAction(state: GameState, action: Action): ActionResult {
       if (from.province !== into.province) return fail('They stand in different provinces.');
       if (from.units.length + into.units.length > 12) return fail('A banner holds twelve companies at most.');
       if (from.heroIds.length + into.heroIds.length > 3) return fail('Three heroes to a banner at most.');
+      delete into.lastMove; // the banner that marched is no longer this banner
       into.units.push(...from.units);
       into.heroIds.push(...from.heroIds);
       for (const hid of from.heroIds) {
@@ -344,6 +366,7 @@ export function applyAction(state: GameState, action: Action): ActionResult {
       hero.armyId = army.id;
       hero.province = army.province;
       army.heroIds.push(hero.id);
+      delete army.lastMove; // the banner that marched is no longer this banner
       log(state, action);
       return { ok: true, effects };
     }
@@ -408,12 +431,16 @@ export function applyAction(state: GameState, action: Action): ActionResult {
 function executeMove(state: GameState, rng: Rng, army: Army, target: MoveTarget, effects: Effect[], support: number[] = [], fervor = false): void {
   const from = army.province;
   const pid = army.owner;
+  let setMoved = false;
+  let setSeaMoved = false;
   if (target.viaSea) {
     teach(state, pid, 'firstSeaMove');
+    setSeaMoved = !army.seaMoved;
     army.seaMoved = true;
     const freeSail = pid >= 0 && lordOf(state.players[pid]).perk.fx.seaMoveFree;
-    if (!freeSail) army.moved = true;
+    if (!freeSail) { setMoved = !army.moved; army.moved = true; }
   } else {
+    setMoved = !army.moved;
     army.moved = true;
   }
 
@@ -425,11 +452,16 @@ function executeMove(state: GameState, rng: Rng, army: Army, target: MoveTarget,
   }
 
   army.province = target.to;
-  grantSight(state, pid, target.to);
+  const sawNewGround = grantSight(state, pid, target.to);
   const p = state.provinces[target.to];
   if (p.owner !== pid && (p.owner === NEUTRAL || atWar(state, pid, p.owner))) {
     captureProvince(state, rng, p, pid, effects);
+    delete army.lastMove;
+    return;
   }
+  // a peaceful march onto known ground can still be taken back this season
+  if (sawNewGround) delete army.lastMove;
+  else army.lastMove = { from, turn: state.turn, setMoved, setSeaMoved };
 }
 
 // -------------------------------------------------------------- diplomacy

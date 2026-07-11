@@ -67,6 +67,11 @@ export interface Army {
   stance: Stance;
   /** Marks neutral lairs/rebel bands so the UI and AI can tell them apart. */
   kind?: 'rebels' | 'marauders' | 'revenants';
+  /** The last peaceful march this season, if it can still be recalled
+   * (rules v14). A march that fought, captured, or parted the fog is not
+   * recorded — those cannot be taken back. Cleared by merges, hero moves,
+   * and disbands, since the banner is no longer the one that marched. */
+  lastMove?: { from: ProvinceId; turn: number; setMoved: boolean; setSeaMoved: boolean };
 }
 
 /** Visual family of a working — drives the war-table cast animation, the
@@ -407,6 +412,7 @@ export type Action =
   | { t: 'recruit'; province: ProvinceId; unit: UnitTypeId }
   | { t: 'disband'; armyId: number; index: number }
   | { t: 'moveArmy'; armyId: number; to: ProvinceId; viaSea?: boolean; support?: number[]; fervor?: boolean }
+  | { t: 'recallMove'; armyId: number }
   | { t: 'mergeArmies'; from: number; into: number }
   | { t: 'setStance'; armyId: number; stance: Stance }
   | { t: 'hireHero'; offerIdx: number }

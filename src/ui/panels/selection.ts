@@ -239,6 +239,16 @@ function renderArmyCard(screen: GameScreen, army: Army, selected: boolean): HTML
     ...heroRows,
     ...unitRows,
     stanceRow,
+    mine && evaluateActions(state, [{ t: 'recallMove', armyId: army.id }])[0].legal
+      ? h('div', { style: { padding: '0 0.8rem 0.6rem' } },
+          h('button', {
+            class: 'btn btn-quiet compact',
+            onclick: () => { screen.dispatch({ t: 'recallMove', armyId: army.id }); },
+          }, '↩ Recall the march'),
+          h('p', { class: 'small muted', style: { margin: '0.2rem 0 0' } },
+            'A peaceful march onto known ground can be taken back, this season only.'),
+        )
+      : null,
     mine && !army.moved && screen.targets.length > 0 && selected
       ? h('p', { class: 'small muted', style: { padding: '0.2rem 0.8rem 0.6rem' } },
           'Choose a glowing province to march. Crossed swords mean a fight.')
