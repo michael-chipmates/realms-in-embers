@@ -8,6 +8,7 @@ import { EVENT_BY_ID } from '../src/engine/content/events';
 import { LORD_BY_ID } from '../src/engine/content/lords';
 import { SIGNATURE_TUNING } from '../src/engine/signature';
 import { Rng } from '../src/engine/rng';
+import { checkVictory, GOLDEN_GOLD, GOLDEN_ROUNDS } from '../src/engine/victory';
 import type { GameSettings, GameState } from '../src/engine/types';
 
 function freshGame(seed: string, players = 3): GameState {
@@ -319,7 +320,7 @@ describe('victory', () => {
       }
     }
     const over = (s: GameState) => s.phase === 'ended';
-    for (let round = 0; round < 3 && !over(state); round++) {
+    for (let round = 0; round < 4 && !over(state); round++) { // DOMINION_ROUNDS is 4 as of v12
       for (let i = 0; i < state.players.length && !over(state); i++) {
         applyAction(state, { t: 'endTurn' });
       }
@@ -328,6 +329,28 @@ describe('victory', () => {
     expect(state.victory.winner).toBe(0);
     expect(state.victory.winPath).toBe('dominion');
     expect(state.chronicle.some((c) => c.ceremony && c.text.length > 40)).toBe(true);
+  });
+
+  it('simultaneous claims fall to the brighter realm, never the earlier seat (v12)', () => {
+    const state = freshGame('victory-tie', 3);
+    // both player 0 and player 1 complete a Golden Age this very round, with
+    // equal treasuries — under the old rules the earlier seat quietly won
+    for (const pid of [0, 1]) {
+      state.players[pid].gold = GOLDEN_GOLD + 300;
+      const mine = state.provinces.filter((p) => p.owner === pid);
+      while (mine.length < 3) {
+        const free = state.provinces.find((p) => p.owner < 0)!;
+        free.owner = pid;
+        mine.push(free);
+      }
+      for (const p of mine) p.order = pid === 0 ? 70 : 92; // seat 1 keeps the brighter realm
+      state.victory.goldenStreak[pid] = GOLDEN_ROUNDS - 1;
+    }
+    state.players[2].gold = 10;
+    checkVictory(state, new Rng('tie-lot'), []);
+    expect(state.phase).toBe('ended');
+    expect(state.victory.winPath).toBe('goldenAge');
+    expect(state.victory.winner).toBe(1);
   });
 
   it('the chronicle always closes at max turns with a scored winner', () => {
@@ -501,17 +524,25 @@ describe('signature abilities', () => {
     }
   });
 
-  it('Open the Doors refuses without a barrow and answers with one', () => {
-    const state = gameWithLords('sig-doors', ['morrikan', 'seraphine', 'vaelia']);
-    const mine = state.provinces.filter((p) => p.owner === 0);
+  it('Open the Doors answers at barrows, and thinly at the seat without one (v12)', () => {
+    const withBarrow = gameWithLords('sig-doors', ['morrikan', 'seraphine', 'vaelia']);
+    const mine = withBarrow.provinces.filter((p) => p.owner === 0);
     for (const p of mine) p.site = null;
-    expect(applyAction(state, { t: 'signature' }).ok).toBe(false);
     mine[0].site = 'barrow';
-    const r = applyAction(state, { t: 'signature' });
+    const r = applyAction(withBarrow, { t: 'signature' });
     expect(r.ok).toBe(true);
-    const risen = Object.values(state.armies).filter((a) => a.owner === 0 && a.province === mine[0].id)
+    const risen = Object.values(withBarrow.armies).filter((a) => a.owner === 0 && a.province === mine[0].id)
       .flatMap((a) => a.units).filter((u) => u.type === 'revenants');
     expect(risen.length).toBe(SIGNATURE_TUNING.morrikan.companiesPerBarrow);
+
+    const noBarrow = gameWithLords('sig-doors-2', ['morrikan', 'seraphine', 'vaelia']);
+    for (const p of noBarrow.provinces.filter((p) => p.owner === 0)) p.site = null;
+    const seat = noBarrow.players[0].seatProvince;
+    const r2 = applyAction(noBarrow, { t: 'signature' });
+    expect(r2.ok).toBe(true);
+    const seatRisen = Object.values(noBarrow.armies).filter((a) => a.owner === 0 && a.province === seat)
+      .flatMap((a) => a.units).filter((u) => u.type === 'revenants');
+    expect(seatRisen.length).toBe(SIGNATURE_TUNING.morrikan.seatFallbackCompanies);
   });
 
   it('a mark for the crows is set and expires', () => {

@@ -1,7 +1,7 @@
 # DECISIONS
 
 A running log of major design and engineering decisions, and the reasoning behind them.
-Newest entries at the bottom. See `STATE.md` for build status, `FINAL_REPORT.md` (at the end) for the retrospective.
+Newest entries at the bottom. See `FINAL_REPORT.md` (at the end) for the retrospective. (Day-to-day build status lived in an internal session log that isn't part of the published repo.)
 
 ---
 
@@ -130,3 +130,12 @@ contrast, buys leverage where it pays: `playwright` drives the real UI in
 every drive script, `sharp` feeds the art pipeline, `tsx`/`vitest`/`vite`
 build and test. Dev-dependencies are allowed to be boring and replaceable;
 the runtime is not allowed to have any.
+
+## D-018 · No signature scales with the table, uncapped
+Review night finding (2026-07-11): Corvas took 6% of *every* rival treasury,
+so his power grew linearly with player count — audit sweeps showed his wins
+clustering at five- and six-lord tables (44% per seat on fresh seeds). The
+rule, now standing: any per-rival effect must scale sub-linearly with the
+number of rivals (Corvas pays out at 6%/√(rivals−1)) or carry an explicit
+cap stated in its desc. The mirror sweep referees; the desc-pinning test
+keeps the printed rules honest.

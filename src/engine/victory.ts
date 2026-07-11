@@ -9,7 +9,7 @@ import type { Rng } from './rng';
 import type { Effect, GameState, PlayerId, VictoryPath } from './types';
 
 export const DOMINION_SHARE = 0.55;
-export const DOMINION_ROUNDS = 3;
+export const DOMINION_ROUNDS = 4; // v12: was 3 — dominion carried 44–48% of AI endings
 export const GOLDEN_GOLD = 900;
 export const GOLDEN_ORDER = 65;
 export const GOLDEN_ROUNDS = 4;
@@ -106,7 +106,16 @@ export function checkVictory(state: GameState, rng: Rng, effects: Effect[]): voi
 
   const total = state.provinces.length;
 
-  // dominion — the required share erodes late (dominionShareAt)
+  // ---- collect every claim from ONE snapshot before naming any winner
+  // (v12): with the old first-claimant-wins loops, two lords completing a
+  // path in the same round were resolved by seat order — invisible, unfair,
+  // and it once let an equal-richest Golden Age tie fall to whoever sat
+  // earlier at the table. Ties now break on the path's own virtue, then on
+  // the chronicle score, then on a seeded lot the chronicle admits to.
+  const dominionClaims: PlayerId[] = [];
+  const goldenClaims: PlayerId[] = [];
+  const legendClaims: PlayerId[] = [];
+
   if (paths.includes('dominion')) {
     const needed = dominionShareAt(state);
     for (const player of alive) {
@@ -115,18 +124,14 @@ export function checkVictory(state: GameState, rng: Rng, effects: Effect[]): voi
       if (share >= needed) {
         const streak = prev + 1;
         state.victory.dominionStreak[player.id] = streak;
-        if (streak >= DOMINION_ROUNDS) {
-          setWinner(state, rng, player.id, 'dominion', effects);
-          return;
-        }
-        say(state, rng, 'dominionWarning', { lord: lordName(state, player.id), rounds: DOMINION_ROUNDS - streak }, { about: player.id });
+        if (streak >= DOMINION_ROUNDS) dominionClaims.push(player.id);
+        else say(state, rng, 'dominionWarning', { lord: lordName(state, player.id), rounds: DOMINION_ROUNDS - streak }, { about: player.id });
       } else if (prev > 0) {
         state.victory.dominionStreak[player.id] = 0;
       }
     }
   }
 
-  // golden age
   if (paths.includes('goldenAge')) {
     for (const player of alive) {
       const provinces = provincesOf(state, player.id);
@@ -137,38 +142,56 @@ export function checkVictory(state: GameState, rng: Rng, effects: Effect[]): voi
       if (qualifies) {
         const streak = prev + 1;
         state.victory.goldenStreak[player.id] = streak;
-        if (streak >= GOLDEN_ROUNDS) {
-          setWinner(state, rng, player.id, 'goldenAge', effects);
-          return;
-        }
-        say(state, rng, 'goldenWarning', { lord: lordName(state, player.id), rounds: GOLDEN_ROUNDS - streak }, { about: player.id });
+        if (streak >= GOLDEN_ROUNDS) goldenClaims.push(player.id);
+        else say(state, rng, 'goldenWarning', { lord: lordName(state, player.id), rounds: GOLDEN_ROUNDS - streak }, { about: player.id });
       } else if (prev > 0) {
         state.victory.goldenStreak[player.id] = 0;
       }
     }
   }
 
-  // legend
   if (paths.includes('legend')) {
     for (const player of alive) {
-      if (player.sagaChapter >= 5) {
-        setWinner(state, rng, player.id, 'legend', effects);
-        return;
-      }
+      if (player.sagaChapter >= 5) legendClaims.push(player.id);
     }
+  }
+
+  // ---- resolve in the published order: dominion, golden age, legend
+  const score = (pid: PlayerId): number => chronicleScore(state, pid).total;
+  const pickBest = (claims: PlayerId[], ...keys: ((pid: PlayerId) => number)[]): PlayerId => {
+    let pool = [...claims];
+    for (const key of [...keys, score]) {
+      const best = Math.max(...pool.map(key));
+      pool = pool.filter((pid) => key(pid) === best);
+      if (pool.length === 1) return pool[0];
+    }
+    // every virtue equal: a seeded lot — deterministic, never seat order
+    return pool[rng.intRange(0, pool.length - 1)];
+  };
+
+  if (dominionClaims.length > 0) {
+    const winner = pickBest(dominionClaims,
+      (pid) => provincesOf(state, pid).length,
+      (pid) => { const ps = provincesOf(state, pid); return ps.length ? ps.reduce((s, p) => s + p.order, 0) / ps.length : 0; });
+    setWinner(state, rng, winner, 'dominion', effects);
+    return;
+  }
+  if (goldenClaims.length > 0) {
+    const winner = pickBest(goldenClaims,
+      (pid) => state.players[pid].gold,
+      (pid) => { const ps = provincesOf(state, pid); return ps.length ? ps.reduce((s, p) => s + p.order, 0) / ps.length : 0; });
+    setWinner(state, rng, winner, 'goldenAge', effects);
+    return;
+  }
+  if (legendClaims.length > 0) {
+    const winner = pickBest(legendClaims, (pid) => state.players[pid].sagaChapter);
+    setWinner(state, rng, winner, 'legend', effects);
+    return;
   }
 
   // the chronicle always ends
   if (state.turn >= state.victory.maxTurns) {
-    let best: PlayerId = alive[0].id;
-    let bestScore = -1;
-    for (const player of alive) {
-      const { total: score } = chronicleScore(state, player.id);
-      if (score > bestScore) {
-        bestScore = score;
-        best = player.id;
-      }
-    }
-    setWinner(state, rng, best, 'chronicle', effects);
+    const winner = pickBest(alive.map((p) => p.id));
+    setWinner(state, rng, winner, 'chronicle', effects);
   }
 }

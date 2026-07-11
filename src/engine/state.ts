@@ -52,8 +52,15 @@ import { NEUTRAL } from './types';
  *     enchanted ground and the panel can name the caster.
  * 11: Signature abilities — every lord gains an active order with a cooldown
  *     (engine/signature.ts); players carry signatureCooldownLeft and the
- *     timed states (crusade, mark, embargo, signatureTurn). */
-export const RULES_VERSION = 11;
+ *     timed states (crusade, mark, embargo, signatureTurn).
+ * 12: The fairness round (review night) — simultaneous victory claims are
+ *     collected from one snapshot and tie-broken on the path's own virtue
+ *     (never seat order); DOMINION_ROUNDS 3→4; Corvas' debts soften by
+ *     1/sqrt(rivals−1) (D-018: nothing scales uncapped with table size);
+ *     Fen Lights gain their offensive half; Morrikan's doors open at his
+ *     seat when the seed gave him no barrow; empty victory-path setups are
+ *     rejected instead of silently rewritten. */
+export const RULES_VERSION = 12;
 
 export const HANDICAPS: Record<Difficulty, PlayerHandicap> = {
   squire: { incomeMult: 0.85, label: 'Squire — AI earns 15% less gold and attacks only with clear advantage.' },
@@ -125,6 +132,11 @@ export function makeCourtOffer(rng: Rng, turn: number, preferred?: HeroClass): C
 
 /** Build the full initial state. Deterministic for (settings.seed, settings). */
 export function initGame(settings: GameSettings): GameState {
+  if (settings.victoryPaths.length === 0) {
+    // the UI blocks this too — but the engine never silently rewrites a
+    // player's choice (rules v12; the old behavior restored conquest unasked)
+    throw new Error('A chronicle needs at least one road to the throne.');
+  }
   const seed = settings.seed.trim() || 'the-sundered-age';
   const rngState = rngStateFrom(seed);
   const rng = new Rng(rngState);

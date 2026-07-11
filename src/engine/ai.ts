@@ -805,8 +805,11 @@ function maybeUseSignature(state: GameState, pid: PlayerId, dispatch: (a: Action
 
   switch (lord.id) {
     case 'seraphine': {
+      // v12: her old gate (avg < 55) almost never opened — her own perk keeps
+      // order high. The Vigil now also pays and heals conquest grief, so she
+      // calls it whenever the realm is merely unsettled or freshly enlarged.
       const avg = mine.reduce((s, p) => s + p.order, 0) / mine.length;
-      if (avg < 55 || mine.some((p) => p.order < 30)) use();
+      if (avg < 68 || mine.some((p) => p.order < 40) || mine.some((p) => p.capturedTurn > 0)) use();
       break;
     }
     case 'aldric': {
@@ -816,12 +819,13 @@ function maybeUseSignature(state: GameState, pid: PlayerId, dispatch: (a: Action
     }
     case 'halvard': {
       // a real siege coming, not every wandering rebel band: hostile armies
-      // of a lord he is at war with beside his land, or rebels inside it
+      // of a lord he is at war with beside his land, or rebels inside it —
+      // or (v12) a war of his own to finish, sallying from the standing wall
       const threatened = mine.some((p) =>
         armiesIn(state, p.id).some((a) => a.owner === NEUTRAL)
         || p.neighbors.some((n) =>
           armiesIn(state, n).some((a) => a.owner >= 0 && a.owner !== pid && atWar(state, pid, a.owner))));
-      if (threatened) use();
+      if (threatened || (warTarget && armiesOf(state, pid).some((a) => !a.moved))) use();
       break;
     }
     case 'lyra': {
@@ -853,10 +857,10 @@ function maybeUseSignature(state: GameState, pid: PlayerId, dispatch: (a: Action
       break;
     }
     case 'corvas': {
-      const takings = state.players
-        .filter((o) => o.alive && o.id !== pid)
-        .reduce((s, o) => s + Math.floor(o.gold * 0.06), 0);
-      if (takings >= 25) use();
+      const rivals = state.players.filter((o) => o.alive && o.id !== pid);
+      const pctEff = 0.06 / Math.sqrt(Math.max(1, rivals.length - 1));
+      const takings = rivals.reduce((s, o) => s + Math.floor(o.gold * pctEff), 0);
+      if (takings >= 15) use();
       break;
     }
     case 'nyssa': {
@@ -872,7 +876,10 @@ function maybeUseSignature(state: GameState, pid: PlayerId, dispatch: (a: Action
       break;
     }
     case 'morrikan': {
-      if (mine.some((p) => p.site === 'barrow') && (warTarget || state.turn >= 6)) use();
+      // barrows make it strong; the seat fallback (v12) keeps it alive on
+      // seeds that never hand him one — but the doors open for wars and the
+      // long middle of the age, not as a free standing army subscription
+      if (warTarget || state.turn >= 12) use();
       break;
     }
     case 'vaelia': {

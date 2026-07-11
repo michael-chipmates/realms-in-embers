@@ -13,17 +13,17 @@ import type { Rng } from './rng';
 import type { Action, Effect, GameState, PlayerId } from './types';
 
 export const SIGNATURE_TUNING = {
-  seraphine: { order: 8, cooldown: 8 },
-  aldric: { knightCompanies: 1, cooldown: 10 },
-  halvard: { defense: 0.25, cooldown: 8 },
+  seraphine: { order: 10, goldPerProvince: 3, cooldown: 8 },
+  aldric: { knightCompanies: 1, cooldown: 12 },
+  halvard: { defense: 0.25, sallyPct: 12, cooldown: 8 },
   lyra: { atkPct: 15, seasons: 3, cooldown: 12 },
   ulvra: { extraMarch: 1, cooldown: 8 },
-  maera: { defense: 0.15, seasons: 2, cooldown: 8 },
+  maera: { defense: 0.15, atkPct: 15, seasons: 2, cooldown: 8 },
   cormac: { atkMult: 1.12, cooldown: 8 },
   branwen: { incomeCutPct: 20, seasons: 2, cooldown: 10 },
   corvas: { treasuryPct: 6, minGold: 2, cooldown: 10 },
   nyssa: { order: 15, cooldown: 6 },
-  morrikan: { companiesPerBarrow: 2, orderCost: 4, cooldown: 8 },
+  morrikan: { companiesPerBarrow: 1, seatFallbackCompanies: 1, orderCost: 4, cooldown: 12 },
   vaelia: { plunderMult: 3, seasons: 3, cooldown: 10 },
 } as const;
 
@@ -73,7 +73,9 @@ export function applySignature(state: GameState, rng: Rng, pid: PlayerId, action
         p.order = clamp(p.order + T.seraphine.order, 0, 100);
         p.capturedTurn = 0; // conquered folk are grieving folk; the Vigil sits with them
       }
-      scribe(state, { kind: 'realm', about: pid, text: `${lordName(state, pid)} called the Great Vigil: one night, every hearth in her realm tended, every district heard — the newly taken most of all, who forgot for an evening that they were taken. Order rose across her banner (+${T.seraphine.order}).` });
+      const tithe = mine.length * T.seraphine.goldPerProvince;
+      player.gold += tithe;
+      scribe(state, { kind: 'realm', about: pid, text: `${lordName(state, pid)} called the Great Vigil: one night, every hearth in her realm tended, every district heard — the newly taken most of all, who forgot for an evening that they were taken. Order rose across her banner (+${T.seraphine.order}), and the parishes tithed ${tithe} gold to the war chest unasked.` });
       break;
     }
     case 'aldric': {
@@ -127,10 +129,14 @@ export function applySignature(state: GameState, rng: Rng, pid: PlayerId, action
       break;
     }
     case 'corvas': {
+      // Design rule (D-018): no signature scales linearly with opponent count
+      // uncapped. The rate softens by 1/sqrt(rivals−1), so a six-lord table
+      // pays like a three-lord one — the flavor keeps, the arithmetic bows.
+      const rivals = state.players.filter((o) => o.alive && o.id !== pid);
+      const pctEff = T.corvas.treasuryPct / Math.sqrt(Math.max(1, rivals.length - 1));
       let collected = 0;
-      for (const o of state.players) {
-        if (!o.alive || o.id === pid) continue;
-        const owed = Math.max(T.corvas.minGold, Math.floor(o.gold * (T.corvas.treasuryPct / 100)));
+      for (const o of rivals) {
+        const owed = Math.max(T.corvas.minGold, Math.floor(o.gold * (pctEff / 100)));
         const paid = Math.min(o.gold, owed);
         o.gold -= paid;
         collected += paid;
@@ -147,7 +153,19 @@ export function applySignature(state: GameState, rng: Rng, pid: PlayerId, action
     }
     case 'morrikan': {
       const barrows = mine.filter((p) => p.site === 'barrow');
-      if (barrows.length === 0) return fail('The doors need barrows — rule at least one.');
+      if (barrows.length === 0) {
+        // No barrow in the realm: the doors still open, just fewer of them.
+        // (Many seeds never hand him one — the signature must not sit dead.)
+        const seat = state.provinces[player.seatProvince];
+        if (seat.owner !== pid) return fail('The doors need a barrow, or at least your own seat — retake it first.');
+        const existing = armiesIn(state, seat.id).find((a) => a.owner === pid && a.units.length <= 10);
+        if (existing) existing.units.push(...makeUnits('revenants', T.morrikan.seatFallbackCompanies));
+        else newArmy(state, pid, seat.id, makeUnits('revenants', T.morrikan.seatFallbackCompanies));
+        seat.order = clamp(seat.order - T.morrikan.orderCost, 0, 100);
+        province = seat.id;
+        scribe(state, { kind: 'magic', about: pid, text: `${lordName(state, pid)} opened what doors there were. Beneath ${seat.name} the old dead answered thinly — one company, patient as ever. The living bolted their shutters (−${T.morrikan.orderCost} order there).` });
+        break;
+      }
       for (const p of barrows) {
         const existing = armiesIn(state, p.id).find((a) => a.owner === pid && a.units.length <= 10);
         if (existing) existing.units.push(...makeUnits('revenants', T.morrikan.companiesPerBarrow));

@@ -43,6 +43,11 @@ export function provinceIncome(state: GameState, p: Province): Itemized {
     lines.push({ label: `${lord.perk.label} (${lord.name})`, amount: fx.incomeTerrainAdd });
     base += fx.incomeTerrainAdd;
   }
+  if (fx.walledIncomeAdd && p.buildings.some((b) => b.startsWith('walls'))) {
+    // Halvard (v12): a held gate taxes the road — walls finally EARN
+    lines.push({ label: `${lord.perk.label} — gate tolls`, amount: fx.walledIncomeAdd });
+    base += fx.walledIncomeAdd;
+  }
   for (const b of p.buildings) {
     const def = BUILDINGS[b];
     if (def.incomeAdd) {

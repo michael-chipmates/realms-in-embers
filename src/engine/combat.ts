@@ -461,6 +461,25 @@ function addSignatureMods(state: GameState, side: Side, enemyPlayer: PlayerId, c
       side.mult *= SIGNATURE_TUNING.cormac.atkMult;
     }
   }
+  // Fen Lights lead outward too (rules v12): attacks launched FROM a lit
+  // province strike harder — the lights walk ahead of her columns and lead
+  // the enemy's line somewhere it regrets.
+  if (side.role === 'attacker' && fromProvince !== null) {
+    const lit = state.provinces[fromProvince].mods.some((m) => m.label === 'Fen Lights' && m.by === side.player);
+    if (lit) {
+      const mult = 1 + SIGNATURE_TUNING.maera.atkPct / 100;
+      side.mods.push({ label: 'Fen Lights lead the column', mult });
+      side.mult *= mult;
+    }
+    // Stand Fast (v12): a held gate opens both ways — Halvard's sallies from
+    // his own warded ground carry the wall's confidence with them.
+    const standing = state.provinces[fromProvince].mods.some((m) => m.label === 'Stand Fast' && m.by === side.player);
+    if (standing) {
+      const mult = 1 + SIGNATURE_TUNING.halvard.sallyPct / 100;
+      side.mods.push({ label: 'Sally from the standing wall', mult });
+      side.mult *= mult;
+    }
+  }
 }
 
 /** Battle magic: each side auto-weaves its strongest affordable spell. */

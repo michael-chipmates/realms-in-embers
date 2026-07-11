@@ -24,6 +24,8 @@ export interface LordPerkEffects {
   orderAll?: number;
   incomeTerrainId?: Terrain;
   incomeTerrainAdd?: number;
+  /** flat gold on top of base income in provinces with any wall building */
+  walledIncomeAdd?: number;
   capitalIncomePct?: number;
   defenseTerrainId?: Terrain;
   defenseTerrainPct?: number;
@@ -103,7 +105,7 @@ export const LORDS: LordDef[] = [
     },
     signature: {
       id: 'greatVigil', name: 'The Great Vigil',
-      desc: 'Every province you rule gains +8 order at once, and newly conquered folk forget their grief.',
+      desc: 'Every province you rule gains +10 order at once, the parishes tithe 3 gold apiece, and newly conquered folk forget their grief.',
       flavor: 'One night, every hearth in the realm tended by someone who prays like she means it.',
       cooldown: 8, target: 'none', fxFamily: 'bless',
     },
@@ -126,14 +128,14 @@ export const LORDS: LordDef[] = [
     color: '#b8860b', colorAlt: '#3a2c14', pattern: 'checks', sigil: 'crown',
     perk: {
       label: 'The Old Blood',
-      desc: 'Your capital yields +20% gold. Banner Knights cost 15% less.',
-      fx: { capitalIncomePct: 20, unitDiscountId: 'knights', unitDiscountPct: 15 },
+      desc: 'Your capital yields +10% gold. Banner Knights cost 10% less.',
+      fx: { capitalIncomePct: 10, unitDiscountId: 'knights', unitDiscountPct: 10 },
     },
     signature: {
       id: 'royalMuster', name: 'Royal Muster',
       desc: 'A full company of Banner Knights musters at your seat, at once and without cost.',
       flavor: 'The Old Blood calls; the old families still answer. Mostly out of habit, which is the strongest reason there is.',
-      cooldown: 10, target: 'none', fxFamily: 'bless',
+      cooldown: 12, target: 'none', fxFamily: 'bless',
     },
     lines: {
       intro: 'Twice crowned, gentlemen. The third time I shall not even need to sit down.',
@@ -154,12 +156,12 @@ export const LORDS: LordDef[] = [
     color: '#5b6472', colorAlt: '#d8d2c2', pattern: 'stripes', sigil: 'gate',
     perk: {
       label: 'Stonefast',
-      desc: 'Walls cost 30% less. Your troops fight +14% harder defending your own provinces.',
-      fx: { wallDiscountPct: 30, defendOwnPct: 14 },
+      desc: 'Walls cost 30% less, and walled provinces pay +4 gold in gate tolls. Your troops fight +14% harder defending your own provinces.',
+      fx: { wallDiscountPct: 30, defendOwnPct: 14, walledIncomeAdd: 4 },
     },
     signature: {
       id: 'standFast', name: 'Stand Fast',
-      desc: 'Every province you rule defends +25% until your next season.',
+      desc: 'Every province you rule defends +25% until your next season, and attacks you launch from your own ground strike +12% harder — a held gate opens both ways.',
       flavor: 'No speech. He walks the wall once, and the wall understands.',
       cooldown: 8, target: 'none', fxFamily: 'ward',
     },
@@ -239,12 +241,12 @@ export const LORDS: LordDef[] = [
     color: '#2a7f7f', colorAlt: '#e2ded0', pattern: 'dots', sigil: 'reed',
     perk: {
       label: 'Fen-Cunning',
-      desc: 'Moor provinces yield +9 gold. Spells cost 25% less Emberlight. You begin knowing Scrying Smoke.',
-      fx: { incomeTerrainId: 'moor', incomeTerrainAdd: 9, spellDiscountPct: 25, startingSpell: 'scryingSmoke' },
+      desc: 'Moor provinces yield +12 gold. Spells cost 25% less Emberlight. You begin knowing Scrying Smoke.',
+      fx: { incomeTerrainId: 'moor', incomeTerrainAdd: 12, spellDiscountPct: 25, startingSpell: 'scryingSmoke' },
     },
     signature: {
       id: 'fenLights', name: 'Fen Lights',
-      desc: 'Lights walk your borders: every province you rule defends +15% for 2 seasons, and everything bordering your realm is revealed.',
+      desc: 'Lights walk your borders for 2 seasons: every province you rule defends +15%, attacks you launch from lit ground strike +15% harder, and everything bordering your realm is revealed.',
       flavor: 'Follow the lights, the children are told. The lights lead soldiers somewhere else entirely.',
       cooldown: 8, target: 'none', fxFamily: 'scry',
     },
@@ -329,7 +331,7 @@ export const LORDS: LordDef[] = [
     },
     signature: {
       id: 'callTheDebts', name: 'Call in the Debts',
-      desc: 'Every living rival immediately pays you 6% of their treasury. None of them thanks you for it.',
+      desc: 'Every living rival immediately pays you a cut of their treasury — 6% against one rival, gentler per head as the table grows. None of them thanks you for it.',
       flavor: 'The appendix, gentlemen. Nobody reads the appendix. The appendix reads you.',
       cooldown: 10, target: 'none', fxFamily: 'curse',
     },
@@ -385,9 +387,9 @@ export const LORDS: LordDef[] = [
     },
     signature: {
       id: 'openTheDoors', name: 'Open the Doors',
-      desc: 'The dead answer at every barrow you rule: two companies of Barrow Revenants rise at each (−4 order there).',
+      desc: 'The dead answer at every barrow you rule: a company of Barrow Revenants rises at each (−4 order there). Without a barrow, one still answers at your seat.',
       flavor: 'Constituents, he calls them. They vote in ranks.',
-      cooldown: 8, target: 'none', fxFamily: 'summon',
+      cooldown: 12, target: 'none', fxFamily: 'summon',
     },
     lines: {
       intro: 'Three graves could not hold me. One throne should manage nicely.',

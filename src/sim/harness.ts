@@ -10,7 +10,7 @@
 import { aiTakeTurn } from '../engine/ai';
 import { createGame, serializeGame, deserializeGame, replayGame } from '../engine/engine';
 import { LORD_BY_ID } from '../engine/content/lords';
-import { defaultSettings } from '../engine/state';
+import { defaultSettings, RULES_VERSION } from '../engine/state';
 import { checkInvariants } from './invariants';
 import type { Difficulty, GameSettings, GameState, MapSize } from '../engine/types';
 import { writeFileSync } from 'node:fs';
@@ -43,9 +43,17 @@ function argOf(name: string, fallback: string): string {
 const GAMES = parseInt(argOf('games', '60'), 10);
 const SEED_PREFIX = argOf('seed-prefix', 'sim');
 const REPLAY_EVERY = parseInt(argOf('replay-every', '10'), 10);
+/** --mirror: the confound-free balance referee (review night, 2026-07-11).
+ * Every seat plays knight, lords deal round-robin in consecutive blocks so
+ * each gets equal seats at every table size, and statistical gates judge
+ * the result: per-lord two-sided test vs the seat-weighted baseline,
+ * ending-share bands, and a signature-use floor. The old mixed sweep hid a
+ * 44%-Corvas / 4%-Maera spread inside difficulty noise. */
+const MIRROR = args.includes('--mirror');
 
 const SIZES: MapSize[] = ['small', 'medium', 'large'];
 const DIFFS: Difficulty[] = ['squire', 'knight', 'warlord'];
+const LORD_IDS = Object.keys(LORD_BY_ID);
 
 function settingsFor(i: number): GameSettings {
   const s = defaultSettings();
@@ -55,8 +63,8 @@ function settingsFor(i: number): GameSettings {
   if (playerCount > 4 && s.mapSize === 'small') s.mapSize = 'medium';
   s.players = Array.from({ length: playerCount }, (_, p) => ({
     kind: 'ai' as const,
-    lordId: 'random',
-    difficulty: DIFFS[(i + p) % 3],
+    lordId: MIRROR ? LORD_IDS[(i * 5 + p) % LORD_IDS.length] : 'random',
+    difficulty: MIRROR ? 'knight' : DIFFS[(i + p) % 3],
   }));
   s.maxTurns = 60;
   s.fogOfWar = i % 4 === 0;
@@ -214,15 +222,90 @@ function main(): void {
       console.log(`  ${(LORD_BY_ID[lord]?.name ?? lord).padEnd(24)} ${String(uses).padStart(4)}   ${(uses / Math.max(1, games)).toFixed(1)}/seat`);
     }
   }
+  // ---- the mirror gates: statistics, not vibes -------------------------
+  const gateFailures: string[] = [];
+  if (MIRROR && records.length > 0) {
+    const gate = records.length >= 300; // below 300 games: print, don't judge
+    console.log(`\nMirror gates (${gate ? 'ENFORCED' : `advisory below 300 games — ${records.length} played`}):`);
+    // Φ via Abramowitz–Stegun 7.1.26 — plenty for a 1% gate
+    const phi = (z: number): number => {
+      const t = 1 / (1 + 0.3275911 * Math.abs(z) / Math.SQRT2);
+      const x = Math.abs(z) / Math.SQRT2;
+      const erf = 1 - (((((1.061405429 * t - 1.453152027) * t) + 1.421413741) * t - 0.284496736) * t + 0.254829592) * t * Math.exp(-x * x);
+      return z >= 0 ? 0.5 * (1 + erf) : 0.5 * (1 - erf);
+    };
+    const perLord = new Map<string, { wins: number; seats: number; expected: number; variance: number }>();
+    for (const r of records) {
+      for (const lord of r.seatLords) {
+        const s = perLord.get(lord) ?? { wins: 0, seats: 0, expected: 0, variance: 0 };
+        s.seats += 1;
+        const p = 1 / r.players;
+        s.expected += p;
+        s.variance += p * (1 - p);
+        perLord.set(lord, s);
+      }
+      if (r.winnerLord) perLord.get(r.winnerLord)!.wins += 1;
+    }
+    console.log('  Lord fairness (observed vs seat-weighted expectation, two-sided p):');
+    for (const [lord, s] of [...perLord.entries()].sort()) {
+      const z = s.variance > 0 ? (s.wins - s.expected) / Math.sqrt(s.variance) : 0;
+      const p = 2 * (1 - phi(Math.abs(z)));
+      // Wilson 95% interval on the raw per-seat rate, for the report
+      const n = s.seats; const w = s.wins / Math.max(1, n); const zz = 1.96;
+      const den = 1 + zz * zz / n;
+      const mid = (w + zz * zz / (2 * n)) / den;
+      const half = (zz * Math.sqrt((w * (1 - w) + zz * zz / (4 * n)) / n)) / den;
+      const verdict = p < 0.01 ? '✗ OUTSIDE' : '✓';
+      console.log(`    ${(LORD_BY_ID[lord]?.name ?? lord).padEnd(24)} ${String(s.wins).padStart(3)}/${String(s.seats).padEnd(3)} exp ${s.expected.toFixed(1).padStart(5)}  CI ${(100 * (mid - half)).toFixed(0)}–${(100 * (mid + half)).toFixed(0)}%  p=${p.toFixed(3)} ${verdict}`);
+      if (gate && p < 0.01) gateFailures.push(`${lord}: wins ${s.wins} vs expected ${s.expected.toFixed(1)} over ${s.seats} seats (p=${p.toFixed(4)})`);
+    }
+    const byPath2 = new Map<string, number>();
+    for (const r of records) byPath2.set(String(r.path), (byPath2.get(String(r.path)) ?? 0) + 1);
+    const share = (path: string): number => (byPath2.get(path) ?? 0) / records.length;
+    if (gate && share('dominion') > 0.40) gateFailures.push(`dominion carries ${Math.round(share('dominion') * 100)}% of endings (gate: ≤40%)`);
+    for (const path of ['conquest', 'legend', 'chronicle']) {
+      if (gate && share(path) < 0.04) gateFailures.push(`${path} at ${Math.round(share(path) * 100)}% of endings (gate: ≥4%)`);
+    }
+    // Golden Age is a rare-prestige ending by decision (ROADMAP §2.1) — it
+    // must stay reachable, not common
+    if (gate && (byPath2.get('goldenAge') ?? 0) === 0) gateFailures.push('goldenAge never occurred (gate: ≥1 per 300)');
+    const sigUses2 = new Map<string, number>();
+    const sigSeats = new Map<string, number>();
+    for (const r of records) {
+      for (const lord of r.seatLords) sigSeats.set(lord, (sigSeats.get(lord) ?? 0) + 1);
+      for (const [lord, n] of Object.entries(r.signatureUses ?? {})) sigUses2.set(lord, (sigUses2.get(lord) ?? 0) + n);
+    }
+    for (const [lord, seats] of sigSeats) {
+      const rate = (sigUses2.get(lord) ?? 0) / seats;
+      if (gate && rate < 1.0) gateFailures.push(`${lord} fires their signature ${rate.toFixed(1)}×/seat (gate: ≥1.0)`);
+    }
+    if (gateFailures.length > 0) {
+      console.log('  ✗ GATES FAILED:');
+      for (const g of gateFailures) console.log(`    ${g}`);
+    } else {
+      console.log(`  ✓ Gates ${gate ? 'pass' : 'would pass (advisory)'}: fairness, ending bands, signature floor.`);
+    }
+  }
+
   if (failures.length > 0) {
     console.log(`\n✗ ${failures.length} FAILURES:`);
     for (const f of failures) console.log(`  ${f}`);
   } else {
     console.log('\n✓ No crashes. Every game terminated with a winner. Invariants held every round.');
   }
-  writeFileSync('sim-report.json', JSON.stringify({ when: new Date().toISOString(), games: records, failures }, null, 2));
+  writeFileSync('sim-report.json', JSON.stringify({
+    when: new Date().toISOString(),
+    rulesVersion: RULES_VERSION,
+    mirror: MIRROR,
+    config: { games: GAMES, seedPrefix: SEED_PREFIX },
+    completed: records.length,
+    attempted: GAMES,
+    games: records,
+    failures,
+    gateFailures,
+  }, null, 2));
   console.log('Report written to sim-report.json');
-  if (failures.length > 0) process.exit(1);
+  if (failures.length > 0 || gateFailures.length > 0) process.exit(1);
 }
 
 main();
