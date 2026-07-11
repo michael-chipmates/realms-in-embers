@@ -13,9 +13,25 @@ await page.waitForTimeout(500);
 // Michel's phone bugs (2026-07-11): setup must fit the viewport width and
 // must scroll under a real touch gesture; the sheet must too (below).
 const cdp = await page.context().newCDPSession(page);
+// Drag a synthetic finger (raw touch events). Input.synthesizeScrollGesture
+// with gestureSourceType 'touch' silently does nothing on Linux headless
+// chromium (CI), so the gesture is built from dispatchTouchEvent instead —
+// which is also closer to a real thumb. dy < 0 drags the finger up, i.e.
+// the content scrolls down (scrollTop grows).
 const touchScroll = async (x, y, dy) => {
-  await cdp.send('Input.synthesizeScrollGesture', { x, y, yDistance: dy, speed: 800, gestureSourceType: 'touch' });
-  await page.waitForTimeout(350);
+  let remaining = dy;
+  while (remaining !== 0) {
+    const chunk = Math.max(-320, Math.min(320, remaining));
+    const startY = chunk < 0 ? Math.min(y, 700) : Math.max(y, 140);
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x, y: startY }] });
+    const steps = 10;
+    for (let i = 1; i <= steps; i++) {
+      await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x, y: startY + (chunk * i) / steps }] });
+    }
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+    remaining -= chunk;
+  }
+  await page.waitForTimeout(400);
 };
 const wide = await page.evaluate(() =>
   [...document.querySelectorAll('.setup-screen *')]
