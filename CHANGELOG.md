@@ -1,10 +1,92 @@
 # Changelog
 
 All notable changes to Realms in Embers. The game's rules carry their own
-version (`RULES_VERSION` in `src/engine/state.ts`, currently v12) — bumped
+version (`RULES_VERSION` in `src/engine/state.ts`, currently v13) — bumped
 whenever engine semantics change, with a frozen replay fixture as the canary.
 
-## [0.3.0] — the revision night (2026-07-12)
+## [0.4.0] — the open realm (2026-07-12)
+
+The round-2 audits arrived (8.9 and 8.8, both up from 8.4) and every finding
+was validated and dispositioned in `docs/ROADMAP.md` §2.16. This release
+ships the trust batches both rounds demanded, the first experience flagship,
+and the Wayhouse.
+
+### Added
+- **The Wayhouse** — open tables for strangers (`docs/design/open-tables.md`):
+  a host can post their table to a well-known room on the same blind relay
+  (its key is published on purpose — public is just "everyone holds the key");
+  anyone opening Play with Friends sees the open tables and sits down with one
+  tap, no link needed. Ads heartbeat while seats stay free, expire cold after
+  30 minutes, withdraw on start/leave, and re-announce when seats fill. The
+  plain-words warning ships with the toggle: a posted table is public.
+  `drive-wayhouse.mjs` proves the whole stranger path: post → discover →
+  sit → identical war on both clients.
+- **Protocol v2 handshake** — hellos carry protocol + rules versions; the
+  lobby names peers on a different edition, the host cannot start a mixed
+  table, and a joiner refusing a foreign `start` gets plain instructions
+  instead of a silent desync.
+- **Idempotent appends** — every payload carries a random message id; both
+  relay flavors dedupe retransmissions and replay the original entry, and the
+  client settles its unacked ledger against the backlog on reconnect. The
+  lost-ack duplicate is closed. Appends are also token-bucket throttled
+  per socket (burst 20, 2/s refill) on both relays.
+- **Validate-before-apply** — decrypted payloads pass structural bounds
+  before use; anything unreadable or out of bounds becomes a tombstone
+  identically on every honest client (one shared key: skipping is consistent,
+  never a fork).
+- **Save trust bundle** — every save write returns a typed result, writes are
+  transactional (write → verify → rotate) with a last-known-good generation,
+  save health is visible in Settings with retry/export, imports pass a 10 MB
+  cap + structural validation + prototype-pollution rejection and can never
+  touch the running game; 16 new tests including a 40-case fuzz corpus.
+- **Workflows** — `nightly.yml` (300-game mirrored sweep with enforced gates
+  + codex drift check), `deploy.yml` (tag-triggered build → codex export →
+  deploy → live smoke; needs two repo secrets), and the PR pipeline now runs
+  the real browser drives, desktop and mobile.
+- **Invite hygiene** — the room key leaves the address bar the moment it is
+  read (session storage carries the war across reloads; Copy invite rebuilds
+  the link deliberately).
+
+### Fixed (round-2 audit findings, all verified)
+- The setup screen promised "3 consecutive seasons" for Dominion after rules
+  v12 made it four — victory copy now renders from the engine's constants,
+  permanently.
+- Mutual annihilation crowned player 0 by seat order; the chronicle now draws
+  a seeded lot over the ruins.
+- The mirror referee itself was confounded: fog and map size cycled with the
+  lord rotation. Mirror mode now fixes every condition but the lords
+  (re-verified: all twelve within gates on fresh seeds).
+- A sampled forecast can no longer print certainty: 240 clean trials read
+  "≥99%", a washout "≤1%", and the trial count is stated.
+- The service worker stopped seizing live campaigns mid-deploy (no more
+  `skipWaiting`); a fresh build waits for the next launch.
+- The map canvas no longer claims `role="application"` (it suppressed
+  screen-reader browse mode while providing no keyboard model); it is an
+  `img` with an honest label until the Navigator flagship lands.
+- Two seated lords can no longer share a heraldic fill pattern.
+- A Continue button whose save fails to parse now says so instead of dying
+  silently.
+- CHANGELOG/ROADMAP now quote the enforced statistical gates, not one
+  sweep's observed ranges — and a meta-test asserts the documented numbers
+  equal the harness constants.
+
+### Added — the first experience flagship
+- **Season Digest** (rules **v13**) — the chronicle no longer buries its good
+  writing under ~237 routine lines. At every round end Osperan closes the
+  season with one digest entry (`ChronicleEntry.digest`, a new `seasonDigest`
+  bank with six count-parameterized variants) summarizing the season's
+  ordinary business; routine ledger lines (insolvency, guild-loan bookkeeping)
+  now carry `minor: true`. In the feed, a persisted **Digest** toggle (on by
+  default, `rie-digest` in localStorage) groups entries under collapsible
+  season headers: the current season expanded, older seasons folded to their
+  digest line plus their ceremonies — which, along with battles, diplomacy,
+  heroes, magic, events and teachings, are never digested. Digest off is
+  exactly the old flat feed. The filter is a pure engine function
+  (`filterChronicle`/`digestView` in `src/engine/narrator.ts`), shared with
+  the new `tests/digest.test.ts`; a full AI game now reads in ~51 visible
+  lines instead of ~239. Replay fixture refrozen at rules v13.
+
+## [0.3.0] — the revision night (2026-07-11)
 
 Four independent auditors read the game, the code, and the live site on
 review night; their findings (kept under `docs/reviews/`) plus Michel's own
@@ -45,8 +127,12 @@ dispositioned. This release ships the P0 layer.
   actually calls it now. Aldric's capital yields +10% (was +20%) and Banner
   Knights discount eased to 10%; Royal Muster cools 12 seasons.
 - `DOMINION_ROUNDS` 3 → 4; dominion endings 44% → 35% of AI games.
-- Final 600-game mirrored sweep: every lord within 20–32% per seat
-  (p ≥ 0.019), all five endings alive, every signature ≥ 1.5 uses/seat.
+- Final 600-game mirrored sweep passed every enforced gate: per-lord
+  fairness at p ≥ 0.01 vs the seat-weighted baseline, dominion ≤ 40% of
+  endings, every other path ≥ 4% (Golden Age exempt — rare by decision,
+  gated at ≥ 1 per 300 games), and every signature ≥ 1.0 uses/seat.
+  Observed on that sweep (not gates): lords landed within 20–32% per seat
+  (worst p = 0.019), all five endings alive, signatures at ≥ 1.5 uses/seat.
 
 ### Added
 - **A landing page that exists**: rie.gg now serves real, styled, crawlable

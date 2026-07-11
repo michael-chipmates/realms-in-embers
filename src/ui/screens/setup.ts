@@ -6,6 +6,7 @@ import { LORDS, LORD_BY_ID } from '../../engine/content/lords';
 import { CREEDS } from '../../engine/content/world';
 import { MAP_SIZES, generateMap } from '../../engine/mapgen';
 import { HANDICAPS, defaultSettings } from '../../engine/state';
+import { DOMINION_SHARE, DOMINION_ROUNDS, GOLDEN_GOLD, GOLDEN_ORDER, GOLDEN_ROUNDS } from '../../engine/victory';
 import { Rng } from '../../engine/rng';
 import type { Difficulty, GameSettings, MapSize, PlayerSetup, VictoryPath } from '../../engine/types';
 import type { App } from '../app';
@@ -17,10 +18,14 @@ import { sigilShield } from '../heraldry';
 import { artSlot } from '../art';
 import { tip } from '../tooltip';
 
+// Every number below renders from the engine's own constants. The screen
+// shipped "3 consecutive seasons" for a night after rules v12 made it four —
+// exactly the drift this project promises cannot happen. Never hand-write
+// a victory number again.
 export const VICTORY_INFO: Record<VictoryPath, { name: string; desc: string }> = {
   conquest: { name: 'Conquest', desc: 'Be the last banner standing.' },
-  dominion: { name: 'Dominion', desc: 'Hold 55% of the realm for 3 consecutive seasons. Everyone sees the countdown.' },
-  goldenAge: { name: 'Golden Age', desc: 'Be the realm’s richest lord, holding 900+ gold with average order 65+, for 4 consecutive seasons.' },
+  dominion: { name: 'Dominion', desc: `Hold ${Math.round(DOMINION_SHARE * 100)}% of the realm for ${DOMINION_ROUNDS} consecutive seasons. Everyone sees the countdown.` },
+  goldenAge: { name: 'Golden Age', desc: `Be the realm’s richest lord, holding ${GOLDEN_GOLD}+ gold with average order ${GOLDEN_ORDER}+, for ${GOLDEN_ROUNDS} consecutive seasons. A rare crown, and priced accordingly.` },
   legend: { name: 'Legend', desc: 'Complete the five chapters of the Grand Saga and rekindle the throne.' },
 };
 

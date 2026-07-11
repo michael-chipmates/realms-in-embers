@@ -59,7 +59,10 @@ function settingsFor(i: number): GameSettings {
   const s = defaultSettings();
   s.seed = `${SEED_PREFIX}-${i}`;
   const playerCount = 2 + (i % 5); // 2..6
-  s.mapSize = SIZES[i % 3];
+  // MIRROR fixes every condition but the lords: fog and size once cycled
+  // with the game index and therefore with the lord rotation — a confound
+  // the round-2 audit caught (per-lord fog exposure ranged 15-35%)
+  s.mapSize = MIRROR ? 'medium' : SIZES[i % 3];
   if (playerCount > 4 && s.mapSize === 'small') s.mapSize = 'medium';
   s.players = Array.from({ length: playerCount }, (_, p) => ({
     kind: 'ai' as const,
@@ -67,7 +70,7 @@ function settingsFor(i: number): GameSettings {
     difficulty: MIRROR ? 'knight' : DIFFS[(i + p) % 3],
   }));
   s.maxTurns = 60;
-  s.fogOfWar = i % 4 === 0;
+  s.fogOfWar = MIRROR ? false : i % 4 === 0;
   return s;
 }
 

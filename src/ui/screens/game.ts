@@ -213,7 +213,11 @@ export class GameScreen {
   // -------------------------------------------------------------- mount
 
   mount(root: HTMLElement): void {
-    this.canvas = h('canvas', { class: 'war-map', 'aria-label': 'The map of the Embermark', role: 'application' });
+    // role 'img', not 'application': the broad application role suppressed
+    // screen-reader browse mode across the whole table without providing the
+    // full keyboard model it promises (round-2 audit). The Realm Ledger and
+    // the planned Province Navigator are the map's non-visual peers.
+    this.canvas = h('canvas', { class: 'war-map', 'aria-label': 'The painted map of the Embermark. Province details and every command are available from the panels and the Ledger overlay.', role: 'img' });
     this.renderer = new MapRenderer(this.canvas);
     this.topbar = h('header', { class: 'topbar' });
     this.sidePanel = h('aside', { class: 'side-panel', 'aria-label': 'Selection details' });
@@ -665,14 +669,17 @@ export class GameScreen {
       const preview = previewBattle(this.state, army.id, target.to, target.viaSea, 240, [...chosen], fervor);
       if (!preview) return;
       const pct = Math.round(preview.winChance * 100);
+      // 240 trials cannot promise certainty: a clean sweep reads "at least
+      // 99%", a washout "at most 1%" — the honest edges of a sampled forecast
+      const pctLabel = pct >= 100 ? '≥99%' : pct <= 0 ? '≤1%' : `${pct}%`;
       mount(content,
         h('div', { class: 'odds-meter-row' },
-          h('div', { class: 'odds-label' }, `${pct}% to carry the field`),
-          h('div', { class: 'odds-meter', role: 'img', 'aria-label': `Victory chance ${pct} percent` },
-            h('div', { class: 'odds-fill', style: { width: `${pct}%` } }),
+          h('div', { class: 'odds-label' }, `${pctLabel} to carry the field`),
+          h('div', { class: 'odds-meter', role: 'img', 'aria-label': `Victory chance ${pctLabel.replace('%', ' percent')}, from 240 sampled battles` },
+            h('div', { class: 'odds-fill', style: { width: `${Math.max(1, Math.min(99, pct))}%` } }),
           ),
           h('div', { class: 'small muted' },
-            `Expected losses — yours: ${Math.round(preview.aExpectedLoss * 100)}%, theirs: ${Math.round(preview.dExpectedLoss * 100)}%`),
+            `Expected losses — yours: ${Math.round(preview.aExpectedLoss * 100)}%, theirs: ${Math.round(preview.dExpectedLoss * 100)}% · 240 trials on forked fate`),
         ),
         eligibleSupport.length > 0
           ? h('div', { class: 'odds-support' },

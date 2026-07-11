@@ -101,9 +101,12 @@ export function renderTitle(app: App): void {
     newest
       ? h('button', {
           class: 'btn title-btn',
-          onclick: () => {
+          onclick: (e: Event) => {
             const state = loadSlot(newest.key);
-            if (state) app.continueGame(state);
+            if (state) { app.continueGame(state); return; }
+            // a dead button teaches nothing: say what happened (round-2 audit)
+            (e.target as HTMLButtonElement).textContent =
+              'That save could not be read — try Load a Chronicle for an older one.';
           },
         }, `Continue — ${newest.lords.split(',')[0]?.trim() ?? 'the war'}, season ${newest.turn}`)
       : null,

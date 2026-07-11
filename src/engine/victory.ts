@@ -99,8 +99,11 @@ export function checkVictory(state: GameState, rng: Rng, effects: Effect[]): voi
     return;
   }
   if (alive.length === 0) {
-    // mutual annihilation: the chronicle picks over the ruins (should be unreachable)
-    setWinner(state, rng, 0, 'chronicle', effects);
+    // mutual annihilation (should be unreachable): everyone scores nothing,
+    // so the chronicle draws a seeded lot over the ruins — deterministic,
+    // and never seat order
+    const lot = state.players[rng.intRange(0, state.players.length - 1)];
+    setWinner(state, rng, lot.id, 'chronicle', effects);
     return;
   }
 
