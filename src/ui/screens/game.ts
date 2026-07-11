@@ -404,6 +404,9 @@ export class GameScreen {
       : undefined;
     const selArmy = this.sel.armyId !== null ? this.state.armies[this.sel.armyId] : null;
     this.renderer.render({
+      // the log length moves with every action, so the political layer
+      // re-paints exactly when the realm changed — hover costs composition
+      cacheKey: `${this.state.log.length}`,
       selected: this.sel.provinceId,
       hovered: this.hovered,
       targets: new Set(this.targets.map((t) => t.to)),

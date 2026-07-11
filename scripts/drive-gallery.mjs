@@ -20,7 +20,7 @@ const watch = (page, label) => {
   const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
   watch(page, 'solo');
   await page.goto(url, { waitUntil: 'networkidle' });
-  await page.getByRole('button', { name: 'Quick War' }).click();
+  await page.getByRole('button', { name: 'A Quick Chronicle' }).click();
   await page.getByRole('button', { name: /Standard/ }).click();
   await page.waitForTimeout(500);
   const overlay = page.locator('.gallery-overlay');
@@ -46,7 +46,7 @@ for (const vp of [{ width: 375, height: 667 }, { width: 320, height: 568 }]) {
   const page = await browser.newPage({ viewport: vp });
   watch(page, `phone${vp.width}`);
   await page.goto(url, { waitUntil: 'networkidle' });
-  await page.getByRole('button', { name: 'Quick War' }).click();
+  await page.getByRole('button', { name: 'A Quick Chronicle' }).click();
   await page.getByRole('button', { name: /Gentle/ }).click();
   await page.waitForTimeout(500);
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);

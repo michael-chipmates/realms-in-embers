@@ -40,6 +40,10 @@ export interface RenderOptions {
   viewer?: number;
   showGrid?: boolean;
   colorblind?: boolean;
+  /** Cheap fingerprint of the game state (e.g. action-log length). When
+   * given, the political layer is cached until it changes; when absent,
+   * every render paints the political layer fresh. */
+  cacheKey?: string;
   /** Army markers to draw (owner -1 = leaderless). */
   armies?: { province: number; owner: number; strength: number; hasHero: boolean; kind?: string }[];
   /** Transient animation layer (t runs 0→1). UI-only — never reads rng,
@@ -107,6 +111,8 @@ export class MapRenderer {
 
   setView(view: MapView): void {
     this.view = view;
+    this.baseLayerKey = '';
+    this.politicalLayerKey = '';
     this.loops.clear();
     for (const p of view.provinces) {
       this.loops.set(p.id, traceProvince(view, p.id));
@@ -151,6 +157,37 @@ export class MapRenderer {
     this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   }
 
+  // ------------------------------------------------ the layer cache (P1)
+  // Three lifetimes, three layers. L0 (base): sea, vellum, terrain — moves
+  // only with the camera or the fog. L1 (political): tints, glyphs, rivers,
+  // borders, sites, armies — moves when the STATE moves (callers pass a
+  // cheap cacheKey; the action log length is perfect). L2 (dynamic): hover,
+  // selection, targets, labels, fx — drawn every frame over two drawImages,
+  // so a hover repaint costs composition, not cartography.
+  private baseLayer: HTMLCanvasElement | null = null;
+  private baseLayerKey = '';
+  private politicalLayer: HTMLCanvasElement | null = null;
+  private politicalLayerKey = '';
+  private uncachedRenders = 0;
+
+  private layerCtx(store: 'baseLayer' | 'politicalLayer'): CanvasRenderingContext2D {
+    let layer = this[store];
+    if (!layer) {
+      layer = document.createElement('canvas');
+      this[store] = layer;
+    }
+    if (layer.width !== this.canvas.width || layer.height !== this.canvas.height) {
+      layer.width = this.canvas.width;
+      layer.height = this.canvas.height;
+    }
+    const lctx = layer.getContext('2d')!;
+    const rect = this.canvas.getBoundingClientRect();
+    const dpr = rect.width > 0 ? this.canvas.width / rect.width : 1;
+    lctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    lctx.clearRect(0, 0, rect.width, rect.height);
+    return lctx;
+  }
+
   render(opts: RenderOptions = {}): void {
     const view = this.view;
     if (!view) return;
@@ -159,6 +196,28 @@ export class MapRenderer {
     const w = rect.width;
     const hgt = rect.height;
 
+    const camKey = `${this.scale.toFixed(3)}:${this.offX.toFixed(1)}:${this.offY.toFixed(1)}:${this.canvas.width}x${this.canvas.height}:${opts.unseen?.size ?? -1}`;
+    if (!this.baseLayer || this.baseLayerKey !== camKey) {
+      this.drawBaseLayer(this.layerCtx('baseLayer'), opts, w, hgt);
+      this.baseLayerKey = camKey;
+    }
+    const polKey = opts.cacheKey === undefined
+      ? `live:${++this.uncachedRenders}` // no key given: never cache
+      : `${camKey}|${opts.cacheKey}:${opts.colorblind ? 1 : 0}:${opts.viewer ?? -9}`;
+    if (!this.politicalLayer || this.politicalLayerKey !== polKey) {
+      this.drawPoliticalLayer(this.layerCtx('politicalLayer'), opts, w, hgt);
+      this.politicalLayerKey = polKey;
+    }
+
+    ctx.clearRect(0, 0, w, hgt);
+    ctx.drawImage(this.baseLayer!, 0, 0, w, hgt);
+    ctx.drawImage(this.politicalLayer!, 0, 0, w, hgt);
+    this.drawDynamic(ctx, opts, w, hgt);
+  }
+
+  /** L0 — everything that only moves with the camera or the fog. */
+  private drawBaseLayer(ctx: CanvasRenderingContext2D, opts: RenderOptions, w: number, hgt: number): void {
+    const view = this.view!;
     // --- the sea (table shows through a deep wash)
     const seaGrad = ctx.createLinearGradient(0, 0, w, hgt);
     seaGrad.addColorStop(0, SEA_SHALLOW);
@@ -217,7 +276,7 @@ export class MapRenderer {
       ctx.restore();
     }
 
-    // --- provinces
+    // --- province ground: terrain wash for the seen, plain vellum for fog
     for (const p of view.provinces) {
       const loops = this.loops.get(p.id);
       if (!loops) continue;
@@ -225,45 +284,43 @@ export class MapRenderer {
       ctx.save();
       this.pathLoops(ctx, loops);
       ctx.clip();
-
       if (!unseen) {
-        // terrain wash
         ctx.fillStyle = TERRAIN_WASH[p.terrain];
         ctx.fillRect(0, 0, w, hgt);
-        // owner tint — the viewer's own realm reads clearly stronger
-        if (p.owner >= 0 && view.playerColors) {
-          const mine = opts.viewer !== undefined && p.owner === opts.viewer;
-          ctx.globalAlpha = mine ? 0.52 : 0.38;
-          ctx.fillStyle = view.playerColors[p.owner];
-          ctx.fillRect(0, 0, w, hgt);
-          ctx.globalAlpha = 1;
-          if (opts.colorblind && view.playerPatterns) {
-            drawPattern(ctx, view.playerPatterns[p.owner], view.playerColors[p.owner], w, hgt, this.scale);
-          }
-        } else if (p.owner < 0) {
-          // free provinces sit back: a faint parchment-grey veil
-          ctx.fillStyle = 'rgba(216, 206, 180, 0.25)';
-          ctx.fillRect(0, 0, w, hgt);
-        }
-        this.drawTerrainGlyphs(ctx, p);
       } else {
         ctx.fillStyle = 'rgba(217, 201, 161, 0.25)';
         ctx.fillRect(0, 0, w, hgt);
       }
+      ctx.restore();
+    }
+  }
 
-      // hover / selection / target glows
-      if (opts.targets?.has(p.id)) {
-        ctx.globalAlpha = 0.22;
-        ctx.fillStyle = '#e6c14a';
+  /** L1 — everything that moves when the STATE moves. */
+  private drawPoliticalLayer(ctx: CanvasRenderingContext2D, opts: RenderOptions, w: number, hgt: number): void {
+    const view = this.view!;
+    for (const p of view.provinces) {
+      const loops = this.loops.get(p.id);
+      if (!loops) continue;
+      if (opts.unseen?.has(p.id)) continue;
+      ctx.save();
+      this.pathLoops(ctx, loops);
+      ctx.clip();
+      // owner tint — the viewer's own realm reads clearly stronger
+      if (p.owner >= 0 && view.playerColors) {
+        const mine = opts.viewer !== undefined && p.owner === opts.viewer;
+        ctx.globalAlpha = mine ? 0.52 : 0.38;
+        ctx.fillStyle = view.playerColors[p.owner];
         ctx.fillRect(0, 0, w, hgt);
         ctx.globalAlpha = 1;
-      }
-      if (opts.hovered === p.id) {
-        ctx.globalAlpha = 0.12;
-        ctx.fillStyle = '#fff2cc';
+        if (opts.colorblind && view.playerPatterns) {
+          drawPattern(ctx, view.playerPatterns[p.owner], view.playerColors[p.owner], w, hgt, this.scale);
+        }
+      } else if (p.owner < 0) {
+        // free provinces sit back: a faint parchment-grey veil
+        ctx.fillStyle = 'rgba(216, 206, 180, 0.25)';
         ctx.fillRect(0, 0, w, hgt);
-        ctx.globalAlpha = 1;
       }
+      this.drawTerrainGlyphs(ctx, p);
       ctx.restore();
     }
 
@@ -306,21 +363,6 @@ export class MapRenderer {
       ctx.restore();
     }
 
-    // --- selection outline on top
-    if (opts.selected !== null && opts.selected !== undefined) {
-      const loops = this.loops.get(opts.selected);
-      if (loops) {
-        ctx.save();
-        this.pathLoops(ctx, loops);
-        ctx.strokeStyle = '#ffe9a8';
-        ctx.lineWidth = Math.max(2.5, this.scale * 0.2);
-        ctx.shadowColor = 'rgba(255, 220, 130, 0.8)';
-        ctx.shadowBlur = 10;
-        ctx.stroke();
-        ctx.restore();
-      }
-    }
-
     // --- coastline ink
     ctx.save();
     this.pathLand(ctx);
@@ -329,7 +371,7 @@ export class MapRenderer {
     ctx.stroke();
     ctx.restore();
 
-    // --- site glyphs, seats, labels
+    // --- site glyphs, seats, badges, seals
     for (const p of view.provinces) {
       if (opts.unseen?.has(p.id)) continue;
       const [sx, sy] = this.worldToScreen(p.cx + 0.5, p.cy + 0.5);
@@ -349,6 +391,70 @@ export class MapRenderer {
             sx - this.scale * (0.85 + i * 0.75) + (p.site ? 0 : this.scale * 0.45),
             sy + this.scale * 0.78, mod);
         });
+      }
+    }
+
+    // --- army markers
+    if (opts.armies) {
+      const byProvince = new Map<number, typeof opts.armies>();
+      for (const marker of opts.armies) {
+        if (opts.unseen?.has(marker.province)) continue;
+        const list = byProvince.get(marker.province) ?? [];
+        list.push(marker);
+        byProvince.set(marker.province, list);
+      }
+      for (const [pid, markers] of byProvince) {
+        const p = view.provinces[pid];
+        const [cx, cy] = this.worldToScreen(p.cx + 0.5, p.cy + 0.5);
+        markers.forEach((marker, i) => {
+          const x = cx + (i - (markers.length - 1) / 2) * this.scale * 1.05;
+          const y = cy + this.scale * 1.5;
+          this.drawArmyMarker(ctx, x, y, marker);
+        });
+      }
+    }
+  }
+
+  /** L2 — hover, selection, targets, labels, fx: every frame, over two
+   * cached drawImages. */
+  private drawDynamic(ctx: CanvasRenderingContext2D, opts: RenderOptions, w: number, hgt: number): void {
+    const view = this.view!;
+    // target / hover glows (low alpha; composited over the cached layers)
+    for (const p of view.provinces) {
+      const isTarget = opts.targets?.has(p.id) ?? false;
+      const isHover = opts.hovered === p.id;
+      if (!isTarget && !isHover) continue;
+      const loops = this.loops.get(p.id);
+      if (!loops) continue;
+      ctx.save();
+      this.pathLoops(ctx, loops);
+      ctx.clip();
+      if (isTarget) {
+        ctx.globalAlpha = 0.22;
+        ctx.fillStyle = '#e6c14a';
+        ctx.fillRect(0, 0, w, hgt);
+      }
+      if (isHover) {
+        ctx.globalAlpha = 0.12;
+        ctx.fillStyle = '#fff2cc';
+        ctx.fillRect(0, 0, w, hgt);
+      }
+      ctx.globalAlpha = 1;
+      ctx.restore();
+    }
+
+    // --- selection outline on top
+    if (opts.selected !== null && opts.selected !== undefined) {
+      const loops = this.loops.get(opts.selected);
+      if (loops) {
+        ctx.save();
+        this.pathLoops(ctx, loops);
+        ctx.strokeStyle = '#ffe9a8';
+        ctx.lineWidth = Math.max(2.5, this.scale * 0.2);
+        ctx.shadowColor = 'rgba(255, 220, 130, 0.8)';
+        ctx.shadowBlur = 10;
+        ctx.stroke();
+        ctx.restore();
       }
     }
 
@@ -384,25 +490,6 @@ export class MapRenderer {
       }
     }
 
-    // --- army markers
-    if (opts.armies) {
-      const byProvince = new Map<number, typeof opts.armies>();
-      for (const marker of opts.armies) {
-        if (opts.unseen?.has(marker.province)) continue;
-        const list = byProvince.get(marker.province) ?? [];
-        list.push(marker);
-        byProvince.set(marker.province, list);
-      }
-      for (const [pid, markers] of byProvince) {
-        const p = view.provinces[pid];
-        const [cx, cy] = this.worldToScreen(p.cx + 0.5, p.cy + 0.5);
-        markers.forEach((marker, i) => {
-          const x = cx + (i - (markers.length - 1) / 2) * this.scale * 1.05;
-          const y = cy + this.scale * 1.5;
-          this.drawArmyMarker(ctx, x, y, marker);
-        });
-      }
-    }
     this.drawLabels(ctx, opts);
 
     // --- transient fx layer (capture ripples: a banner planted in the ground)
