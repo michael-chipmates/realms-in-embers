@@ -11,11 +11,7 @@ import { startQuest } from './quests';
 import type { Rng } from './rng';
 import type { Action, Effect, GameState, PlayerId } from './types';
 
-export interface ActionResult {
-  ok: boolean;
-  error?: string;
-  effects: Effect[];
-}
+import type { ActionResult } from './actions';
 
 const fail = (error: string): ActionResult => ({ ok: false, error, effects: [] });
 

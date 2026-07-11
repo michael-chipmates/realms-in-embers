@@ -7,10 +7,11 @@ import { RECRUITABLE, TRAIT_INFO, UNITS, VET_NAMES } from '../../engine/content/
 import type { UnitTrait } from '../../engine/content/units';
 import { SITE_NAMES } from '../../engine/content/names';
 import { buildingCostFor, orderDrift, provinceIncome, unitCostFor } from '../../engine/economy';
+import { evaluateActions } from '../../engine/evaluate';
 import { heroDerived } from '../../engine/heroFx';
 import { armiesIn, heroesOf, lordOf, seenBy } from '../../engine/helpers';
 import type { Army, Province, UnitTypeId } from '../../engine/types';
-import { clear, h, mount } from '../dom';
+import { armToConfirm, clear, h, mount } from '../dom';
 import { fmt, lordDisplay, signed } from '../format';
 import { iconSvg } from '../icons';
 import { breakdown, tip } from '../tooltip';
@@ -168,13 +169,11 @@ function renderArmyCard(screen: GameScreen, army: Army, selected: boolean): HTML
           h('span', { class: `pip ${i < u.hits ? 'pip-full' : ''}` })),
       ),
       mine
-        ? h('button', {
-            class: 'btn btn-quiet compact', 'aria-label': `Disband ${def.name}`, html: iconSvg('close', 12),
-            onclick: (e: Event) => {
-              e.stopPropagation();
-              screen.dispatch({ t: 'disband', armyId: army.id, index: idx });
-            },
-          })
+        ? armToConfirm(
+            h('button', { class: 'btn btn-quiet compact', 'aria-label': `Disband ${def.name}`, html: iconSvg('close', 12) }),
+            'Disband?',
+            () => { screen.dispatch({ t: 'disband', armyId: army.id, index: idx }); },
+          )
         : null,
     );
     tip(row, () => h('div', { class: 'tip-plain' },
@@ -263,16 +262,19 @@ function renderBuildCard(screen: GameScreen, p: Province): HTMLElement | null {
     return true;
   });
   if (options.length === 0) return null;
+  // verdicts come from the engine's own evaluation — the button can only
+  // disagree with dispatch if this line is deleted
+  const verdicts = evaluateActions(state, options.map((b) => ({ t: 'build', province: p.id, building: b } as const)));
   return h('details', { class: 'panel side-card side-section', open: true },
     h('summary', {}, 'Raise works'),
     h('div', { class: 'option-grid' },
-      ...options.map((b) => {
+      ...options.map((b, i) => {
         const def = BUILDINGS[b];
         const { cost, lines } = buildingCostFor(state, pid, b);
-        const afford = player.gold >= cost;
+        const verdict = verdicts[i];
         const btn = h('button', {
           class: 'option-btn',
-          disabled: !afford,
+          disabled: !verdict.legal,
           onclick: () => {
             if (screen.dispatch({ t: 'build', province: p.id, building: b })) audio.hammer();
           },
@@ -284,6 +286,7 @@ function renderBuildCard(screen: GameScreen, p: Province): HTMLElement | null {
         tip(btn, () => h('div', { class: 'tip-plain' },
           h('b', {}, `${def.name} — ${cost} gold, ${def.turns} ${def.turns === 1 ? 'season' : 'seasons'}`),
           h('p', { class: 'small' }, def.desc),
+          ...verdict.reasons.map((r) => h('p', { class: 'small neg' }, r)),
           ...lines.map((l) => h('p', { class: 'small pos' }, l)),
           h('p', { class: 'small italic muted' }, def.flavor),
         ));
@@ -317,16 +320,18 @@ function renderRecruitCard(screen: GameScreen, p: Province): HTMLElement | null 
     return true;
   });
   if (options.length === 0) return null;
+  // same contract as the build card: the engine's evaluation is the verdict
+  const verdicts = evaluateActions(state, options.map((id) => ({ t: 'recruit', province: p.id, unit: id } as const)));
   return h('details', { class: 'panel side-card side-section', open: true },
     h('summary', {}, 'Muster companies'),
     h('div', { class: 'option-grid' },
-      ...options.map((id: UnitTypeId) => {
+      ...options.map((id: UnitTypeId, i) => {
         const def = UNITS[id];
         const { cost, lines } = unitCostFor(state, pid, id);
-        const afford = player.gold >= cost;
+        const verdict = verdicts[i];
         const btn = h('button', {
           class: 'option-btn',
-          disabled: !afford,
+          disabled: !verdict.legal,
           onclick: () => {
             if (screen.dispatch({ t: 'recruit', province: p.id, unit: id })) audio.drum();
           },
@@ -340,6 +345,7 @@ function renderRecruitCard(screen: GameScreen, p: Province): HTMLElement | null 
           h('p', { class: 'small' }, `Attack ${def.atk} · Defense ${def.def} · ${def.hits} hits · upkeep ${def.upkeep}/season`),
           h('p', { class: 'small' }, def.desc),
           ...traitLines(def.traits),
+          ...verdict.reasons.map((r) => h('p', { class: 'small neg' }, r)),
           ...lines.map((l) => h('p', { class: 'small pos' }, l)),
           h('p', { class: 'small italic muted' }, def.flavor),
           codexHint(),

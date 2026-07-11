@@ -12,6 +12,8 @@ export { applyAction } from './actions';
 export { moveTargets, entryKind } from './actions';
 export { previewBattle } from './combat';
 export { defaultSettings } from './state';
+export { evaluateAction, evaluateActions } from './evaluate';
+export type { ActionEvaluation, ActionCost, CodexRef } from './evaluate';
 
 export interface NewGame {
   state: GameState;

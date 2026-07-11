@@ -33,6 +33,11 @@ export type CodexSection =
   | 'battle' | 'units' | 'works' | 'realm' | 'magic' | 'heroes'
   | 'quests' | 'artifacts' | 'twelve' | 'lords' | 'enchant' | 'victory' | 'marginalia';
 
+// Every chapter the engine's evaluations may point at must really exist here;
+// this line fails to compile if the two unions ever drift.
+const _everyCodexRefIsASection: CodexSection = null as unknown as import('../../engine/evaluate').CodexRef;
+void _everyCodexRefIsASection;
+
 const SECTIONS: { id: CodexSection; icon: string; title: string }[] = [
   { id: 'battle', icon: 'swords', title: 'The Field of Battle' },
   { id: 'units', icon: 'banner', title: 'Companies' },
