@@ -103,6 +103,31 @@ if (target) {
   if (await close.isVisible().catch(() => false)) await close.click();
 }
 
+// the mode bar: four surfaces one thumb away, and the sheet sits on its
+// shoulder instead of underneath it
+const modeBar = page.locator('.mode-bar');
+if (!(await modeBar.isVisible())) { console.error('mode bar missing on a phone'); process.exit(1); }
+const overlap = await page.evaluate(() => {
+  const bar = document.querySelector('.mode-bar').getBoundingClientRect();
+  const sheet = document.querySelector('.side-panel').getBoundingClientRect();
+  return sheet.bottom > bar.top + 2;
+});
+if (overlap) { console.error('the sheet sits under the mode bar'); process.exit(1); }
+await page.getByRole('button', { name: 'Realm', exact: true }).click();
+await page.waitForTimeout(500);
+if (!(await page.getByText('The Realm Ledger').isVisible().catch(() => false))) {
+  console.error('mode bar Realm did not open the Ledger'); process.exit(1);
+}
+await page.keyboard.press('Escape');
+await page.getByRole('button', { name: 'Chronicle', exact: true }).click();
+await page.waitForTimeout(400);
+if (!(await page.locator('.chronicle-feed').isVisible().catch(() => false))) {
+  console.error('mode bar Chronicle did not open the feed'); process.exit(1);
+}
+await page.getByRole('button', { name: 'Map', exact: true }).click();
+await page.waitForTimeout(300);
+await page.screenshot({ path: `${outdir}/m5b-modebar.png` });
+
 // clear the selection sheet
 await page.evaluate(() => window.__game.select(null, null));
 await page.waitForTimeout(200);

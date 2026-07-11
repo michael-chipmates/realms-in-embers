@@ -24,7 +24,7 @@ import { sigilShield } from '../heraldry';
 import { saveToSlot } from '../saves';
 import { breakdown, tip, hideTip } from '../tooltip';
 import { renderSelectionPanel } from '../panels/selection';
-import { renderChronicleFeed } from '../panels/chronicleFeed';
+import { chronicleCollapsed, renderChronicleFeed, setChronicleCollapsed } from '../panels/chronicleFeed';
 import { openCourtOverlay, openDiplomacyOverlay, openLedgerOverlay, openMagicOverlay, openQuestsOverlay, openMenuOverlay } from '../panels/overlays';
 import { openCodexOverlay } from '../panels/codex';
 import { openKeysOverlay, openNavigatorOverlay } from '../panels/navigator';
@@ -311,6 +311,22 @@ export class GameScreen {
           h('button', { class: 'btn btn-quiet map-zoom-btn', 'aria-label': 'Zoom out', onclick: () => this.zoomCenter(0.8) }, '−'),
           h('button', { class: 'btn btn-quiet map-zoom-btn', 'aria-label': 'Fit the whole realm', onclick: () => { this.renderer.fit(); this.redrawMap(); } }, '⊡'),
         ),
+      ),
+      // phones only (CSS-gated): the four surfaces, one thumb away.
+      // Composition, not compression — each button opens what exists.
+      h('nav', { class: 'mode-bar', 'aria-label': 'The table, one thumb away' },
+        h('button', {
+          class: 'mode-bar-btn',
+          onclick: () => { closeAllModals(); setChronicleCollapsed(true); this.renderChronicle(); },
+        }, h('span', { html: iconSvg('flag', 16) }), 'Map'),
+        h('button', { class: 'mode-bar-btn', onclick: () => openLedgerOverlay(this) },
+          h('span', { html: iconSvg('book', 16) }), 'Realm'),
+        h('button', { class: 'mode-bar-btn', onclick: () => openDiplomacyOverlay(this) },
+          h('span', { html: iconSvg('handshake', 16) }), 'Lords'),
+        h('button', {
+          class: 'mode-bar-btn',
+          onclick: () => { closeAllModals(); setChronicleCollapsed(!chronicleCollapsed()); this.renderChronicle(); },
+        }, h('span', { html: iconSvg('quill', 16) }), 'Chronicle'),
       ),
     );
     mount(root, this.el);

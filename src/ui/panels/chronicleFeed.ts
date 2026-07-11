@@ -28,6 +28,15 @@ const KIND_ICON: Record<ChronicleEntry['kind'], string> = {
 };
 
 let collapsed = window.innerWidth < 900;
+
+/** The phone mode bar's Chronicle button flips the same state the spine
+ * toggle does — one truth for whether the feed is open. */
+export function chronicleCollapsed(): boolean {
+  return collapsed;
+}
+export function setChronicleCollapsed(v: boolean): void {
+  collapsed = v;
+}
 let filter: 'all' | ChronicleEntry['kind'] = 'all';
 const DIGEST_KEY = 'rie-digest';
 let digestOn = localStorage.getItem(DIGEST_KEY) !== 'off';

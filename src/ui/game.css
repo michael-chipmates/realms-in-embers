@@ -800,6 +800,23 @@ body.reduced-motion .battle-round-live .battle-round-losses .neg { animation: no
 }
 .slot-actions { display: flex; gap: 0.4rem; }
 
+/* phones only: the four surfaces one thumb away (composition, not chrome).
+   Hidden by default; the 900px block below turns it on. */
+.mode-bar {
+  display: none;
+  position: absolute; left: 0; right: 0; bottom: 0; z-index: 24;
+  padding: 0.25rem 0.4rem calc(0.25rem + env(safe-area-inset-bottom));
+  background: rgba(12, 8, 4, 0.96); border-top: 1px solid rgba(201, 162, 39, 0.35);
+  gap: 0.25rem;
+}
+.mode-bar-btn {
+  flex: 1; display: flex; flex-direction: column; align-items: center; gap: 0.1rem;
+  border: none; background: transparent; color: var(--gold);
+  font-size: 0.68rem; letter-spacing: 0.04em; padding: 0.25rem 0;
+  min-height: 44px; cursor: pointer;
+}
+.mode-bar-btn:active { color: var(--gold-bright); }
+
 /* ------------------------------------------------------------ responsive */
 
 @media (max-width: 900px) {
@@ -836,6 +853,9 @@ body.reduced-motion .battle-round-live .battle-round-losses .neg { animation: no
   .topbar { gap: 0.45rem; }
   .topbar-stats { gap: 0.6rem; }
   .topbar-lord .small { display: none; }
+  /* the mode bar owns the bottom edge; the sheet sits on its shoulder */
+  .mode-bar { display: flex; }
+  .side-panel { bottom: calc(3.5rem + env(safe-area-inset-bottom)); padding-bottom: 0.5rem; }
 }
 
 
