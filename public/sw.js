@@ -1,9 +1,10 @@
 /* Realms in Embers — offline keeper.
  * Two caches, two lifetimes:
  *   rie-app-<build>  — the shell + hashed /assets/ bundles. Rebuilt every
- *                      deploy (the build stamps __BUILD__ below), and every
- *                      older rie-app-* cache is swept on activate, so old
- *                      bundles never pile up on long-lived installs.
+ *                      deploy (the build stamps __BUILD__ below). Older
+ *                      rie-app-* caches are swept only after the new shell
+ *                      posts BOOT_OK — a deploy that cannot boot never
+ *                      destroys the last shell that could.
  *   rie-media        — /art/, /music/, /audio/. Content-addressed or
  *                      immutable in practice, so it survives deploys and is
  *                      served cache-first: a phone downloads the score once.
@@ -26,16 +27,33 @@ self.addEventListener('install', (e) => {
 });
 
 self.addEventListener('activate', (e) => {
-  // Sweep every cache of ours except the current app cache and the media
-  // cache — that covers stale rie-app-* builds and the legacy rie-v1/rie-v2.
+  // Only LEGACY caches (rie-v1/rie-v2, pre-split) are swept on activate.
+  // Older rie-app-<build> caches survive until the new shell proves it
+  // boots (BOOT_OK below) — a broken deploy must never destroy the last
+  // shell that worked.
   e.waitUntil(
     caches.keys()
       .then((keys) => Promise.all(
         keys
-          .filter((k) => k.startsWith('rie-') && k !== APP_CACHE && k !== MEDIA_CACHE)
+          .filter((k) => k.startsWith('rie-') && !k.startsWith('rie-app-') && k !== MEDIA_CACHE)
           .map((k) => caches.delete(k)),
       )),
   );
+});
+
+self.addEventListener('message', (e) => {
+  const t = e.data && e.data.t;
+  if (t === 'BOOT_OK') {
+    // this build's shell stands: yesterday's app caches may go
+    caches.keys().then((keys) => Promise.all(
+      keys
+        .filter((k) => k.startsWith('rie-app-') && k !== APP_CACHE)
+        .map((k) => caches.delete(k)),
+    ));
+  } else if (t === 'SKIP_WAITING') {
+    // a deliberate act from the title screen — never automatic
+    self.skipWaiting();
+  }
 });
 
 self.addEventListener('fetch', (e) => {

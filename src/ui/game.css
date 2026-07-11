@@ -512,6 +512,15 @@ details.side-section:not([open]) > summary { border-bottom: none; }
   .codex-nav-btn.active { border-left: none; border-bottom-color: var(--gold); }
 }
 
+/* -------------------------------------------------- NET-033 desync freeze */
+
+.desync-veil {
+  position: absolute; inset: 0; z-index: 60;
+  background: rgba(5, 3, 1, 0.82);
+  display: flex; overflow-y: auto;
+}
+.desync-card { margin: auto; max-width: min(440px, 90vw); padding: 1rem 1.2rem; text-align: center; }
+
 /* --------------------------------------------------------- the Navigator */
 
 .navigator-body { display: flex; flex-direction: column; gap: 0.5rem; max-width: min(680px, 92vw); }

@@ -10,6 +10,7 @@ import type { OnlineSession } from './lobby';
 import { emberlightIncome, incomeReport } from '../../engine/economy';
 import { LORD_BY_ID } from '../../engine/content/lords';
 import { armiesIn, armiesOf, heroesOf, seenBy } from '../../engine/helpers';
+import { fnv } from '../../engine/hash';
 import type { Action, Army, BattlePreview, BattleReport, Effect, GameState, SpellId } from '../../engine/types';
 import type { MoveTarget } from '../../engine/actions';
 import { SPELLS, type SpellFxFamily } from '../../engine/content/spells';
@@ -139,8 +140,10 @@ export class GameScreen {
       const entry = session.client.entries[session.cursor];
       if (!entry) break; // not arrived / not decrypted yet
       const payload = entry.payload;
+      if (payload.kind === 'check') { this.verifyCheckpoint(payload); session.cursor++; continue; }
       if (payload.kind !== 'act') { session.cursor++; continue; }
       if (this.state.phase === 'ended') { session.cursor++; continue; }
+      if (this.desynced) break; // frozen: the log and this table disagree
       if (this.aiRunning || this.current().kind === 'ai') break; // wait for the wheel
       if (payload.seat !== this.state.current) { session.cursor++; continue; } // stale/dishonest
       // replaying history (a join or rejoin mid-war): keep the room quiet —
@@ -150,7 +153,10 @@ export class GameScreen {
       const result = applyAction(this.state, payload.action);
       if (result.ok) {
         this.presentEffects(result.effects);
-        if (payload.action.t === 'endTurn') this.onTurnAdvanced();
+        if (payload.action.t === 'endTurn') {
+          this.onTurnAdvanced();
+          this.recordCheckpoint(entry.seq, payload.seat);
+        }
       }
     }
     this.catchingUp = false;
@@ -169,6 +175,53 @@ export class GameScreen {
     if (session.mySeat >= 0 && this.state.current === session.mySeat && !this.aiRunning) {
       maybeOpenEventModal(this);
     }
+  }
+
+  // -------------------------------------------- NET-033: state checkpoints
+  /** My own state hash after applying the endTurn act at relay seq S.
+   * Bounded; checkpoints reference only recent seasons. */
+  private checkpointHashes = new Map<number, { turn: number; hash: string }>();
+  /** The log and this table have provably diverged: no further acts apply. */
+  private desynced = false;
+
+  /** Hash the state at a point every honest client reaches identically:
+   * immediately after applying the endTurn act at relay seq `afterSeq`.
+   * The seat that ended its season publishes; everyone else compares. */
+  private recordCheckpoint(afterSeq: number, seat: number): void {
+    const session = this.online!;
+    const hash = fnv(JSON.stringify(this.state));
+    this.checkpointHashes.set(afterSeq, { turn: this.state.turn, hash });
+    if (this.checkpointHashes.size > 24) {
+      const oldest = Math.min(...this.checkpointHashes.keys());
+      this.checkpointHashes.delete(oldest);
+    }
+    if (seat === session.mySeat) {
+      void session.client.send({ kind: 'check', seat, afterSeq, turn: this.state.turn, hash });
+    }
+  }
+
+  private verifyCheckpoint(check: { seat: number; afterSeq: number; turn: number; hash: string }): void {
+    const session = this.online!;
+    if (check.seat === session.mySeat || this.desynced) return;
+    const mine = this.checkpointHashes.get(check.afterSeq);
+    if (!mine || mine.hash === check.hash) return;
+    // A real fork: same log position, different worlds. Freeze this table —
+    // applying more acts to a diverged state could only invent history. A
+    // reload rebuilds from the sealed relay log, which is the shared truth.
+    this.desynced = true;
+    const banner = h('div', { class: 'desync-veil', role: 'alertdialog', 'aria-label': 'The chronicle diverged' },
+      h('div', { class: 'panel desync-card' },
+        h('h2', { class: 'small-caps' }, 'The chronicle diverged'),
+        h('p', { class: 'small' },
+          `At season ${check.turn}, this table and ${lordDisplay(this.state, check.seat).name}'s table tell different stories. ` +
+          'No further orders will apply here — that would only deepen the fork.'),
+        h('p', { class: 'small muted' },
+          'Rebuilding replays the sealed war log from the start entry; every honest table rebuilds to the same realm.'),
+        h('div', { style: { display: 'flex', gap: '0.5rem', justifyContent: 'center', marginTop: '0.5rem' } },
+          h('button', { class: 'btn btn-seal', onclick: () => location.reload() }, 'Rebuild from the log'),
+        ),
+      ));
+    this.el.appendChild(banner);
   }
 
   private endShown = false;
@@ -774,6 +827,10 @@ export class GameScreen {
     // NOTHING applies locally out of turn: not hotkeys, not armed spells,
     // not spectators. The relay log is the only pen.
     if (this.online) {
+      if (this.desynced) {
+        this.toast('This table has diverged from the log — rebuild before giving orders.', 'danger');
+        return false;
+      }
       if (this.online.mySeat < 0) {
         this.toast('You are watching this war, not writing it.', 'info');
         return false;

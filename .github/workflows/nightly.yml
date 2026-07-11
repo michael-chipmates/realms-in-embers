@@ -31,6 +31,23 @@ jobs:
           path: sim-report.json
           if-no-files-found: warn
 
+  # DET-030: the frozen replay fixture must hash identically inside real
+  # Chromium, Firefox, and WebKit — the determinism mixed-browser online
+  # tables stand on. One divergent engine fails the night.
+  determinism-browsers:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install chromium firefox webkit --with-deps
+      - name: Replay the fixture in all three engines
+        run: node scripts/det-browsers.mjs
+
   # The static Codex pages are generated from the live app; if the committed
   # pages in public/codex/ drift from what the engine renders today, fail.
   codex-drift:

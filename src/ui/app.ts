@@ -30,6 +30,29 @@ export class App {
     // restore it now so Continue works. The note also shows in Settings.
     const recovery = bootRecoveryCheck();
     if (recovery) console.warn(`[saves] ${recovery}`);
+    this.armCrashBoundary();
+  }
+
+  /** SAVE-033: when an uncaught error escapes with a local chronicle open,
+   * set the game down as "The emergency copy" before anything else is lost.
+   * Once per session — a crash loop must not thrash storage — and never for
+   * online wars, whose truth lives in the relay log, not local slots. */
+  private crashSaved = false;
+
+  private armCrashBoundary(): void {
+    const onCrash = (): void => {
+      if (this.crashSaved || !this.game || !this.gameScreen || this.gameScreen.online) return;
+      this.crashSaved = true;
+      const saved = saveToSlot(this.game, 'emergency');
+      if (saved.ok) {
+        console.warn('[saves] an uncaught error escaped; the chronicle was set down as The emergency copy');
+        this.gameScreen.toast(
+          'Something broke backstage — your chronicle was set down safely as “The emergency copy” on the shelf.',
+          'danger');
+      }
+    };
+    window.addEventListener('error', onCrash);
+    window.addEventListener('unhandledrejection', onCrash);
   }
 
   applySettings(): void {

@@ -199,7 +199,7 @@ function slotMeta(state: GameState): Omit<SlotInfo, 'key' | 'auto' | 'savedAt' |
   };
 }
 
-export function saveToSlot(state: GameState, slot: number | 'auto'): SaveResult {
+export function saveToSlot(state: GameState, slot: number | 'auto' | 'emergency'): SaveResult {
   const ls = getStorage();
   if (!ls) {
     return reportResult({ ok: false, code: 'unavailable', message: MSG_UNAVAILABLE }, state.turn);
@@ -212,6 +212,12 @@ export function saveToSlot(state: GameState, slot: number | 'auto'): SaveResult 
   }
   const meta = JSON.stringify({ ...slotMeta(state), savedAt: Date.now(), auto: slot === 'auto' });
 
+  if (slot === 'emergency') {
+    // SAVE-033: the crash boundary sets the chronicle down here on the way
+    // out. One slot, always overwritten — the freshest wreck is the one
+    // worth salvaging.
+    return reportResult(txWrite(ls, 'emergency', raw, meta), state.turn);
+  }
   if (slot !== 'auto') {
     return reportResult(txWrite(ls, `slot${slot}`, raw, meta), state.turn);
   }
@@ -256,7 +262,7 @@ export function listSlots(): SlotInfo[] {
   const ls = getStorage();
   if (!ls) return [];
   const out: SlotInfo[] = [];
-  const keys = ['auto1', 'auto2', 'auto3', 'slot1', 'slot2', 'slot3', 'slot4', 'slot5'];
+  const keys = ['emergency', 'auto1', 'auto2', 'auto3', 'slot1', 'slot2', 'slot3', 'slot4', 'slot5'];
   for (const key of keys) {
     const meta = safeGet(ls, `${PREFIX}${key}:meta`);
     if (!meta) continue;
@@ -264,8 +270,8 @@ export function listSlots(): SlotInfo[] {
       const parsed = JSON.parse(meta);
       out.push({
         key,
-        label: key.startsWith('auto') ? `Autosave ${key.slice(4)}` : `Slot ${key.slice(4)}`,
-        auto: key.startsWith('auto'),
+        label: key === 'emergency' ? 'The emergency copy' : key.startsWith('auto') ? `Autosave ${key.slice(4)}` : `Slot ${key.slice(4)}`,
+        auto: key.startsWith('auto') || key === 'emergency',
         turn: parsed.turn,
         seed: parsed.seed,
         lords: parsed.lords,

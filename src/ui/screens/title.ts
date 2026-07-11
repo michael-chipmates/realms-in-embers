@@ -11,6 +11,7 @@ import { openModal } from '../modal';
 import { openSettingsPanel } from '../panels/settingsPanel';
 import { openLordGallery } from './gallery';
 import { FIRST_EMBER_DONE_KEY, FirstEmberGuide } from '../guide';
+import { applyUpdate, onUpdateReady, updateWaiting } from '../swUpdate';
 import type { Difficulty } from '../../engine/types';
 import type { App } from '../app';
 
@@ -174,6 +175,16 @@ export function renderTitle(app: App): void {
     ),
   );
   mount(app.root, screen);
+  // staged update: a waiting edition is offered here, in the quiet room —
+  // it never seizes a live campaign (BOOT_OK handshake in swUpdate.ts)
+  const offerUpdate = (): void => {
+    if (!screen.isConnected || screen.querySelector('.title-update')) return;
+    screen.querySelector('.title-menu')?.appendChild(
+      h('button', { class: 'btn btn-quiet title-btn title-update', onclick: () => applyUpdate() },
+        'A fresh edition is ready — take the table now'));
+  };
+  if (updateWaiting()) offerUpdate();
+  else onUpdateReady(offerUpdate);
   if (!app.settings.reducedMotion) startEmberDrift(screen);
 }
 

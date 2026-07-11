@@ -7,6 +7,7 @@ import { App } from './app';
 import { preloadArtManifest } from './art';
 import { parseInvite } from './net';
 import { openOnlineLobby } from './screens/lobby';
+import { registerSw } from './swUpdate';
 
 const root = document.getElementById('app');
 if (!root) throw new Error('no #app mount point');
@@ -40,9 +41,8 @@ if (invite) {
   app.toTitle();
 }
 
-// offline keeper: after first visit the whole game works with no network
-if (import.meta.env.PROD && 'serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    void navigator.serviceWorker.register('sw.js');
-  });
+// offline keeper: after first visit the whole game works with no network.
+// The registration is staged — see swUpdate.ts for the BOOT_OK handshake.
+if (import.meta.env.PROD) {
+  registerSw();
 }

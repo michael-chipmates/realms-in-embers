@@ -54,6 +54,11 @@ export type NetPayload =
   | { kind: 'hello'; cid: string; name: string; seat: number | null; lordId?: string | null; proto?: number; rules?: number; mid?: string }
   | { kind: 'start'; settings: GameSettings; clock: ClockConfig; seatCids: string[]; rules?: number; mid?: string }
   | { kind: 'act'; seat: number; action: Action; mid?: string }
+  /** NET-033: a state checkpoint. After applying the endTurn act at relay
+   * seq `afterSeq`, the sender's serialized state hashed to `hash`. Every
+   * client reaches that exact point deterministically, so a mismatch means
+   * someone's table has left the shared story — freeze and rebuild. */
+  | { kind: 'check'; seat: number; afterSeq: number; turn: number; hash: string; mid?: string }
   | { kind: 'chat'; name: string; text: string; mid?: string }
   /** An open-table ad in the Wayhouse room (encrypted with the PUBLISHED
    * wayhouse key — public by design; see docs/design/open-tables.md). */
@@ -88,6 +93,10 @@ export function validatePayload(p: unknown): NetPayload | null {
     case 'act':
       if (!int(o.seat, 0, 15)) return null;
       if (typeof o.action !== 'object' || o.action === null || !str((o.action as Record<string, unknown>).t, 40)) return null;
+      return o as NetPayload;
+    case 'check':
+      if (!int(o.seat, 0, 15) || !int(o.afterSeq, 0, 1_000_000) || !int(o.turn, 0, 10_000)) return null;
+      if (!str(o.hash, 16)) return null;
       return o as NetPayload;
     case 'chat':
       if (!str(o.name, 48) || !str(o.text, 500)) return null;

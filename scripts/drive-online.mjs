@@ -89,6 +89,22 @@ try {
   const [ha, hb] = [await hash(a), await hash(b)];
   if (ha !== hb) throw new Error(`state diverged between clients: ${ha} vs ${hb}`);
 
+  // NET-033: each ended season published a state checkpoint, both clients
+  // verified them, and neither table froze (no false desync)
+  const checksOf = (page) => page.evaluate(() =>
+    window.__game.online.client.list().filter((e) => e.payload.kind === 'check').length);
+  let checks = 0;
+  for (let i = 0; i < 20 && checks < 2; i++) {
+    checks = Math.min(await checksOf(a), await checksOf(b));
+    if (checks < 2) await a.waitForTimeout(300);
+  }
+  if (checks < 2) throw new Error(`expected 2 state checkpoints in the log, saw ${checks}`);
+  for (const [page, label] of [[a, 'A'], [b, 'B']]) {
+    if (await page.locator('.desync-veil').isVisible().catch(() => false)) {
+      throw new Error(`${label} froze on a FALSE desync — checkpoints disagree on identical states`);
+    }
+  }
+
   await a.screenshot({ path: `${outdir}/on2-a-season2.png` });
   await b.screenshot({ path: `${outdir}/on3-b-season2.png` });
 
