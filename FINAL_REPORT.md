@@ -1,5 +1,11 @@
 # FINAL REPORT — Realms in Embers
 
+> **A snapshot, not the present.** This report closed the original build
+> session (2026-07-03). The game has since gained online multiplayer, the
+> Illustrated Edition, the Codex, signature abilities, the lord gallery and
+> four more rules versions — `STATE.md` and `CHANGELOG.md` carry the living
+> history. Kept intact as the record of the first climb.
+
 One session, one empty directory, one finished game. This is what got built, what
 was invented along the way, where it's honestly weak, and what I'd build next.
 

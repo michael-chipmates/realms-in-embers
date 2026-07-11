@@ -7,7 +7,7 @@
 <p align="center">Twelve lords · one cold throne · a narrator who refuses to stay dead</p>
 
 <p align="center">
-<a href=".github/workflows/ci.yml"><img src="https://img.shields.io/badge/CI-typecheck_·_41_tests_·_sim-2ea44f" alt="CI"></a>
+<a href=".github/workflows/ci.yml"><img src="https://img.shields.io/badge/CI-typecheck_·_56_tests_·_sim-2ea44f" alt="CI"></a>
 <a href="LICENSE"><img src="https://img.shields.io/badge/code-AGPL--3.0-8a4d00" alt="Code: AGPL-3.0"></a>
 <a href="LICENSE-CONTENT"><img src="https://img.shields.io/badge/content_&_art-CC_BY--SA_4.0-8a4d00" alt="Content: CC BY-SA 4.0"></a>
 <img src="https://img.shields.io/badge/accounts-none,_ever-1c1e21" alt="No accounts, no tracking">
@@ -25,7 +25,7 @@
 
 ## The game in one paragraph
 
-Pick a lord (twelve, in three creeds, each with a real temperament the AI genuinely plays). Expand across a procedurally forged realm — every seed is shareable and reforges identically. Raise works and companies, mind your order (every number itemizes its causes on hover), send heroes on quests, learn workings of Emberlight, read your rivals' grudges in plain lines, and reach one of five endings: conquest, dominion, a golden age, the Legend of the rekindled throne — or the judgment of the Chronicle when the page runs out. Every game ends. The saga export hands you the whole war as a story when it's over.
+Pick a lord in the painted gallery (twelve, in three creeds, each with a real temperament the AI genuinely plays, and each with two abilities: a legacy that shapes them and a signature order that is theirs alone). Expand across a procedurally forged realm — every seed is shareable and reforges identically. Raise works and companies, mind your order (every number itemizes its causes on hover), send heroes on quests, learn workings of Emberlight, read your rivals' grudges in plain lines, and reach one of five endings: conquest, dominion, a golden age, the Legend of the rekindled throne — or the judgment of the Chronicle when the page runs out. Every game ends. The saga export hands you the whole war as a story when it's over.
 
 ## What a season feels like
 
@@ -44,6 +44,7 @@ Pick a lord (twelve, in three creeds, each with a real temperament the AI genuin
 - **Battles are honest.** Before any blood, a Monte-Carlo preview shows both sides' full modifiers in plain words — run on a forked RNG, so checking your odds can never change your fate. Combine banners from several provinces for one assault, or burn raw Emberlight for fervor. All previewed.
 - **Rivals scheme in the open.** Attitude is an itemized ledger of remembered deeds. Alliances defend and share maps. Lords call allies into their wars with gold. Grow past forty percent of the realm and the rest of the table forms a league about it.
 - **The narrator is the game.** Tutorial, chronicle, and endgame export are one system — Osperan's book. Big moments stop the room; small ones get a dry line in the margin. He is voiced, painted, and behind schedule.
+- **The rules live in the book.** The Codex (press c) is Osperan's complete handbook — every number rendered from the engine's own constants, so the book cannot drift from the battlefield.
 - **It ends.** Five distinct endings, all reachable, all raced in public. From season 38 the Chronicle wearies and the dominion bar erodes — late games finish in thrones, not timeouts.
 
 ## Three ways to war
@@ -60,9 +61,9 @@ npm run dev        # http://localhost:5173 — desktop and phone
 ```
 
 ```bash
-npm test           # 41 tests: engine, replay determinism, the rules-version canary
+npm test           # 56 tests: engine, signatures, replay determinism, the rules-version canary
 npm run sim        # headless AI-vs-AI sweep with invariants checked every round
-npm run build      # typecheck + production build (~110 KB gzipped, zero runtime deps)
+npm run build      # typecheck + production build (~146 KB gzipped, zero runtime deps)
 ```
 
 ## The making of
@@ -71,7 +72,7 @@ Some of the machinery is half the fun:
 
 - **A deterministic core.** One seeded RNG lives inside a single serializable state object; every mutation — human and AI — is an action in a log. Seed + log replays byte-identically, a frozen fixture guards the rules version, and that determinism is also the multiplayer netcode.
 - **A model playtester.** `scripts/model-playtest.mjs` seats a language model at the table through the real engine. On its first outing it found a real exploit (the counting-house was lending gold it could never collect before the game ended) and filed a structured complaint about our error messages. Both fixed.
-- **The Illustrated Edition, one command.** Forty-three painted plates in a late-80s game-manual style, generated against a single approved style anchor so the whole set reads as one painter's hand (`scripts/gen-art.mjs`). The procedural heraldry remains as the eternal fallback.
+- **The Illustrated Edition, one command.** Ninety-one painted plates in a late-80s game-manual style, generated against a single approved style anchor so the whole set reads as one painter's hand — and every slot is generated three to five times, reviewed against its brief, and only the best candidate ships (`scripts/gen-art.mjs --candidates` + `scripts/pick-art.mjs`). The procedural heraldry remains as the eternal fallback.
 - **A ghost with a voice.** The chronicler's ceremonies are spoken (`scripts/gen-audio.mjs`); the synth engine still covers every sound offline.
 
 Deeper reading: [`DECISIONS.md`](DECISIONS.md) (why things are the way they are), [`docs/ART.md`](docs/ART.md) (the whole art pipeline), [`CHANGELOG.md`](CHANGELOG.md), and [`STATE.md`](STATE.md) (the honest build log).

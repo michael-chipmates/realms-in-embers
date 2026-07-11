@@ -3,7 +3,7 @@
  * same-origin GET (hashed assets, art, music) is cached on first use and
  * served stale-while-revalidate after. The whole game keeps working with
  * no network after one visit — only the online-war relay needs a wire. */
-const CACHE = 'rie-v1';
+const CACHE = 'rie-v2';
 const SHELL = ['.', 'manifest.webmanifest', 'favicon.svg'];
 
 self.addEventListener('install', (e) => {
@@ -21,6 +21,22 @@ self.addEventListener('activate', (e) => {
 self.addEventListener('fetch', (e) => {
   const url = new URL(e.request.url);
   if (e.request.method !== 'GET' || url.origin !== location.origin) return;
+  // Navigations go network-first: a fresh deploy is picked up on the next
+  // visit, and the cached shell still answers when the wire is gone.
+  if (e.request.mode === 'navigate') {
+    e.respondWith(
+      caches.open(CACHE).then(async (cache) => {
+        try {
+          const res = await fetch(e.request);
+          if (res.ok) cache.put('.', res.clone());
+          return res;
+        } catch {
+          return (await cache.match(e.request)) ?? (await cache.match('.')) ?? Response.error();
+        }
+      }),
+    );
+    return;
+  }
   e.respondWith(
     caches.open(CACHE).then(async (cache) => {
       const cached = await cache.match(e.request);

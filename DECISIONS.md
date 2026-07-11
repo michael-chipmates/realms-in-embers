@@ -123,3 +123,10 @@ war table wears carved-brass corner flourishes. Every illustrated surface
 already queries a named art slot (src/ui/art.ts) with a procedural fallback,
 and docs/ART.md specifies the full generated-image manifest — provider,
 style block, per-image prompts — so the illustration round is a drop-in.
+
+## D-017 · Zero runtime deps, honest dev deps
+The shipped game still imports nothing at runtime. The toolchain, by
+contrast, buys leverage where it pays: `playwright` drives the real UI in
+every drive script, `sharp` feeds the art pipeline, `tsx`/`vitest`/`vite`
+build and test. Dev-dependencies are allowed to be boring and replaceable;
+the runtime is not allowed to have any.
