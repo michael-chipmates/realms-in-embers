@@ -257,6 +257,16 @@ select.input {
   box-shadow: none;
 }
 
+/* An armed confirm button (armToConfirm): the question before the act.
+   Loud enough to read as "this will really happen", on any button kind. */
+.btn-armed,
+.btn-quiet.btn-armed {
+  border-color: var(--danger);
+  background: rgba(184, 67, 47, 0.16);
+  color: #f0c0ae;
+  white-space: nowrap;
+}
+
 /* ------------------------------------------------------------ utilities */
 
 .muted {

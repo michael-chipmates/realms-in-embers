@@ -17,7 +17,7 @@ import { riteCostFor, spellCostFor } from '../../engine/magic';
 import { questStat, sagaGate } from '../../engine/quests';
 import { armiesOf, getStance, heroesOf, provincesOf } from '../../engine/helpers';
 import type { Hero, PlayerId, SpellId } from '../../engine/types';
-import { h, mount } from '../dom';
+import { armToConfirm, h, mount } from '../dom';
 import { classGrowthWords, fmt, lordDisplay, signed } from '../format';
 import { iconSvg } from '../icons';
 import { openModal, closeAllModals, type ModalHandle } from '../modal';
@@ -208,12 +208,13 @@ function renderHeroCard(screen: GameScreen, hero: Hero, canAct: boolean, refresh
                   if (screen.dispatch({ t: 'attachHero', heroId: hero.id, armyId: null })) refresh();
                 },
               }, 'Recall to court'),
-          h('button', {
-            class: 'btn btn-quiet compact',
-            onclick: () => {
+          armToConfirm(
+            h('button', { class: 'btn btn-quiet compact' }, 'Release from service'),
+            'Release them for good?',
+            () => {
               if (screen.dispatch({ t: 'dismissHero', heroId: hero.id })) refresh();
             },
-          }, 'Release from service'),
+          ),
         )
       : null,
   );

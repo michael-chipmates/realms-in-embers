@@ -34,6 +34,33 @@ await page.keyboard.press('ArrowRight');
 await page.waitForTimeout(400);
 await page.screenshot({ path: `${outdir}/4-selected.png` });
 
+// disbanding is irreversible, so the ✕ must arm on the first press and act
+// only on the second (Michel, 2026-07-11)
+await page.evaluate(() => {
+  const g = window.__game;
+  const army = Object.values(g.state.armies).find((a) => a.owner === 0 && a.units.length > 0);
+  g.selectArmy(army.id);
+});
+await page.waitForTimeout(400);
+const unitsBefore = await page.evaluate(() =>
+  Object.values(window.__game.state.armies).filter((a) => a.owner === 0).reduce((s, a) => s + a.units.length, 0));
+await page.locator('button[aria-label^="Disband "]').first().click();
+await page.waitForTimeout(150);
+// arming rewrites the label to the question, so find the armed button itself
+const armed = page.locator('.btn-armed');
+const armedLabel = await armed.textContent().catch(() => null);
+const unitsAfterFirstTap = await page.evaluate(() =>
+  Object.values(window.__game.state.armies).filter((a) => a.owner === 0).reduce((s, a) => s + a.units.length, 0));
+if (unitsAfterFirstTap !== unitsBefore) { console.error('disband fired on the FIRST tap'); process.exit(1); }
+if (!/Disband\?/.test(armedLabel ?? '')) { console.error(`disband button did not arm (label: ${armedLabel})`); process.exit(1); }
+await armed.click();
+await page.waitForTimeout(300);
+const unitsAfterConfirm = await page.evaluate(() =>
+  Object.values(window.__game.state.armies).filter((a) => a.owner === 0).reduce((s, a) => s + a.units.length, 0));
+if (unitsAfterConfirm !== unitsBefore - 1) { console.error('confirmed disband did not remove exactly one company'); process.exit(1); }
+await page.evaluate(() => window.__game.select(null, null));
+await page.waitForTimeout(200);
+
 // open overlays
 await page.keyboard.press('h');
 await page.waitForTimeout(500);
