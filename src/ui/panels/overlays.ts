@@ -618,13 +618,55 @@ function renderDiplomacy(screen: GameScreen, body: HTMLElement, focusPlayer?: Pl
     );
   });
 
+  // the comparison table: every living rival in one glance, one row each —
+  // only what the Ledger and the cards already tell (fog reveals nothing new
+  // here), with the full card below as the dossier
+  const living = state.players.filter((o) => o.id !== pid && o.alive);
+  const compareRows = living.map((other) => {
+    const lord = LORD_BY_ID[other.lordId];
+    const stance = getStance(state, pid, other.id);
+    const att = attitudeOf(state, other.id, pid);
+    const cd = other.signatureCooldownLeft ?? 0;
+    return h('tr', {
+      class: 'rival-row',
+      tabindex: '0',
+      role: 'button',
+      'aria-label': `${lord.name} — the full dossier below`,
+      onclick: () => renderDiplomacy(screen, body, other.id),
+      onkeydown: (e: KeyboardEvent) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); renderDiplomacy(screen, body, other.id); } },
+    },
+      h('td', {}, h('span', { class: 'lord-swatch', style: { background: lord.color, marginRight: '0.35em' } }), lord.name.split(' ').slice(-1)[0]),
+      h('td', {}, h('span', { class: `chip stance-${stance}` }, stance === 'war' ? 'WAR' : stance === 'pact' ? 'Pact' : stance === 'alliance' ? 'Allied' : 'Peace')),
+      h('td', { class: att.total > 15 ? 'pos' : att.total < -15 ? 'neg' : '' }, `${att.total > 0 ? '+' : ''}${att.total}`),
+      h('td', {}, String(provincesOf(state, other.id).length)),
+      h('td', {}, `${other.sagaChapter}/5`),
+      h('td', { class: 'small' }, cd === 0 ? 'ready' : `${cd} to go`),
+    );
+  });
+  const compareTable = living.length > 1
+    ? h('div', { class: 'rival-table-wrap' },
+        h('table', { class: 'rival-table' },
+          h('thead', {}, h('tr', {},
+            h('th', {}, 'Lord'), h('th', {}, 'Stance'), h('th', {}, 'Regard'),
+            h('th', {}, 'Lands'), h('th', {}, 'Saga'), h('th', {}, 'Signature'),
+          )),
+          h('tbody', {}, ...compareRows),
+        ),
+      )
+    : null;
+
   mount(body,
     proposalCards.length > 0 ? h('h3', { class: 'settings-head' }, 'Envoys waiting') : null,
     ...proposalCards,
+    compareTable ? h('h3', { class: 'settings-head' }, 'The table, at a glance') : null,
+    compareTable,
     h('h3', { class: 'settings-head' }, 'The claimants'),
     ...rivals,
     h('p', { class: 'small muted italic' }, `Your creed: ${CREEDS[LORD_BY_ID[player.lordId].creed].name} — ${CREEDS[LORD_BY_ID[player.lordId].creed].tagline}`),
   );
+  if (focusPlayer !== undefined) {
+    body.querySelector('.army-selected')?.scrollIntoView({ block: 'start' });
+  }
 }
 
 function openGoldPrompt(screen: GameScreen, title: string, onConfirm: (gold: number) => void): void {

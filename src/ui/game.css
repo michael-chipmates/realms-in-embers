@@ -521,6 +521,19 @@ details.side-section:not([open]) > summary { border-bottom: none; }
   .codex-nav-btn.active { border-left: none; border-bottom-color: var(--gold); }
 }
 
+/* ---------------------------------------------------- rival comparison */
+
+.rival-table-wrap { overflow-x: auto; margin-bottom: 0.5rem; }
+.rival-table { width: 100%; border-collapse: collapse; font-size: 0.86rem; }
+.rival-table th {
+  text-align: left; font-weight: 400; color: var(--gold);
+  font-variant: small-caps; letter-spacing: 0.04em;
+  padding: 0.25rem 0.6rem 0.25rem 0; border-bottom: 1px solid rgba(201, 162, 39, 0.3);
+}
+.rival-table td { padding: 0.3rem 0.6rem 0.3rem 0; border-bottom: 1px dotted rgba(201, 162, 39, 0.15); white-space: nowrap; }
+.rival-row { cursor: pointer; }
+.rival-row:hover td, .rival-row:focus-visible td { background: rgba(201, 162, 39, 0.07); }
+
 /* ------------------------------------------------------ the Council Brief */
 
 .brief-body { display: flex; flex-direction: column; gap: 0.5rem; max-width: min(620px, 92vw); }
