@@ -3,8 +3,8 @@
 > **A snapshot, not the present.** This report closed the original build
 > session (2026-07-03). The game has since gained online multiplayer, the
 > Illustrated Edition, the Codex, signature abilities, the lord gallery and
-> four more rules versions — `STATE.md` and `CHANGELOG.md` carry the living
-> history. Kept intact as the record of the first climb.
+> four more rules versions — `CHANGELOG.md` carries the living history.
+> Kept intact as the record of the first climb.
 
 One session, one empty directory, one finished game. This is what got built, what
 was invented along the way, where it's honestly weak, and what I'd build next.
@@ -40,7 +40,7 @@ with both sides' modifiers in plain language — run on a forked RNG, so
 inspecting your odds never changes them.
 
 **The soul.** Heroes in four classes who level through battle and quest, choose
-between arts at milestone levels, carry artifacts from a 22-piece pool (three of
+between arts at milestone levels, carry artifacts from a 20-piece pool (three of
 them Shards of the sundered throne, two of them honestly cursed), and die
 deaths that stop the room — ceremonies, not popups. A quest book of thirteen
 undertakings in three risk tiers with authored outcome prose, plus the

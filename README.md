@@ -43,7 +43,7 @@ Pick a lord in the painted gallery (twelve, in three creeds, each with a real te
 - **Every number explains itself.** Income, order, attitude, victory standing — hover anything and Osperan itemizes where it comes from. If a number in this realm cannot explain itself, he has failed, and he does not intend to fail twice in one age.
 - **Battles are honest.** Before any blood, a Monte-Carlo preview shows both sides' full modifiers in plain words — run on a forked RNG, so checking your odds can never change your fate. Combine banners from several provinces for one assault, or burn raw Emberlight for fervor. All previewed.
 - **Rivals scheme in the open.** Attitude is an itemized ledger of remembered deeds. Alliances defend and share maps. Lords call allies into their wars with gold. Grow past forty percent of the realm and the rest of the table forms a league about it.
-- **The narrator is the game.** Tutorial, chronicle, and endgame export are one system — Osperan's book. Big moments stop the room; small ones get a dry line in the margin. He is voiced, painted, and behind schedule.
+- **The narrator is the game.** Tutorial, chronicle, and endgame export are one system — Osperan's book. Big moments stop the room; small ones get a dry line in the margin. He is painted and behind schedule; key moments are spoken aloud, the rest is instrument and ink.
 - **The rules live in the book.** The Codex (press c) is Osperan's complete handbook — every number rendered from the engine's own constants, so the book cannot drift from the battlefield.
 - **It ends.** Five distinct endings, all reachable, all raced in public. From season 38 the Chronicle wearies and the dominion bar erodes — late games finish in thrones, not timeouts.
 
@@ -61,7 +61,7 @@ npm run dev        # http://localhost:5173 — desktop and phone
 ```
 
 ```bash
-npm test           # 56 tests: engine, signatures, replay determinism, the rules-version canary
+npm test           # the full suite: engine, signatures, replay determinism, the rules-version canary
 npm run sim        # headless AI-vs-AI sweep with invariants checked every round
 npm run build      # typecheck + production build (~146 KB gzipped, zero runtime deps)
 ```
