@@ -552,9 +552,10 @@ describe('signature abilities', () => {
     expect(state.players[0].mark).toEqual({ target: 2, turnsLeft: SIGNATURE_TUNING.vaelia.seasons });
   });
 
-  it('old saves gain a zeroed cooldown on load', () => {
+  it('old saves gain a zeroed cooldown on load (via the migration registry)', () => {
     const state = gameWithLords('sig-oldsave', ['seraphine', 'aldric', 'vaelia']);
     const raw = JSON.parse(serializeGame(state));
+    raw.state.v = 10; // a genuinely pre-signature save declares its age
     for (const p of raw.state.players) delete p.signatureCooldownLeft;
     const revived = deserializeGame(JSON.stringify(raw));
     expect(revived.players[0].signatureCooldownLeft).toBe(0);
