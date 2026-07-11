@@ -16,9 +16,193 @@
     <link rel="canonical" href="https://rie.gg/" />
     <meta name="twitter:card" content="summary_large_image" />
     <title>Realms in Embers</title>
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "VideoGame",
+      "name": "Realms in Embers",
+      "url": "https://rie.gg/",
+      "description": "A compact, narrative 4X war chronicle for the browser: choose a lord, read every cause, outlast rival ambitions, and leave with the story of the realm.",
+      "genre": "Strategy",
+      "gamePlatform": "Web browser",
+      "operatingSystem": "Any",
+      "playMode": ["SinglePlayer", "MultiPlayer"],
+      "image": "https://rie.gg/art/title-hall.webp",
+      "author": {
+        "@type": "Person",
+        "name": "michael-chipmates",
+        "url": "https://github.com/michael-chipmates"
+      },
+      "license": "https://www.gnu.org/licenses/agpl-3.0.html",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD",
+        "availability": "https://schema.org/InStock"
+      }
+    }
+    </script>
+    <style>
+      /* Static landing for crawlers and the no-JS crowd. Everything is scoped
+         to #landing; the app removes that section on boot, so none of this
+         touches the game. Palette matches the hall. */
+      body { margin: 0; background: #16100a; }
+      #landing {
+        min-height: 100vh;
+        background: #16100a;
+        color: #ede2c8;
+        font-family: Georgia, 'Times New Roman', serif;
+        line-height: 1.55;
+        padding: 0 1.25rem 3rem;
+      }
+      #landing .l-inner { max-width: 46rem; margin: 0 auto; }
+      #landing .l-hero {
+        display: block;
+        width: calc(100% + 2.5rem);
+        margin: 0 -1.25rem 2rem;
+        max-width: none;
+        height: auto;
+        border-bottom: 1px solid #3a2c18;
+      }
+      #landing h1 {
+        font-size: 2.4rem;
+        font-weight: normal;
+        letter-spacing: 0.04em;
+        color: #c9a227;
+        margin: 0 0 0.75rem;
+      }
+      #landing .l-pitch { font-size: 1.15rem; margin: 0 0 1.5rem; }
+      #landing .l-proof {
+        list-style: none;
+        padding: 0;
+        margin: 0 0 2rem;
+        border-left: 2px solid #c9a227;
+      }
+      #landing .l-proof li { padding: 0.2rem 0 0.2rem 0.9rem; }
+      #landing .l-cta {
+        display: inline-block;
+        background: #c9a227;
+        color: #16100a;
+        font-size: 1.1rem;
+        padding: 0.7rem 1.6rem;
+        text-decoration: none;
+        border-radius: 3px;
+        margin-bottom: 2.5rem;
+      }
+      #landing .l-cta:hover { background: #e0b83a; }
+      #landing h2 {
+        font-size: 1.15rem;
+        font-weight: normal;
+        color: #c9a227;
+        margin: 1.6rem 0 0.3rem;
+      }
+      #landing p { margin: 0 0 0.8rem; }
+      #landing .l-chronicler {
+        margin: 2.5rem 0;
+        display: flex;
+        gap: 1.2rem;
+        align-items: center;
+      }
+      #landing .l-chronicler img {
+        width: 8rem;
+        height: auto;
+        flex: none;
+        border: 1px solid #3a2c18;
+        border-radius: 3px;
+      }
+      #landing .l-chronicler figcaption { font-style: italic; color: #c7b998; }
+      #landing .l-foot {
+        margin-top: 2.5rem;
+        padding-top: 1.2rem;
+        border-top: 1px solid #3a2c18;
+        font-size: 0.95rem;
+        color: #c7b998;
+      }
+      #landing a { color: #c9a227; }
+      #landing noscript p {
+        border: 1px solid #3a2c18;
+        padding: 0.8rem 1rem;
+        margin: 0 0 2rem;
+        color: #c7b998;
+      }
+      @media (max-width: 480px) {
+        #landing h1 { font-size: 1.9rem; }
+        #landing .l-chronicler { flex-direction: column; align-items: flex-start; }
+      }
+    </style>
   </head>
   <body>
-    <div id="app"></div>
+    <div id="app">
+      <section id="landing">
+        <img
+          class="l-hero"
+          src="/art/title-hall.webp"
+          width="1920"
+          height="1080"
+          alt="A carved oak war table in a candlelit hall: an unrolled map of the realm weighted with wax seals, pewter markers standing on the provinces, a fire burning low in the hearth behind"
+        />
+        <div class="l-inner">
+          <h1>Realms in Embers</h1>
+          <p class="l-pitch">
+            A compact, narrative 4X war chronicle for the browser: choose a lord,
+            read every cause, outlast rival ambitions, and leave with the story of
+            the realm.
+          </p>
+          <ul class="l-proof">
+            <li>Every number explains itself.</li>
+            <li>Every game ends.</li>
+            <li>Free, no account, no tracking — and after the first visit it works offline.</li>
+          </ul>
+          <p><a class="l-cta" href="#landing">Play free in your browser</a></p>
+          <noscript>
+            <p>
+              This page is plain HTML, but the game itself needs JavaScript: the
+              whole realm is dealt, fought, and remembered on your own device, and
+              nothing is sent anywhere. Turn scripts back on and the hall lights
+              itself.
+            </p>
+          </noscript>
+          <h2>Twelve lords</h2>
+          <p>
+            Painted, tempered, and opinionated, in three creeds. Each carries a
+            legacy that shapes their rule and a signature order that is theirs
+            alone, and the AI genuinely plays every temperament it is given.
+          </p>
+          <h2>Five endings</h2>
+          <p>
+            Conquest, dominion, a golden age, the Legend of the rekindled throne,
+            or the judgment of the Chronicle when the page runs out. Late wars
+            finish in thrones, not timeouts.
+          </p>
+          <h2>Three ways to war</h2>
+          <p>
+            Online with end-to-end-encrypted invite links: the relay stores
+            ciphertext and cannot read a single move. Hotseat, several mortals on
+            one device. Or courier — war by letters, the chronicle file carried
+            between turns.
+          </p>
+          <figure class="l-chronicler">
+            <img
+              src="/art/osperan.webp"
+              width="512"
+              height="640"
+              alt="Osperan the chronicler: the ghost of an old scholar in spectacles, embers glowing behind his ribs, writing in a great ledger by a single candle"
+            />
+            <figcaption>
+              Osperan, chronicler of the Embermark. Dead, punctual, and the voice
+              of every rule in the book.
+            </figcaption>
+          </figure>
+          <footer class="l-foot">
+            <p>
+              <a href="https://github.com/michael-chipmates/realms-in-embers">Source on GitHub</a>
+              — code under AGPL-3.0, story and art under CC BY-SA 4.0.
+              <a href="/legal.html">Legal &amp; privacy</a>.
+            </p>
+          </footer>
+        </div>
+      </section>
+    </div>
     <script type="module" src="/src/ui/main.ts"></script>
   </body>
 </html>

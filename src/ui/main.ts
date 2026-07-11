@@ -11,6 +11,11 @@ import { openOnlineLobby } from './screens/lobby';
 const root = document.getElementById('app');
 if (!root) throw new Error('no #app mount point');
 
+// The static landing in index.html exists for crawlers and the no-JS crowd;
+// the app takes the room over from here. (Screens also clear #app, but the
+// invite path renders asynchronously — remove it now so it never lingers.)
+document.getElementById('landing')?.remove();
+
 preloadArtManifest();
 const app = new App(root);
 const invite = parseInvite(location.hash);
