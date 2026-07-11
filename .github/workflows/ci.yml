@@ -26,6 +26,8 @@ jobs:
         run: npx tsx src/sim/harness.ts --games 10
       - name: Production build
         run: npm run build
+      - name: Performance budget (bundle gzip caps)
+        run: node scripts/check-budget.mjs
 
   # Drive the built app through real desktop and mobile play loops; the
   # drive scripts exit nonzero on any console/page error, so this job gates.

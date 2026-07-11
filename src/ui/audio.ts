@@ -159,6 +159,11 @@ class AudioEngine {
     ];
   }
 
+  /** The score's file list, for the offline warm-cache sweep. */
+  trackUrls(): string[] {
+    return [...this.playlist];
+  }
+
   leaveGame(): void {
     this.inGame = false;
     this.stopMusic();

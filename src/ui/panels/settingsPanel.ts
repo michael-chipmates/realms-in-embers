@@ -31,6 +31,71 @@ function bugReport(app: App): string {
   return lines.join('\n');
 }
 
+/** The offline keeper's card: whether it stands watch, how much it holds,
+ * and one button that fetches the whole realm — art, score, voice — so a
+ * phone can leave the network behind after one deliberate tap. */
+function offlineRow(): HTMLElement {
+  const status = h('p', { class: 'small muted', 'aria-live': 'polite', style: { margin: '0.2rem 0 0' } });
+  const keeper = 'serviceWorker' in navigator && navigator.serviceWorker.controller
+    ? 'The offline keeper stands watch: pages you have visited work with no wire.'
+    : 'The offline keeper arms itself after the first visit to the live site.';
+  void (async () => {
+    try {
+      const est = await navigator.storage?.estimate?.();
+      if (est?.usage !== undefined) {
+        status.textContent = `Kept so far: ~${(est.usage / (1024 * 1024)).toFixed(1)} MB on this device.`;
+      }
+    } catch { /* estimate is a nicety */ }
+  })();
+  const btn = h('button', {
+    class: 'btn compact',
+    onclick: async (e: Event) => {
+      const button = e.currentTarget as HTMLButtonElement;
+      button.disabled = true;
+      try {
+        const urls = new Set<string>();
+        for (const track of audio.trackUrls()) urls.add(track);
+        for (const manifest of ['art/manifest.json', 'audio/manifest.json']) {
+          try {
+            const res = await fetch(manifest);
+            if (!res.ok) continue;
+            const map = await res.json() as Record<string, string>;
+            const dir = manifest.split('/')[0];
+            for (const file of Object.values(map)) urls.add(`${dir}/${file}`);
+          } catch { /* a missing manifest just means fewer files */ }
+        }
+        const list = [...urls];
+        let done = 0;
+        let failed = 0;
+        for (const url of list) {
+          try {
+            const res = await fetch(url);
+            if (!res.ok) failed++;
+          } catch { failed++; }
+          done++;
+          if (done % 10 === 0 || done === list.length) {
+            status.textContent = `Carrying the realm home: ${done} of ${list.length}…`;
+          }
+        }
+        status.textContent = failed === 0
+          ? `The whole realm is kept: ${list.length} files ready with no wire.`
+          : `${list.length - failed} of ${list.length} kept — ${failed} would not come (try again on a better wire).`;
+        const est = await navigator.storage?.estimate?.().catch(() => undefined);
+        if (est?.usage !== undefined) {
+          status.textContent += ` ~${(est.usage / (1024 * 1024)).toFixed(1)} MB on this device.`;
+        }
+      } finally {
+        button.disabled = false;
+      }
+    },
+  }, 'Keep the whole realm offline');
+  return h('div', {},
+    h('p', { class: 'small muted', style: { margin: '0 0 0.3rem' } }, keeper),
+    btn,
+    status,
+  );
+}
+
 function copyBugReportRow(app: App): HTMLElement {
   const status = h('span', { class: 'small muted', 'aria-live': 'polite' });
   let timer = 0;
@@ -153,6 +218,7 @@ export function openSettingsPanel(app: App): void {
     }),
     h('h3', { class: 'settings-head' }, 'Keeping'),
     healthRow.el,
+    offlineRow(),
     h('h3', { class: 'settings-head' }, 'Credits'),
     h('div', { class: 'small muted', style: { lineHeight: '1.5' } },
       ...audio.credits().map((line) => h('p', { style: { margin: '0 0 0.3rem' } }, line)),
