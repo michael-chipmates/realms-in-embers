@@ -4,6 +4,40 @@ All notable changes to Realms in Embers. The game's rules carry their own
 version (`RULES_VERSION` in `src/engine/state.ts`, currently v13) — bumped
 whenever engine semantics change, with a frozen replay fixture as the canary.
 
+## [Unreleased] — 0.5.0
+
+In progress. Shipped so far on `main`:
+
+- **The Battle Theater** — every fight opens as a staged scene: a stakes card
+  carrying the odds you accepted, ranks of company chits, a balance that tips
+  clash by clash at three speeds, and an aftermath naming the decisive
+  moments and answering the forecast. Reduced motion keeps the still report.
+- **The First Ember** — a guided first chronicle on a pinned friendly seed;
+  six steps that only advance when the real thing happened in the action log.
+  Skippable always; leads the title for first visits.
+- **The Province Navigator** (`p`) — the map as rows, fog-gated to exactly
+  what the vellum shows, filterable, selection mirrored both ways. The Keys
+  card moved to `?`; an axe accessibility gate joined CI at zero violations.
+- **ActionEvaluation** (UX-030) — one typed legality/cost/reason source that
+  dry-runs the engine's own validator; the build and muster buttons read it.
+- **Trust wave two** — online state checkpoints every ended season with
+  freeze-on-divergence (NET-033); a crash boundary that sets the game down as
+  "The emergency copy" (SAVE-033); the replay fixture verified nightly in
+  Chromium, Firefox, and WebKit (DET-030); staged service-worker updates
+  (BOOT_OK — a shell that cannot boot never destroys the last one that could),
+  applied deliberately from the title.
+- **QA-030 statistics** — the mirror harness now reports game-block bootstrap
+  CIs and judges each lord against a ROPE equivalence band: a CI wholly
+  outside expectation ±5pp fails the night conclusively; straddles are
+  reported, never failed. Route attempts print beside wins so Golden Age
+  rarity stays a choice. The harness judges and never tunes.
+- Disbanding a company and releasing a hero now arm on the first press and
+  act on the second — nothing irreversible on a stray tap.
+
+The enforced balance gates are unchanged: every lord p ≥ 0.01 over ≥300
+mirrored games, dominion ≤ 40% of endings, other paths ≥ 4% (Golden Age:
+reachable), signatures ≥ 1.0 uses/seat — now joined by the ±5pp ROPE gate.
+
 ## [0.4.0] — the open realm (2026-07-12)
 
 The round-2 audits arrived (8.9 and 8.8, both up from 8.4) and every finding

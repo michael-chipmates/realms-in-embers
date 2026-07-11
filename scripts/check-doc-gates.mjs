@@ -33,6 +33,8 @@ const gates = {
   pathMin: gateNumber('path floor', /share\(path\) < (0\.\d+)/),
   // rate < 1.0 → docs must say "≥ 1.0 uses/seat"
   signatureFloor: gateNumber('signature floor', /rate < (\d+\.\d+)\) gateFailures/),
+  // const ROPE_PP = 0.05 → docs must say "±5pp" (QA-030 equivalence gate)
+  ropePp: gateNumber('ROPE equivalence band', /const ROPE_PP = (0\.\d+);/),
 };
 
 const pct = (frac) => `${Math.round(parseFloat(frac) * 100)}%`;
@@ -44,6 +46,7 @@ const requirements = [
   { text: `≤ ${pct(gates.dominionMax)}`, gate: 'dominion ending ceiling' },
   { text: `≥ ${pct(gates.pathMin)}`, gate: 'per-path ending floor' },
   { text: `≥ ${gates.signatureFloor} uses/seat`, gate: 'signature-use floor' },
+  { text: `±${Math.round(parseFloat(gates.ropePp) * 100)}pp`, gate: 'ROPE equivalence band (QA-030)' },
 ];
 
 const docs = ['CHANGELOG.md', 'docs/ROADMAP.md'];
@@ -66,6 +69,7 @@ if (drifts.length > 0) {
 
 console.log(
   `doc gates in sync: p ≥ ${gates.pThreshold}, dominion ≤ ${pct(gates.dominionMax)}, ` +
-  `paths ≥ ${pct(gates.pathMin)}, signatures ≥ ${gates.signatureFloor} uses/seat ` +
+  `paths ≥ ${pct(gates.pathMin)}, signatures ≥ ${gates.signatureFloor} uses/seat, ` +
+  `ROPE ±${Math.round(parseFloat(gates.ropePp) * 100)}pp ` +
   `(checked ${docs.join(', ')})`,
 );

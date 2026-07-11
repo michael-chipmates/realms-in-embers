@@ -32,7 +32,47 @@ interface GameRecord {
   chronicleEntries: number;
   /** Signature uses by lord id — the balance gate wants all twelve alive. */
   signatureUses: Record<string, number>;
+  /** QA-030: which gated victory routes were genuinely ATTEMPTED this game
+   * (a streak begun, a saga chapter reached) — so a route's rarity is a
+   * choice we can see, never an accident nobody pursued. */
+  attempts: { dominion: boolean; goldenAge: boolean; legend: boolean };
   wallMs: number;
+}
+
+/** QA-030 — the statistical policy, in one place. The harness JUDGES and
+ * never tunes: no constant in the engine is ever adjusted from here.
+ * ROPE_PP is the region of practical equivalence around each lord's
+ * seat-weighted expected win share: a lord whose bootstrap CI lies wholly
+ * outside expectation ± ROPE_PP is conclusively unbalanced and fails the
+ * gate; a CI that straddles the band is reported, not failed. */
+const ROPE_PP = 0.05;
+const BOOTSTRAP_ROUNDS = 1000;
+
+/** Seeded LCG so nightly reports are reproducible from their seed prefix. */
+function makeRand(seedStr: string): () => number {
+  let s = 0x811c9dc5;
+  for (let i = 0; i < seedStr.length; i++) {
+    s ^= seedStr.charCodeAt(i);
+    s = Math.imul(s, 0x01000193);
+  }
+  return () => {
+    s = (Math.imul(s, 1664525) + 1013904223) >>> 0;
+    return s / 2 ** 32;
+  };
+}
+
+/** Game-block bootstrap: resample whole GAMES (the correlated unit — one
+ * game contributes several seats and exactly one winner), and read a 95%
+ * interval off the resampled statistic. */
+function bootstrapCi(records: GameRecord[], stat: (sample: GameRecord[]) => number, rand: () => number): { lo: number; hi: number } {
+  const values: number[] = [];
+  for (let b = 0; b < BOOTSTRAP_ROUNDS; b++) {
+    const sample: GameRecord[] = [];
+    for (let i = 0; i < records.length; i++) sample.push(records[Math.floor(rand() * records.length)]);
+    values.push(stat(sample));
+  }
+  values.sort((a, b) => a - b);
+  return { lo: values[Math.floor(0.025 * values.length)], hi: values[Math.floor(0.975 * values.length)] };
 }
 
 const args = process.argv.slice(2);
@@ -85,6 +125,7 @@ function playGame(i: number): GameRecord {
   let battles = 0;
   let rebellions = 0;
   const signatureUses: Record<string, number> = {};
+  const attempts = { dominion: false, goldenAge: false, legend: false };
   let lastTurnSeen = state.turn;
   let stuckCounter = 0;
 
@@ -105,6 +146,10 @@ function playGame(i: number): GameRecord {
       lastTurnSeen = state.turn;
       stuckCounter = 0;
       checkInvariants(state, settings.seed);
+      // QA-030 route attempts: a streak genuinely begun, a late saga chapter
+      attempts.dominion ||= Object.values(state.victory.dominionStreak).some((n) => n >= 2);
+      attempts.goldenAge ||= Object.values(state.victory.goldenStreak).some((n) => n >= 2);
+      attempts.legend ||= state.players.some((p) => p.alive && p.sagaChapter >= 4);
     } else if (++stuckCounter > settings.players.length + 2) {
       throw new Error(`[${settings.seed}] round counter stuck at ${state.turn}`);
     }
@@ -143,6 +188,7 @@ function playGame(i: number): GameRecord {
     eliminations,
     chronicleEntries: state.chronicle.length,
     signatureUses,
+    attempts,
     wallMs: Math.round(performance.now() - started),
   };
 }
@@ -227,6 +273,7 @@ function main(): void {
   }
   // ---- the mirror gates: statistics, not vibes -------------------------
   const gateFailures: string[] = [];
+  const ropeVerdicts: Record<string, { lo: number; hi: number; verdict: string }> = {};
   if (MIRROR && records.length > 0) {
     const gate = records.length >= 300; // below 300 games: print, don't judge
     console.log(`\nMirror gates (${gate ? 'ENFORCED' : `advisory below 300 games — ${records.length} played`}):`);
@@ -249,18 +296,33 @@ function main(): void {
       }
       if (r.winnerLord) perLord.get(r.winnerLord)!.wins += 1;
     }
-    console.log('  Lord fairness (observed vs seat-weighted expectation, two-sided p):');
+    // QA-030: game-block bootstrap CIs + ROPE equivalence verdicts. The
+    // bootstrap resamples whole games (the correlated unit); the ROPE asks
+    // the practical question — is this lord within ±5pp of expectation? —
+    // and only a CI wholly outside the band is a conclusive imbalance.
+    const rand = makeRand(SEED_PREFIX);
+    console.log('  Lord fairness (two-sided p + game-block bootstrap CI vs ROPE ±5pp):');
     for (const [lord, s] of [...perLord.entries()].sort()) {
       const z = s.variance > 0 ? (s.wins - s.expected) / Math.sqrt(s.variance) : 0;
       const p = 2 * (1 - phi(Math.abs(z)));
-      // Wilson 95% interval on the raw per-seat rate, for the report
-      const n = s.seats; const w = s.wins / Math.max(1, n); const zz = 1.96;
-      const den = 1 + zz * zz / n;
-      const mid = (w + zz * zz / (2 * n)) / den;
-      const half = (zz * Math.sqrt((w * (1 - w) + zz * zz / (4 * n)) / n)) / den;
-      const verdict = p < 0.01 ? '✗ OUTSIDE' : '✓';
-      console.log(`    ${(LORD_BY_ID[lord]?.name ?? lord).padEnd(24)} ${String(s.wins).padStart(3)}/${String(s.seats).padEnd(3)} exp ${s.expected.toFixed(1).padStart(5)}  CI ${(100 * (mid - half)).toFixed(0)}–${(100 * (mid + half)).toFixed(0)}%  p=${p.toFixed(3)} ${verdict}`);
+      const expectedShare = s.expected / Math.max(1, s.seats);
+      const ci = bootstrapCi(records, (sample) => {
+        let wins = 0; let seats = 0;
+        for (const r of sample) {
+          for (const sl of r.seatLords) if (sl === lord) seats++;
+          if (r.winnerLord === lord) wins++;
+        }
+        return seats > 0 ? wins / seats : expectedShare;
+      }, rand);
+      const ropeLo = expectedShare - ROPE_PP;
+      const ropeHi = expectedShare + ROPE_PP;
+      const outside = ci.lo > ropeHi || ci.hi < ropeLo;
+      const inside = ci.lo >= ropeLo && ci.hi <= ropeHi;
+      const verdict = outside ? '✗ OUTSIDE ROPE' : inside ? '✓ equivalent' : '~ inconclusive';
+      ropeVerdicts[lord] = { ...ci, verdict };
+      console.log(`    ${(LORD_BY_ID[lord]?.name ?? lord).padEnd(24)} ${String(s.wins).padStart(3)}/${String(s.seats).padEnd(3)} exp ${(100 * expectedShare).toFixed(0)}%  CI ${(100 * ci.lo).toFixed(0)}–${(100 * ci.hi).toFixed(0)}%  p=${p.toFixed(3)} ${verdict}`);
       if (gate && p < 0.01) gateFailures.push(`${lord}: wins ${s.wins} vs expected ${s.expected.toFixed(1)} over ${s.seats} seats (p=${p.toFixed(4)})`);
+      if (gate && outside) gateFailures.push(`${lord}: bootstrap CI ${(100 * ci.lo).toFixed(0)}–${(100 * ci.hi).toFixed(0)}% lies wholly outside expectation ±5pp — a conclusive imbalance`);
     }
     const byPath2 = new Map<string, number>();
     for (const r of records) byPath2.set(String(r.path), (byPath2.get(String(r.path)) ?? 0) + 1);
@@ -272,6 +334,20 @@ function main(): void {
     // Golden Age is a rare-prestige ending by decision (ROADMAP §2.1) — it
     // must stay reachable, not common
     if (gate && (byPath2.get('goldenAge') ?? 0) === 0) gateFailures.push('goldenAge never occurred (gate: ≥1 per 300)');
+    // QA-030: ending shares with game-block bootstrap intervals, and the
+    // gated routes' attempts beside their wins — rarity as a visible choice
+    console.log('  Ending shares (game-block bootstrap 95% CI):');
+    for (const path of ['dominion', 'chronicle', 'legend', 'conquest', 'goldenAge']) {
+      const ci = bootstrapCi(records, (sample) => sample.filter((r) => r.path === path).length / Math.max(1, sample.length), rand);
+      console.log(`    ${path.padEnd(10)} ${(100 * share(path)).toFixed(0).padStart(3)}%  CI ${(100 * ci.lo).toFixed(0)}–${(100 * ci.hi).toFixed(0)}%`);
+    }
+    const attemptsOf = (route: 'dominion' | 'goldenAge' | 'legend'): number => records.filter((r) => r.attempts?.[route]).length;
+    console.log('  Route attempts vs wins (gated routes):');
+    for (const route of ['dominion', 'goldenAge', 'legend'] as const) {
+      const att = attemptsOf(route);
+      const wins = byPath2.get(route) ?? 0;
+      console.log(`    ${route.padEnd(10)} attempted in ${att}/${records.length} games, won ${wins} (${att > 0 ? Math.round((wins / att) * 100) : 0}% of attempts)`);
+    }
     const sigUses2 = new Map<string, number>();
     const sigSeats = new Map<string, number>();
     for (const r of records) {
@@ -301,6 +377,11 @@ function main(): void {
     rulesVersion: RULES_VERSION,
     mirror: MIRROR,
     config: { games: GAMES, seedPrefix: SEED_PREFIX },
+    // QA-030: the harness judges, it never tunes — no engine constant is
+    // ever written from here, and any tuning is a human decision refereed
+    // by a fresh sweep.
+    policy: 'no-auto-tune',
+    stats: { ropePp: ROPE_PP, bootstrapRounds: BOOTSTRAP_ROUNDS, ropeVerdicts },
     completed: records.length,
     attempted: GAMES,
     games: records,
