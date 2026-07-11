@@ -1,5 +1,6 @@
 /** Tiny formatting helpers shared across panels. */
 import { LORD_BY_ID } from '../engine/content/lords';
+import { assignPatterns } from './heraldry';
 import { HERO_CLASSES } from '../engine/heroes';
 import type { GameState, HeroClass, PlayerId } from '../engine/types';
 
@@ -30,8 +31,14 @@ export function playerColors(state: GameState): Record<number, string> {
   return out;
 }
 
+/**
+ * Colorblind-mode fill patterns per seated player. Routed through
+ * `assignPatterns` so no two seated lords ever share a pattern, even when
+ * their static heraldry collides (e.g. two 'plain' lords at one table).
+ */
 export function playerPatterns(state: GameState): Record<number, string> {
+  const byLord = assignPatterns(state.players.map((p) => p.lordId));
   const out: Record<number, string> = {};
-  for (const p of state.players) out[p.id] = LORD_BY_ID[p.lordId].pattern;
+  for (const p of state.players) out[p.id] = byLord[p.lordId];
   return out;
 }

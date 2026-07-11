@@ -3,8 +3,45 @@
  * Pure SVG — crisp at any size, themeable, zero assets.
  */
 import { LORD_BY_ID } from '../engine/content/lords';
+import type { SigilPattern } from '../engine/content/lords';
 import { iconPathOf } from './icons';
 import { h } from './dom';
+
+/** Every fill pattern the map renderer can draw, in deterministic order. */
+export const SIGIL_PATTERNS: readonly SigilPattern[] =
+  ['plain', 'stripes', 'dots', 'checks', 'waves', 'crosshatch'];
+
+/**
+ * Deterministic, collision-free pattern assignment for the lords actually
+ * seated this game. Twelve lords share six patterns, so two seated lords can
+ * carry the same one — invisible in color, hostile in colorblind mode.
+ *
+ * Each lord keeps their heraldic pattern when it is free (first come in seat
+ * order wins); a lord whose pattern is taken receives the first unused
+ * pattern instead. Pure and UI-only: no state, no RNG, no rules change.
+ * With at most six seats and six patterns, uniqueness is guaranteed.
+ */
+export function assignPatterns(lordIds: readonly string[]): Record<string, SigilPattern> {
+  const out: Record<string, SigilPattern> = {};
+  const taken = new Set<SigilPattern>();
+  // first pass: everyone whose own pattern is still free keeps it
+  for (const id of lordIds) {
+    if (out[id] !== undefined) continue; // same lord seated twice: one entry
+    const own = LORD_BY_ID[id]?.pattern ?? 'plain';
+    if (!taken.has(own)) {
+      out[id] = own;
+      taken.add(own);
+    }
+  }
+  // second pass: the displaced take the first unused pattern, in seat order
+  for (const id of lordIds) {
+    if (out[id] !== undefined) continue;
+    const free = SIGIL_PATTERNS.find((p) => !taken.has(p)) ?? 'plain';
+    out[id] = free;
+    taken.add(free);
+  }
+  return out;
+}
 
 /** ids must be unique per INSTANCE — the same lord renders in many places. */
 let shieldSerial = 0;

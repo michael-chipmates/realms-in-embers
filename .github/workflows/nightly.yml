@@ -1,0 +1,63 @@
+name: Nightly
+
+on:
+  schedule:
+    - cron: '0 3 * * *' # 03:00 UTC, while the realm sleeps
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  # 300 mirrored AI-vs-AI games with the statistical balance gates enforced.
+  # The harness exits nonzero on any crash, invariant break, or gate failure.
+  mirror-sim:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Mirror balance sweep (300 games, gates enforced)
+        run: npx tsx src/sim/harness.ts --mirror --games 300 --seed-prefix nightly-${{ github.run_number }}
+      - name: Upload sim report
+        if: always() # the report is most interesting when the gates fail
+        uses: actions/upload-artifact@v4
+        with:
+          name: sim-report
+          path: sim-report.json
+          if-no-files-found: warn
+
+  # The static Codex pages are generated from the live app; if the committed
+  # pages in public/codex/ drift from what the engine renders today, fail.
+  codex-drift:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install chromium --with-deps
+      - run: npm run build
+      - name: Start preview server
+        # export-codex.mjs defaults to http://localhost:5199 — keep in sync.
+        run: |
+          npx vite preview --port 5199 &
+          for i in $(seq 1 60); do
+            curl -sf http://localhost:5199/ >/dev/null && break
+            sleep 1
+          done
+          curl -sf http://localhost:5199/ >/dev/null
+      - name: Regenerate the Codex export
+        run: node scripts/export-codex.mjs http://localhost:5199
+      - name: Committed Codex pages must match the engine
+        run: |
+          git diff --exit-code public/codex/
+          # a brand-new chapter would be untracked, invisible to git diff
+          test -z "$(git status --porcelain public/codex/)"

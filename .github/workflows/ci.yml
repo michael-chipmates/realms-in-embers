@@ -26,3 +26,37 @@ jobs:
         run: npx tsx src/sim/harness.ts --games 10
       - name: Production build
         run: npm run build
+
+  # Drive the built app through real desktop and mobile play loops; the
+  # drive scripts exit nonzero on any console/page error, so this job gates.
+  drives:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install chromium --with-deps
+      - run: npm run build
+      - name: Start preview server
+        run: |
+          npx vite preview --port 5199 &
+          for i in $(seq 1 60); do
+            curl -sf http://localhost:5199/ >/dev/null && break
+            sleep 1
+          done
+          curl -sf http://localhost:5199/ >/dev/null
+      - name: Desktop drive
+        run: node scripts/drive.mjs http://localhost:5199 /tmp
+      - name: Mobile drive (touch via CDP)
+        run: node scripts/drive-mobile.mjs http://localhost:5199 /tmp
+      - name: Upload drive screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: drive-screenshots
+          path: /tmp/*.png
+          if-no-files-found: warn

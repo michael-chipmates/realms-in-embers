@@ -1,0 +1,63 @@
+name: Deploy
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install chromium --with-deps
+      - name: Build (first pass, to serve for the Codex export)
+        run: npm run build
+      - name: Start preview server
+        run: |
+          npx vite preview --port 5199 &
+          for i in $(seq 1 60); do
+            curl -sf http://localhost:5199/ >/dev/null && break
+            sleep 1
+          done
+          curl -sf http://localhost:5199/ >/dev/null
+      - name: Regenerate the Codex export
+        run: node scripts/export-codex.mjs http://localhost:5199
+      - name: Rebuild with the fresh Codex pages
+        run: npm run build
+      - name: Deploy to Cloudflare Pages
+        # NOTE (Michel): this job needs two repository secrets —
+        #   CLOUDFLARE_API_TOKEN   (a token with Pages:Edit on the account)
+        #   CLOUDFLARE_ACCOUNT_ID  (the account id from the Cloudflare dashboard)
+        # Add them under Settings → Secrets and variables → Actions.
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: npx wrangler pages deploy dist --project-name realms-in-embers
+      - name: Post-deploy smoke against rie.gg
+        run: |
+          set -euo pipefail
+          # give the edge a moment; retry the landing page up to 10 times
+          for i in $(seq 1 10); do
+            if curl -fsS https://rie.gg/ | grep -q "free browser fantasy strategy game"; then
+              break
+            fi
+            if [ "$i" = "10" ]; then
+              echo "FATAL: landing page missing its crawlable copy" >&2
+              exit 1
+            fi
+            sleep 6
+          done
+          curl -fsS -o /dev/null https://rie.gg/robots.txt
+          curl -fsS -o /dev/null https://rie.gg/sitemap.xml
+          curl -fsS -o /dev/null https://rie.gg/codex/
+          echo "smoke passed: landing copy, robots.txt, sitemap.xml, codex index"
