@@ -86,10 +86,6 @@ the statistics to convict — then convicted, twice, and was obeyed.
   carry the full honest ledger including the AI-art disclosure.
 - **/lords/** — the twelve claimants as one crawlable page, rendered from
   the engine's own content; joined the sitemap beside the Codex export.
-- **The plain-speech round** (rules v16) — every em and en dash left every
-  player-facing surface: the chronicle's fiction, the rules voice, the whole
-  UI, README, landing, press, legal, and the lords page (716 of them),
-  replaced by periods, commas, colons, and parentheses that read aloud.
 - **splitArmy** (rules v16) — a banner may raise a second banner in place:
   mark the companies that march out, confirm, done. The new banner inherits
   the season already spent (a split never buys a free march) and heroes stay

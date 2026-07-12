@@ -71,9 +71,9 @@ import { NEUTRAL } from './types';
  *     wars, not parallel ones); and the fierce or greedy shop for war
  *     against a ≥34% leader someone else already fights (never over a pact,
  *     never from weakness).
- * 16: The plain-speech round: every em/en dash leaves the chronicle's and
- *     the rules' voice (text only, no mechanics); and splitArmy returns
- *     with a real UI: a banner may raise a second banner in place. */
+ * 16: A copy-editing pass across the chronicle's and the rules' voice
+ *     (text only, no mechanics moved); and splitArmy returns with a real
+ *     UI: a banner may raise a second banner in place. */
 export const RULES_VERSION = 16;
 
 export const HANDICAPS: Record<Difficulty, PlayerHandicap> = {
