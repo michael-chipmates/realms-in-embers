@@ -143,6 +143,7 @@ function codexOf(action: Action): CodexRef | null {
   switch (action.t) {
     case 'moveArmy':
     case 'recallMove':
+    case 'splitArmy':
     case 'setStance':
     case 'mergeArmies':
     case 'disband':

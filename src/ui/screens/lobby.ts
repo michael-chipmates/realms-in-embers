@@ -15,7 +15,7 @@ import { h, mount, clear } from '../dom';
 import { sigilShield } from '../heraldry';
 import {
   AD_FRESH_MS, AD_HEARTBEAT_MS, CLOCK_PRESETS, NetClient, PROTOCOL_VERSION, RULES_VERSION,
-  WAYHOUSE_KEY, WAYHOUSE_ROOM, inviteLink, makeRoomKey, openTables, parseInvite, randomRoomId, relayUrl,
+  WAYHOUSE_KEY, WAYHOUSE_ROOM, inviteLink, makeRoomKey, openTables, parseInvite, randomRoomId,
   type ClockConfig, type NetEntry,
 } from '../net';
 import type { App } from '../app';
@@ -409,8 +409,13 @@ export async function openOnlineLobby(app: App, invite?: { roomId: string; key: 
   };
 
   client.onStatus = (s) => {
+    // players see a state, not infrastructure: the relay's hostname is
+    // nobody's business at the table (Michel, 2026-07-12). A self-hosted
+    // override still shows its address, deliberately, so a custom relay
+    // is verifiable at a glance.
+    const custom = localStorage.getItem('rie-relay');
     status.textContent = s === 'open'
-      ? `Connected · relay ${relayUrl().replace(/^wss?:\/\//, '')}`
+      ? (custom ? `Connected · your relay ${custom.replace(/^wss?:\/\//, '')}` : 'Connected to the open table.')
       : s === 'connecting' ? 'Reaching the relay…' : 'Relay lost, retrying…';
   };
   client.onError = (message) => {

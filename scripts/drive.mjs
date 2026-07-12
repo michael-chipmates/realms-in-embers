@@ -58,6 +58,34 @@ await page.waitForTimeout(300);
 const unitsAfterConfirm = await page.evaluate(() =>
   Object.values(window.__game.state.armies).filter((a) => a.owner === 0).reduce((s, a) => s + a.units.length, 0));
 if (unitsAfterConfirm !== unitsBefore - 1) { console.error('confirmed disband did not remove exactly one company'); process.exit(1); }
+
+// split the banner: mark one company, confirm, and a second banner stands
+// in the same province with one company fewer under the old one
+const splitReady = await page.evaluate(() => {
+  const g = window.__game;
+  const army = Object.values(g.state.armies).find((a) => a.owner === 0 && a.units.length >= 2);
+  if (!army) return null;
+  g.selectArmy(army.id);
+  return { id: army.id, units: army.units.length, count: Object.values(g.state.armies).filter((a) => a.owner === 0).length };
+});
+if (splitReady) {
+  await page.waitForTimeout(400);
+  await page.getByRole('button', { name: /Split the banner/ }).click();
+  await page.waitForTimeout(400);
+  await page.locator('#split-0').check();
+  await page.waitForTimeout(200);
+  await page.getByRole('button', { name: /Raise the new banner/ }).click();
+  await page.waitForTimeout(400);
+  const after = await page.evaluate((prev) => {
+    const g = window.__game;
+    return {
+      count: Object.values(g.state.armies).filter((a) => a.owner === 0).length,
+      oldUnits: g.state.armies[prev.id]?.units.length ?? -1,
+    };
+  }, splitReady);
+  if (after.count !== splitReady.count + 1) { console.error('split did not raise a second banner'); process.exit(1); }
+  if (after.oldUnits !== splitReady.units - 1) { console.error('split moved the wrong number of companies'); process.exit(1); }
+}
 await page.evaluate(() => window.__game.select(null, null));
 await page.waitForTimeout(200);
 

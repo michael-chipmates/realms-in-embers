@@ -11,7 +11,7 @@ import { BUILDINGS, TERRAIN } from './content/world';
 import { UNITS } from './content/units';
 import { createHero, HERO_CLASSES } from './heroes';
 import {
-  addDeed, armiesIn, atWar, getStance, lordName, lordOf, setStance,
+  addDeed, armiesIn, atWar, getStance, lordName, lordOf, newArmy, setStance,
 } from './helpers';
 import { say, scribe } from './narrator';
 import { applySignature, signatureSeasonActive } from './signature';
@@ -259,6 +259,26 @@ export function applyAction(state: GameState, action: Action): ActionResult {
       if (recall.setMoved) army.moved = false;
       if (recall.setSeaMoved) army.seaMoved = false;
       delete army.lastMove;
+      log(state, action);
+      return { ok: true, effects };
+    }
+
+    case 'splitArmy': {
+      // v16: the chosen companies march out under a second banner, raised
+      // in place. The new banner inherits the season already spent (a split
+      // never buys a free march) and the stance it was raised under; heroes
+      // stay with the old banner and re-attach by the usual rules.
+      const army = state.armies[action.armyId];
+      if (!army || army.owner !== pid) return fail('Not your army.');
+      const indices = [...new Set(action.indices)].sort((a, b) => a - b);
+      if (indices.length === 0) return fail('Choose the companies that march out.');
+      if (indices.some((i) => !Number.isInteger(i) || i < 0 || i >= army.units.length)) return fail('No such company.');
+      if (indices.length === army.units.length) return fail('At least one company must keep the old banner.');
+      const marched = indices.map((i) => army.units[i]);
+      for (let k = indices.length - 1; k >= 0; k--) army.units.splice(indices[k], 1);
+      const split = newArmy(state, pid, army.province, marched, { stance: army.stance, moved: army.moved });
+      if (army.seaMoved) split.seaMoved = true;
+      delete army.lastMove; // both banners are reshaped
       log(state, action);
       return { ok: true, effects };
     }

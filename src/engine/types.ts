@@ -413,6 +413,7 @@ export type Action =
   | { t: 'disband'; armyId: number; index: number }
   | { t: 'moveArmy'; armyId: number; to: ProvinceId; viaSea?: boolean; support?: number[]; fervor?: boolean }
   | { t: 'recallMove'; armyId: number }
+  | { t: 'splitArmy'; armyId: number; indices: number[] }
   | { t: 'mergeArmies'; from: number; into: number }
   | { t: 'setStance'; armyId: number; stance: Stance }
   | { t: 'hireHero'; offerIdx: number }

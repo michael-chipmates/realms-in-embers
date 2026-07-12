@@ -49,7 +49,7 @@ async function boot(page) {
   await page.keyboard.press('Escape');
   await page.keyboard.press('Escape');
   // topbar button opens it too
-  await page.getByRole('button', { name: 'The Codex — every rule of the realm' }).click();
+  await page.getByRole('button', { name: 'The Codex: every rule of the realm' }).click();
   await page.waitForTimeout(400);
   if (!(await page.getByRole('dialog', { name: 'The Codex' }).isVisible())) {
     throw new Error('Codex did not open from the topbar');

@@ -7,7 +7,7 @@
  * state: the Brief is a reader, the war table is the pen.
  */
 import { emberlightIncome, incomeReport } from '../../engine/economy';
-import { armiesOf, heroesOf, provincesOf } from '../../engine/helpers';
+import { armiesOf, getStance, heroesOf, provincesOf } from '../../engine/helpers';
 import { chronicleScore, dominionShareAt } from '../../engine/victory';
 import { LORD_BY_ID } from '../../engine/content/lords';
 import type { ChronicleEntry } from '../../engine/types';
@@ -138,19 +138,27 @@ export function openBriefOverlay(screen: GameScreen): void {
   );
 
   // ------------------------------------------------------ the intention
-  const saved = localStorage.getItem(intentionKey(screen));
-  const savedIdx = saved !== null ? Number(saved) : -1;
+  // An intention is a promise the Brief keeps score on: setting one
+  // snapshots the realm, and once the season has turned, the next Brief
+  // opens with the verdict. Read-only against engine selectors, stored on
+  // this device only.
+  const held = loadIntention(screen);
+  const verdict = held && state.turn > held.turn ? intentionVerdict(screen, held) : null;
   const intention = h('div', { class: 'panel brief-card' },
     h('h3', { class: 'settings-head' }, 'The intention'),
-    savedIdx >= 0 && INTENTIONS[savedIdx]
-      ? h('p', { class: 'small muted' }, `You set out to: ${INTENTIONS[savedIdx].toLowerCase()}.`)
-      : h('p', { class: 'small muted' }, 'Name the season\'s purpose. The Brief will hold you to it, gently.'),
+    verdict
+      ? h('p', { class: 'small' },
+          `You set out to ${INTENTIONS[held!.idx].toLowerCase()}: `,
+          h('span', { class: verdict.kept ? 'pos' : 'neg' }, verdict.text))
+      : held
+        ? h('p', { class: 'small muted' }, `This season's aim: ${INTENTIONS[held.idx].toLowerCase()}. The next Brief says how it went.`)
+        : h('p', { class: 'small muted' }, 'Name the season\'s aim. The next Brief says how it went.'),
     h('div', { class: 'brief-intents' },
       ...INTENTIONS.map((label, i) =>
         h('button', {
-          class: `btn btn-quiet compact${i === savedIdx ? ' theater-speed-on' : ''}`,
+          class: `btn btn-quiet compact${held?.idx === i ? ' theater-speed-on' : ''}`,
           onclick: (e: Event) => {
-            localStorage.setItem(intentionKey(screen), String(i));
+            saveIntention(screen, i);
             const row = (e.currentTarget as HTMLElement).parentElement!;
             for (const b of row.children) b.classList.remove('theater-speed-on');
             (e.currentTarget as HTMLElement).classList.add('theater-speed-on');
@@ -158,6 +166,90 @@ export function openBriefOverlay(screen: GameScreen): void {
         }, label)),
     ),
   );
+  // a verdict delivered is a page turned: re-arm the snapshot at this season
+  if (verdict && held) saveIntention(screen, held.idx);
 
   mount(body, forecast, developments, open, race, intention);
+}
+
+interface IntentionSnapshot {
+  idx: number;
+  turn: number;
+  provinces: number;
+  gold: number;
+  bonds: number;
+  saga: number;
+}
+
+function bondsOf(screen: GameScreen): number {
+  const state = screen.state;
+  const pid = screen.viewerId();
+  return state.players.filter((o) => {
+    if (!o.alive || o.id === pid) return false;
+    const s = getStance(state, pid, o.id);
+    return s === 'pact' || s === 'alliance';
+  }).length;
+}
+
+function loadIntention(screen: GameScreen): IntentionSnapshot | null {
+  try {
+    const raw = localStorage.getItem(intentionKey(screen));
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as IntentionSnapshot;
+    if (typeof parsed.idx !== 'number' || !INTENTIONS[parsed.idx]) return null;
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+function saveIntention(screen: GameScreen, idx: number): void {
+  const state = screen.state;
+  const pid = screen.viewerId();
+  const snapshot: IntentionSnapshot = {
+    idx,
+    turn: state.turn,
+    provinces: provincesOf(state, pid).length,
+    gold: state.players[pid].gold,
+    bonds: bondsOf(screen),
+    saga: state.players[pid].sagaChapter,
+  };
+  try { localStorage.setItem(intentionKey(screen), JSON.stringify(snapshot)); } catch { /* full storage loses a note, never a game */ }
+}
+
+/** The verdict, one plain line, from the same selectors the Ledger reads. */
+function intentionVerdict(screen: GameScreen, then: IntentionSnapshot): { kept: boolean; text: string } {
+  const state = screen.state;
+  const pid = screen.viewerId();
+  const provinces = provincesOf(state, pid).length;
+  const gained = provinces - then.provinces;
+  switch (then.idx) {
+    case 0: // hold what is mine
+      return gained >= 0
+        ? { kept: true, text: 'not one province slipped from the banner.' }
+        : { kept: false, text: `${-gained} ${gained === -1 ? 'province' : 'provinces'} slipped from the banner.` };
+    case 1: { // take new ground
+      return gained > 0
+        ? { kept: true, text: `${gained} ${gained === 1 ? 'province' : 'provinces'} joined your banner.` }
+        : { kept: false, text: 'no new ground was taken.' };
+    }
+    case 2: { // fill the treasury
+      const delta = state.players[pid].gold - then.gold;
+      return delta > 0
+        ? { kept: true, text: `the treasury grew by ${fmt(delta)} gold.` }
+        : { kept: false, text: delta === 0 ? 'the treasury stands where it stood.' : `the realm ended ${fmt(-delta)} gold poorer.` };
+    }
+    case 3: { // court the other lords
+      const bonds = bondsOf(screen);
+      return bonds > then.bonds
+        ? { kept: true, text: 'new oaths were sworn.' }
+        : { kept: false, text: 'no new oaths yet. The envoys keep trying.' };
+    }
+    default: { // feed the saga
+      const saga = state.players[pid].sagaChapter;
+      return saga > then.saga
+        ? { kept: true, text: `the saga turned a chapter (${saga} of 5).` }
+        : { kept: false, text: 'the saga waits on its next page.' };
+    }
+  }
 }

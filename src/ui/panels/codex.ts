@@ -204,6 +204,7 @@ function renderUnits(): HTMLElement {
 
   return h('div', {},
     para(`Sixteen kinds of company march in this realm. You can muster thirteen of them; rebels and wolfsheads muster themselves, and revenants answer to very few. A company is ready the season after you pay for it. Veterans fight +${pc(vetMult(1) - 1)}% per rank, and survivors of a won battle often earn one.`),
+    para('Companies march under banners: twelve companies and three heroes to a banner at most. Banners in the same province may merge, and a banner may split: choose the companies that march out and they raise a second banner in place, sharing the season already spent. Heroes stay with the old banner.'),
     ...tiers.flatMap((t) => [head(t.title), ...t.ids.map(unitCard)]),
     head('The realm’s own'),
     ...neutral.map(unitCard),

@@ -14,6 +14,7 @@ import type { Army, Province, UnitTypeId } from '../../engine/types';
 import { armToConfirm, clear, h, mount } from '../dom';
 import { fmt, lordDisplay, signed } from '../format';
 import { iconSvg } from '../icons';
+import { openModal } from '../modal';
 import { breakdown, tip } from '../tooltip';
 import { audio } from '../audio';
 import { codexHint } from './codex';
@@ -249,11 +250,70 @@ function renderArmyCard(screen: GameScreen, army: Army, selected: boolean): HTML
             'A peaceful march onto known ground can be taken back, this season only.'),
         )
       : null,
+    mine && army.units.length >= 2
+      ? h('div', { style: { padding: '0 0.8rem 0.6rem' } },
+          h('button', {
+            class: 'btn btn-quiet compact',
+            onclick: () => openSplitModal(screen, army.id),
+          }, '⑂ Split the banner'),
+        )
+      : null,
     mine && !army.moved && screen.targets.length > 0 && selected
       ? h('p', { class: 'small muted', style: { padding: '0.2rem 0.8rem 0.6rem' } },
           'Choose a glowing province to march. Crossed swords mean a fight.')
       : null,
   );
+}
+
+/** Split the banner: pick the companies that march out; a second banner is
+ * raised in place. The engine's evaluation gates the confirm. */
+function openSplitModal(screen: GameScreen, armyId: number): void {
+  const state = screen.state;
+  const army = state.armies[armyId];
+  if (!army) return;
+  const chosen = new Set<number>();
+  const confirmBtn = h('button', { class: 'btn btn-seal', disabled: true }, 'Raise the new banner') as HTMLButtonElement;
+  const note = h('p', { class: 'small muted', style: { margin: '0.4rem 0 0' } },
+    'The new banner shares the season already spent: a split never buys a second march. Heroes stay with the old banner.');
+  const sync = (): void => {
+    const verdict = evaluateActions(state, [{ t: 'splitArmy', armyId, indices: [...chosen] }])[0];
+    confirmBtn.disabled = !verdict.legal;
+    confirmBtn.textContent = chosen.size === 0
+      ? 'Raise the new banner'
+      : `Raise the new banner (${chosen.size} ${chosen.size === 1 ? 'company' : 'companies'})`;
+  };
+  const rows = army.units.map((u, idx) => {
+    const def = UNITS[u.type];
+    const box = h('input', {
+      type: 'checkbox', id: `split-${idx}`,
+      onchange: (e: Event) => {
+        if ((e.target as HTMLInputElement).checked) chosen.add(idx);
+        else chosen.delete(idx);
+        sync();
+      },
+    }) as HTMLInputElement;
+    return h('label', { class: 'odds-support-row', for: `split-${idx}` },
+      box,
+      h('span', { html: iconSvg(def.icon, 15) }),
+      h('span', {}, `${def.name}${u.vet > 0 ? ` (${VET_NAMES[u.vet]})` : ''}`),
+      h('span', { class: 'small muted' }, `${u.hits}/${def.hits} hits`),
+    );
+  });
+  confirmBtn.onclick = () => {
+    if (screen.dispatch({ t: 'splitArmy', armyId, indices: [...chosen] })) {
+      modal.close();
+      screen.selectArmy(armyId);
+    }
+  };
+  const modal = openModal('Split the banner', h('div', { style: { padding: '0.3rem 0.6rem 0.7rem', minWidth: 'min(380px, 88vw)' } },
+    h('p', { class: 'small muted', style: { margin: '0 0 0.4rem' } }, 'Mark the companies that march out under the new banner.'),
+    ...rows,
+    note,
+    h('div', { style: { display: 'flex', gap: '0.5rem', justifyContent: 'flex-end', marginTop: '0.6rem' } },
+      h('button', { class: 'btn', onclick: () => modal.close() }, 'Keep them together'),
+      confirmBtn,
+    ),
+  ));
 }
 
 // ---------------------------------------------------------------- build
