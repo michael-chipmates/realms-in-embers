@@ -38,15 +38,29 @@ async function walk(page, outPrefix) {
   await page.waitForTimeout(300);
   await expectStep(page, 'Raise works', 'step 2');
 
-  // 2: queue a building (first legal option button in the build card)
+  // 2: queue a building (first legal option button, then its confirm card)
   await page.locator('.side-panel details:has(summary:text("Raise works")) .option-btn:not([disabled])').first().click();
+  await page.waitForTimeout(300);
+  await page.getByRole('button', { name: 'Raise it' }).click();
   await page.waitForTimeout(400);
   await expectStep(page, 'Muster a company', 'step 3');
 
-  // 3: queue a company
+  // 3: queue a company (option button, then the confirm card)
   await page.locator('.side-panel details:has(summary:text("Muster companies")) .option-btn:not([disabled])').first().click();
+  await page.waitForTimeout(300);
+  await page.getByRole('button', { name: 'Muster them' }).click();
   await page.waitForTimeout(400);
   await expectStep(page, 'March', 'step 4');
+
+  // a reload mid-guide must not lose the First Ember: Continue re-seats the
+  // guide and the steps re-derive themselves from the action log (review R3).
+  // The quiet mid-season autosave lands ~800ms after the last order.
+  await page.waitForTimeout(1200);
+  await page.goto(url, { waitUntil: 'networkidle' });
+  await page.getByRole('button', { name: /^Continue/ }).click();
+  await page.waitForTimeout(1200);
+  if (!(await page.locator('.guide-card').isVisible().catch(() => false))) fail('guide lost after reload + Continue');
+  await expectStep(page, 'March', 'step 4 after reload');
 
   // 4: march somewhere peaceful (avoid the odds modal; a fight is not required)
   const marched = await page.evaluate(() => {

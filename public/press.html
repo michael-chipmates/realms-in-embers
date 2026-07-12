@@ -105,7 +105,7 @@
         <dt>Developer</dt>
         <dd>Michel Strasser (personal project, one person)</dd>
         <dt>Release state</dt>
-        <dd>v0.3.0, live and playable</dd>
+        <dd>v0.5.0, live and playable</dd>
         <dt>Platform</dt>
         <dd>Web browser, desktop and phone; installs as a PWA and works offline after the first load</dd>
         <dt>Price</dt>
@@ -137,7 +137,7 @@
         <li>The Codex, an in-game handbook whose every number is rendered from the engine's
           own constants, so the book cannot drift from the battlefield.</li>
         <li>A saga export that hands you the whole war as a written story when it is over.</li>
-        <li>147 KB of gzipped JavaScript with zero runtime dependencies.</li>
+        <li>Under 190 KB of gzipped JavaScript (about 170 KB today, budget-enforced in CI) with zero runtime dependencies.</li>
       </ul>
 
       <h2>Media</h2>
@@ -217,9 +217,9 @@
           the table through the real engine. On its first outing it found a genuine exploit
           (the counting-house was lending gold it could never collect before the game ended)
           and filed a structured complaint about the error messages. Both fixed.</li>
-        <li><strong>147 KB.</strong> The whole game (engine, AI, UI) is 147 KB of gzipped
-          JavaScript with zero runtime dependencies. It loads fast on a phone and keeps
-          working offline.</li>
+        <li><strong>Under 190 KB.</strong> The whole game (engine, AI, UI) is about 170 KB of
+          gzipped JavaScript with zero runtime dependencies, and CI fails any build past
+          190. It loads fast on a phone and keeps working offline.</li>
         <li><strong>The relay is blind.</strong> Online games are end-to-end encrypted with
           a key that lives only in the invite link's URL fragment, which browsers never send
           to any server. The relay stores ciphertext and ordinals; it cannot read a single

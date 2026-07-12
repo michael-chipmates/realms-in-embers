@@ -34,8 +34,9 @@ await page.keyboard.press('ArrowRight');
 await page.waitForTimeout(400);
 await page.screenshot({ path: `${outdir}/4-selected.png` });
 
-// disbanding is irreversible, so the ✕ must arm on the first press and act
-// only on the second (Michel, 2026-07-11)
+// disbanding is irreversible, so the ✕ opens the confirm card first: what
+// it does and its upkeep saved, then the seal or a step back (Michel,
+// 2026-07-11; upgraded to the full confirm card 2026-07-12)
 await page.evaluate(() => {
   const g = window.__game;
   const army = Object.values(g.state.armies).find((a) => a.owner === 0 && a.units.length > 0);
@@ -45,15 +46,22 @@ await page.waitForTimeout(400);
 const unitsBefore = await page.evaluate(() =>
   Object.values(window.__game.state.armies).filter((a) => a.owner === 0).reduce((s, a) => s + a.units.length, 0));
 await page.locator('button[aria-label^="Disband "]').first().click();
-await page.waitForTimeout(150);
-// arming rewrites the label to the question, so find the armed button itself
-const armed = page.locator('.btn-armed');
-const armedLabel = await armed.textContent().catch(() => null);
+await page.waitForTimeout(300);
+const confirmCard = page.locator('.confirm-body');
+const confirmText = await confirmCard.textContent().catch(() => null);
 const unitsAfterFirstTap = await page.evaluate(() =>
   Object.values(window.__game.state.armies).filter((a) => a.owner === 0).reduce((s, a) => s + a.units.length, 0));
 if (unitsAfterFirstTap !== unitsBefore) { console.error('disband fired on the FIRST tap'); process.exit(1); }
-if (!/Disband\?/.test(armedLabel ?? '')) { console.error(`disband button did not arm (label: ${armedLabel})`); process.exit(1); }
-await armed.click();
+if (!/upkeep/.test(confirmText ?? '')) { console.error(`disband confirm does not say what it does (${confirmText})`); process.exit(1); }
+// a step back must cost nothing
+await page.getByRole('button', { name: 'Keep them' }).click();
+await page.waitForTimeout(200);
+const unitsAfterCancel = await page.evaluate(() =>
+  Object.values(window.__game.state.armies).filter((a) => a.owner === 0).reduce((s, a) => s + a.units.length, 0));
+if (unitsAfterCancel !== unitsBefore) { console.error('stepping back from the confirm cost a company'); process.exit(1); }
+await page.locator('button[aria-label^="Disband "]').first().click();
+await page.waitForTimeout(300);
+await page.getByRole('button', { name: 'Disband them' }).click();
 await page.waitForTimeout(300);
 const unitsAfterConfirm = await page.evaluate(() =>
   Object.values(window.__game.state.armies).filter((a) => a.owner === 0).reduce((s, a) => s + a.units.length, 0));
@@ -85,6 +93,22 @@ if (splitReady) {
   }, splitReady);
   if (after.count !== splitReady.count + 1) { console.error('split did not raise a second banner'); process.exit(1); }
   if (after.oldUnits !== splitReady.units - 1) { console.error('split moved the wrong number of companies'); process.exit(1); }
+
+  // and back again: two banners on one field can rejoin under one
+  await page.waitForTimeout(300);
+  await page.getByRole('button', { name: /Join the banners/ }).first().click();
+  await page.waitForTimeout(400);
+  await page.getByRole('button', { name: 'Join them' }).click();
+  await page.waitForTimeout(400);
+  const merged = await page.evaluate((prev) => {
+    const g = window.__game;
+    return {
+      count: Object.values(g.state.armies).filter((a) => a.owner === 0).length,
+      units: g.state.armies[prev.id]?.units.length ?? -1,
+    };
+  }, splitReady);
+  if (merged.count !== splitReady.count) { console.error('merge did not fold the banners back into one'); process.exit(1); }
+  if (merged.units !== splitReady.units) { console.error('merge lost or duplicated companies'); process.exit(1); }
 }
 await page.evaluate(() => window.__game.select(null, null));
 await page.waitForTimeout(200);

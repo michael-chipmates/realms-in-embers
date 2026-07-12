@@ -103,7 +103,7 @@ export async function openOnlineLobby(app: App, invite?: { roomId: string; key: 
       h('p', { class: 'title-over muted italic' }, 'A war among friends'),
       h('h1', { class: 'title-display', style: { fontSize: 'clamp(1.5rem, 4vw, 2.4rem)' } }, 'The Muster Table'),
       h('p', { class: 'small muted', style: { maxWidth: '52ch', margin: '0.4rem auto' } },
-        'One link seats everyone. The relay carries only ciphertext. The key never leaves this address bar. No accounts, no tracking, ever.'),
+        'One link seats everyone. The relay carries only ciphertext; the key is never sent to it. Anyone holding the link can read and join this table. No accounts, no tracking, ever.'),
       h('div', { class: 'lobby-invite' },
         h('input', { class: 'input', type: 'text', readonly: 'readonly', value: link, 'aria-label': 'Invite link', onclick: (e: Event) => (e.target as HTMLInputElement).select() }),
         h('button', {
@@ -186,7 +186,7 @@ export async function openOnlineLobby(app: App, invite?: { roomId: string; key: 
       h('h3', { class: 'settings-head' }, 'The Wayhouse · open tables'),
       ...(tables.length === 0
         ? [h('p', { class: 'small muted italic' },
-            'No tables at this hour. Post yours below and keep your lamp lit, or the AI rivals are always willing. Embers burn brightest on Sunday evenings.')]
+            'No tables at this hour. Post yours below and keep your lamp lit, or fate’s rivals are always willing. Embers burn brightest on Sunday evenings.')]
         : tables.map((ad) => {
             const mins = Math.max(0, Math.round((Date.now() - ad.at) / 60000));
             const foreign = ad.rules !== undefined && ad.rules !== RULES_VERSION;
@@ -235,7 +235,7 @@ export async function openOnlineLobby(app: App, invite?: { roomId: string; key: 
       .slice(0, MAX_SEATS);
     if (seated.length < 1) return;
     if (seated.length + aiFill < 2) {
-      status.textContent = 'A war needs a second claimant. Invite someone, or add an AI rival.';
+      status.textContent = 'A war needs a second claimant. Invite someone, or let fate deal a rival.';
       return;
     }
     // a mixed-edition table would desync on the first act: refuse politely
@@ -376,7 +376,7 @@ export async function openOnlineLobby(app: App, invite?: { roomId: string; key: 
             labeled('Season clock', select(CLOCK_PRESETS.map((c) => c.label), CLOCK_PRESETS[clockIdx].label, (v) => {
               clockIdx = Math.max(0, CLOCK_PRESETS.findIndex((c) => c.label === v));
             })),
-            labeled('AI rivals', select(['0', '1', '2', '3'], String(aiFill), (v) => { aiFill = parseInt(v, 10); })),
+            labeled('Rivals dealt by fate', select(['0', '1', '2', '3'], String(aiFill), (v) => { aiFill = parseInt(v, 10); })),
             labeled('Fog of war', select(['on', 'off'], fog ? 'on' : 'off', (v) => { fog = v === 'on'; })),
             h('label', { class: 'lobby-field', style: { cursor: 'pointer' } },
               h('span', { class: 'small muted' }, 'Post in the Wayhouse'),
@@ -387,7 +387,7 @@ export async function openOnlineLobby(app: App, invite?: { roomId: string; key: 
                   if (posted) {
                     postAd();
                     if (heartbeat === null) heartbeat = window.setInterval(() => postAd(), AD_HEARTBEAT_MS);
-                    status.textContent = 'Posted. Anyone may sit down. A posted table is public. Untick to withdraw it.';
+                    status.textContent = 'Posted. Public means public: whoever reads the board holds this table’s key. A friendly war among strangers, not a refereed one. Untick to withdraw it.';
                   } else {
                     postAd(true);
                     if (heartbeat !== null) window.clearInterval(heartbeat);
@@ -398,7 +398,7 @@ export async function openOnlineLobby(app: App, invite?: { roomId: string; key: 
               }),
             ),
             posted && seatedNow() < 2
-              ? h('p', { class: 'small muted italic' }, 'While the lamp burns: you can always call in AI rivals and begin. A posted table never strands its host.')
+              ? h('p', { class: 'small muted italic' }, 'While the lamp burns: you can always let fate deal the missing rivals and begin. A posted table never strands its host.')
               : null,
             h('button', { class: 'btn btn-seal', style: { marginTop: '0.6rem' }, onclick: tryStart },
               'Begin the war'),

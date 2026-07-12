@@ -257,14 +257,45 @@ select.input {
   box-shadow: none;
 }
 
-/* An armed confirm button (armToConfirm): the question before the act.
-   Loud enough to read as "this will really happen", on any button kind. */
-.btn-armed,
-.btn-quiet.btn-armed {
-  border-color: var(--danger);
-  background: rgba(184, 67, 47, 0.16);
-  color: #f0c0ae;
-  white-space: nowrap;
+/* The confirm card (ui/confirm.ts): what the act does, its price from the
+   engine's evaluation, then the seal or a step back. One pattern for every
+   act that spends, sends, or cannot be taken back. */
+.confirm-body {
+  padding: 0.3rem 0.8rem 0.7rem;
+  min-width: min(340px, 86vw);
+  max-width: 480px;
+}
+
+.confirm-body p {
+  margin: 0.35rem 0 0;
+}
+
+.confirm-cost {
+  color: var(--gold-bright);
+}
+
+.confirm-actions {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: flex-end;
+  margin-top: 0.7rem;
+}
+
+/* A level-up art on the crossroads card: name above, what it brings below,
+   readable before any tap ever commits. */
+.skill-pick {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.15rem;
+  text-align: left;
+  white-space: normal;
+  max-width: 100%;
+}
+
+.skill-pick-desc {
+  font-weight: 400;
+  letter-spacing: normal;
 }
 
 /* ------------------------------------------------------------ utilities */

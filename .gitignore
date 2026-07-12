@@ -18,3 +18,13 @@ audio-audition/
 STATE.md
 .claude/
 playtest-out/
+
+# internal: external review docs, GTM strategy, and the content-production
+# pipeline live in ../internal — only game stuff belongs in this repo. The
+# guards below catch files dropped here out of habit.
+docs/reviews/
+docs/RELEASE-STRATEGY.md
+docs/ART.md
+scripts/gen-art.mjs
+scripts/pick-art.mjs
+scripts/gen-audio.mjs

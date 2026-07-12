@@ -11,6 +11,12 @@ import { audio } from './audio';
 import type { GameScreen } from './screens/game';
 
 export const FIRST_EMBER_DONE_KEY = 'rie-first-ember-done';
+/** Set while a First Ember chronicle is open, so Continue after a reload
+ * seats the guide again. The steps re-derive themselves from the action
+ * log, so resuming lands on the right one without remembering anything. */
+export const FIRST_EMBER_OPEN_KEY = 'rie-first-ember-open';
+/** The fixed seed the guided door always opens onto. */
+export const FIRST_EMBER_SEED = 'first-ember-1';
 
 interface GuideStep {
   title: string;
@@ -66,10 +72,21 @@ export class FirstEmberGuide {
 
   onUpdate(screen: GameScreen): void {
     if (this.finished) return;
-    // steps advance in order, but a player who raced ahead is not held back
-    while (this.step < STEPS.length && STEPS[this.step].done(screen, screen.state)) {
-      this.step++;
-      if (this.step <= STEPS.length) audio.quillScratch();
+    // Steps advance in order, but neither a player who raced ahead nor a
+    // resumed chronicle is held back: any LATER step already satisfied
+    // (the log remembers builds and marches; the screen does not remember
+    // selections) pulls the guide past everything before it.
+    let advanced = true;
+    while (advanced) {
+      advanced = false;
+      for (let i = this.step; i < STEPS.length; i++) {
+        if (STEPS[i].done(screen, screen.state)) {
+          this.step = i + 1;
+          advanced = true;
+          audio.quillScratch();
+          break;
+        }
+      }
     }
     this.render(screen);
   }
@@ -110,6 +127,7 @@ export class FirstEmberGuide {
   private dismiss(): void {
     this.finished = true;
     localStorage.setItem(FIRST_EMBER_DONE_KEY, '1');
+    localStorage.removeItem(FIRST_EMBER_OPEN_KEY);
     this.el?.remove();
     this.el = null;
   }

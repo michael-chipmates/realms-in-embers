@@ -15,7 +15,13 @@
 const BUILD = '__BUILD__';
 const APP_CACHE = `rie-app-${BUILD}`;
 const MEDIA_CACHE = 'rie-media';
-const SHELL = ['.', 'manifest.webmanifest', 'favicon.svg'];
+// The build stamps the hashed bundles in below: installing the worker
+// precaches the WHOLE boot (shell + js + css), so the very first visit is
+// enough for a full offline launch. Before, only the shell was precached
+// and an uncontrolled first visit could strand offline boots with HTML but
+// no executable bundle (review R3).
+const PRECACHE = /* __PRECACHE__ */ [];
+const SHELL = ['.', 'manifest.webmanifest', 'favicon.svg'].concat(PRECACHE);
 // Media files only — the .json manifests living beside them (audio/manifest,
 // music/playlist) can change across deploys and stay stale-while-revalidate.
 const MEDIA_PATH = /\/(art|music|audio)\/.+\.(m4a|mp3|ogg|wav|flac|webp|png|jpe?g|gif|svg|avif)$/i;

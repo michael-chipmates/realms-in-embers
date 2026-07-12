@@ -65,7 +65,7 @@ npm run dev        # http://localhost:5173 (desktop and phone)
 ```bash
 npm test           # the full suite: engine, signatures, replay determinism, the rules-version canary
 npm run sim        # headless AI-vs-AI sweep with invariants checked every round
-npm run build      # typecheck + production build (~159 KB gzipped, zero runtime deps)
+npm run build      # typecheck + production build (~170 KB gzipped, zero runtime deps)
 ```
 
 ## The making of
@@ -74,10 +74,10 @@ Some of the machinery is half the fun:
 
 - **A deterministic core.** One seeded RNG lives inside a single serializable state object; every mutation (human and AI) is an action in a log. Seed + log replays byte-identically, a frozen fixture guards the rules version, and that determinism is also the multiplayer netcode.
 - **A model playtester.** `scripts/model-playtest.mjs` seats a language model at the table through the real engine. On its first outing it found a real exploit (the counting-house was lending gold it could never collect before the game ended) and filed a structured complaint about our error messages. Both fixed.
-- **The Illustrated Edition, one command.** Ninety-one painted plates in a late-80s game-manual style, generated against a single approved style anchor so the whole set reads as one painter's hand, and every slot is generated three to five times, reviewed against its brief, and only the best candidate ships (`scripts/gen-art.mjs --candidates` + `scripts/pick-art.mjs`). The procedural heraldry remains as the eternal fallback.
-- **A ghost with a voice.** The chronicler's ceremonies are spoken (`scripts/gen-audio.mjs`); the synth engine still covers every sound offline.
+- **The Illustrated Edition.** Ninety-one painted plates in a late-80s game-manual style, every one generated against a single approved style anchor so the set reads as one painter's hand, then judged against its written brief among three to five candidates. Only the best ships, and the procedural heraldry remains as the eternal fallback: the game never needs a single image to run.
+- **A ghost with a voice.** The chronicler's key moments are spoken; the synth engine still covers every sound offline.
 
-Deeper reading: [`DECISIONS.md`](DECISIONS.md) (why things are the way they are), [`docs/ART.md`](docs/ART.md) (the whole art pipeline), [`CHANGELOG.md`](CHANGELOG.md).
+Deeper reading: [`DECISIONS.md`](DECISIONS.md) (why things are the way they are), [`CHANGELOG.md`](CHANGELOG.md).
 
 ## Credits & licenses
 

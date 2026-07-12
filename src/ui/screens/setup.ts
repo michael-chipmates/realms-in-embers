@@ -90,7 +90,7 @@ export function renderSetup(app: App, presetSeed?: string): void {
           },
         },
           h('option', { value: 'human', selected: player.kind === 'human' }, 'Mortal (you)'),
-          h('option', { value: 'ai', selected: player.kind === 'ai' }, 'Rival lord (AI)'),
+          h('option', { value: 'ai', selected: player.kind === 'ai' }, 'Rival lord (fate plays them)'),
         );
 
         const lordSelect = h('select', {

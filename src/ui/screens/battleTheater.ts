@@ -10,6 +10,7 @@
  * companies lost (BattleSideSummary), and the two are never conflated.
  * Reduced motion never lands here: battleReport.ts keeps the still page.
  */
+import { PREVIEW_RUNS } from '../../engine/combat';
 import { UNITS } from '../../engine/content/units';
 import type { BattleEventNote, BattleReport, BattleRound } from '../../engine/types';
 import { h } from '../dom';
@@ -232,13 +233,11 @@ export function openBattleTheater(screen: GameScreen, report: BattleReport, prev
     if (expectedAttacker === attackerWon) {
       return h('p', { class: 'small muted' }, `The augurs gave ${previewLabel}, and the field agreed.`);
     }
-    const beneficiary = attackerWon ? report.aMods : report.dMods;
-    const strongest = [...beneficiary].sort((a, b) => (b.mult - 1) - (a.mult - 1))[0];
+    // an upset is the tail of the forecast, not a modifier it missed: every
+    // strength on both sides was already weighed inside that number, so the
+    // honest explanation is the rounds' own fortune (review R3)
     return h('p', { class: 'small' },
-      `The augurs gave ${previewLabel}. The field ruled otherwise. `,
-      strongest && strongest.mult > 1
-        ? `${strongest.label} weighed heaviest against the forecast; the rest was the fortune 240 sampled battles can only bracket.`
-        : 'Fortune inside the forecast’s own bracket decided it.',
+      `The augurs gave ${previewLabel}. The field ruled otherwise. Every strength on both sides was already weighed in that number; the rounds themselves fell the unlikely way, as ${PREVIEW_RUNS} sampled battles say they sometimes will. An unlikely outcome is not a wrong forecast.`,
     );
   };
 

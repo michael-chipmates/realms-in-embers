@@ -156,7 +156,7 @@ export function showGameEnd(screen: GameScreen): void {
         },
       }, 'Read the finished Saga'),
       h('button', { class: 'btn', onclick: () => downloadSaga(state) }, 'Save the Saga to a file'),
-      h('button', { class: 'btn', onclick: () => openWarReplay(screen) }, 'Watch the war again'),
+      h('button', { class: 'btn', onclick: () => openWarReplay(screen) }, 'Watch the banners change'),
       h('button', {
         class: 'btn',
         onclick: (e: Event) => {
@@ -225,14 +225,16 @@ function renderCampaignGraph(screen: GameScreen): HTMLElement {
   );
 }
 
-/** The whole war scrubbed on a slider, rebuilt from the action log. */
+/** Who held what, season by season, scrubbed on a slider. This rebuilds
+ * OWNERSHIP from the log, not the battles themselves: the name on the
+ * button promises exactly that much (review R3). */
 export function openWarReplay(screen: GameScreen): void {
   const state = screen.state;
   const body = h('div', { style: { padding: '0.4rem 0.6rem 0.8rem', width: 'min(760px, 92vw)' } },
     h('p', { class: 'small muted italic' }, 'Osperan rereads his notes…'),
   );
   // closing the modal must stop the playback interval with it
-  const modal = openModal('The war, replayed', body, { wide: true, onClose: () => stopOnClose() });
+  const modal = openModal('The banners, season by season', body, { wide: true, onClose: () => stopOnClose() });
   let stopOnClose: () => void = () => {};
   window.setTimeout(() => {
     const timeline = buildWarTimeline(state);

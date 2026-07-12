@@ -11,7 +11,7 @@ import { renderTitle } from './screens/title';
 import { renderSetup } from './screens/setup';
 import { GameScreen } from './screens/game';
 import type { OnlineSession } from './screens/lobby';
-import type { FirstEmberGuide } from './guide';
+import { FIRST_EMBER_DONE_KEY, FIRST_EMBER_OPEN_KEY, FIRST_EMBER_SEED, FirstEmberGuide } from './guide';
 import { audio } from './audio';
 
 export type ScreenName = 'title' | 'setup' | 'game';
@@ -87,6 +87,9 @@ export class App {
     clear(this.root);
     this.gameScreen = new GameScreen(this, state);
     if (opts.guide) this.gameScreen.guide = opts.guide;
+    // the open-guide flag survives a reload; any other door closes it
+    if (opts.guide) localStorage.setItem(FIRST_EMBER_OPEN_KEY, '1');
+    else localStorage.removeItem(FIRST_EMBER_OPEN_KEY);
     this.gameScreen.mount(this.root);
     this.gameScreen.presentEffects(effects);
     this.gameScreen.guide?.onUpdate(this.gameScreen);
@@ -112,7 +115,19 @@ export class App {
     this.game = state;
     clear(this.root);
     this.gameScreen = new GameScreen(this, state);
+    // a First Ember left open resumes with its guide: the steps read the
+    // action log, so the card lands on the right one by itself. Only the
+    // guided door's own seed ever qualifies, and only until it is furled.
+    if (
+      localStorage.getItem(FIRST_EMBER_OPEN_KEY) &&
+      !localStorage.getItem(FIRST_EMBER_DONE_KEY) &&
+      state.settings.seed === FIRST_EMBER_SEED &&
+      state.phase !== 'ended'
+    ) {
+      this.gameScreen.guide = new FirstEmberGuide();
+    }
     this.gameScreen.mount(this.root);
+    this.gameScreen.guide?.onUpdate(this.gameScreen);
     audio.enterGame();
   }
 }

@@ -10,7 +10,7 @@ import { openOnlineLobby } from './lobby';
 import { openModal } from '../modal';
 import { openSettingsPanel } from '../panels/settingsPanel';
 import { openLordGallery } from './gallery';
-import { FIRST_EMBER_DONE_KEY, FirstEmberGuide } from '../guide';
+import { FIRST_EMBER_DONE_KEY, FIRST_EMBER_SEED, FirstEmberGuide } from '../guide';
 import { applyUpdate, onUpdateReady, updateWaiting } from '../swUpdate';
 import type { Difficulty } from '../../engine/types';
 import type { App } from '../app';
@@ -86,7 +86,7 @@ function openQuickWar(app: App): void {
  * neighbors, not twelve banners at once. */
 function startFirstEmber(app: App): void {
   app.startGame({
-    seed: 'first-ember-1',
+    seed: FIRST_EMBER_SEED,
     mapSize: 'small',
     players: [
       { kind: 'human', lordId: 'random', difficulty: 'squire' },

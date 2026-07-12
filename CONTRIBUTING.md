@@ -32,7 +32,7 @@ npm run dev -- --port 5199
 node scripts/drive.mjs
 ```
 
-`scripts/drive-*.mjs` variants cover specific flows — attack, codex, gallery, mobile, online, and more. Most UI bugs in this project were caught this way.
+`scripts/drive-*.mjs` variants cover specific flows: attack, codex, gallery, mobile, online, and more. Most UI bugs in this project were caught this way.
 
 ## The determinism rules
 
@@ -40,7 +40,7 @@ These are the house laws. The engine replays byte-identically from seed + action
 
 - **No state outside `GameState`.** It is one JSON-serializable plain object: no classes, no Maps, no Dates, no module-level mutable variables.
 - **No randomness outside `Rng`.** UI-only jitter uses a separate throwaway RNG; previews use `rng.fork()`, which never advances the real stream.
-- **Any engine-visible change** — rules, content numbers, AI decisions, anything a replay could notice — means bumping `RULES_VERSION` in `src/engine/state.ts` and regenerating the fixture:
+- **Any engine-visible change** (rules, content numbers, AI decisions, anything a replay could notice) means bumping `RULES_VERSION` in `src/engine/state.ts` and regenerating the fixture:
 
   ```bash
   npx tsx scripts/make-replay-fixture.mjs
@@ -50,7 +50,7 @@ These are the house laws. The engine replays byte-identically from seed + action
 
 ## Art
 
-Generated art goes through a candidate review: every slot is generated several times against a single approved style anchor, judged against its brief, and only the best candidate ships (`scripts/gen-art.mjs --candidates`, then `scripts/pick-art.mjs`). You'll need a Replicate token in `.replicate_token` at the repo root (gitignored). The procedural heraldry fallback means the game never needs the images to run — art PRs can't break play.
+The painted plates are produced and reviewed outside this repo: every slot is generated several times against one approved style anchor, judged against its written brief, and only the best candidate ships into `public/art/`. The procedural heraldry fallback means the game never needs the images to run, so art changes can't break play. If you want to propose new art, open an issue with the slot name; don't commit generated images directly.
 
 ## Voice
 

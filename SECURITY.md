@@ -10,7 +10,7 @@ That holds for any relay operator, including us, and for anyone watching the wir
 
 ## What it does not protect
 
-The invite link is the room. Anyone holding the full link — key and all — can read the whole war and act in it. There is no anti-cheat, no identity, and no way to tell one holder of the link from another. Online play is a table for trusted friends: share the invite like you'd share your front-door key, and start a fresh room if a link gets loose.
+The invite link is the room. Anyone holding the full link, key and all, can read the whole war and act in it. There is no anti-cheat, no identity, and no way to tell one holder of the link from another. Online play is a table for trusted friends: share the invite like you'd share your front-door key, and start a fresh room if a link gets loose.
 
 ## Reporting
 

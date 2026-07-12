@@ -2,7 +2,7 @@
  * The drift-proof meta-test (round-2 audit, F-2): the docs must quote the
  * balance gates the harness actually enforces. scripts/check-doc-gates.mjs
  * parses the gate constants out of src/sim/harness.ts and asserts
- * CHANGELOG.md and docs/ROADMAP.md carry the same numbers; this test runs it
+ * CHANGELOG.md carries the same numbers; this test runs it
  * so `npm test` (and CI) fails the moment either side moves alone.
  */
 import { execFileSync } from 'node:child_process';
@@ -24,7 +24,7 @@ describe('doc-gate drift check', () => {
     expect(harness).toMatch(/rate < \d+\.\d+\) gateFailures/); // signature floor
   });
 
-  it('CHANGELOG.md and docs/ROADMAP.md quote the enforced gates', () => {
+  it('CHANGELOG.md quotes the enforced gates', () => {
     // The script exits nonzero and names each drift; surface that as the
     // assertion message so the failure says exactly which number moved.
     let output = '';

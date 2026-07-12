@@ -84,10 +84,35 @@ try {
   const [sa, sb] = [await seasonOf(a), await seasonOf(b)];
   if (sa !== 2 || sb !== 2) throw new Error(`seasons diverged: A=${sa} B=${sb}`);
 
-  // determinism check: identical state hashes on both clients
-  const hash = (page) => page.evaluate(() => JSON.stringify(window.__game.state).length + ':' + JSON.stringify(window.__game.state.rng));
+  // determinism check: a REAL digest of the full serialized state on both
+  // clients. The old check compared serialized length + rng vector, which
+  // two different states can share (review R3); SHA-256 of the bytes cannot.
+  const hash = (page) => page.evaluate(async () => {
+    const bytes = new TextEncoder().encode(JSON.stringify(window.__game.state));
+    const digest = await crypto.subtle.digest('SHA-256', bytes);
+    return [...new Uint8Array(digest)].map((x) => x.toString(16).padStart(2, '0')).join('');
+  });
   const [ha, hb] = [await hash(a), await hash(b)];
   if (ha !== hb) throw new Error(`state diverged between clients: ${ha} vs ${hb}`);
+
+  // prove the comparator can fail: a mutation that PRESERVES serialized
+  // length and rng (the old surrogate's blind spot) must change the digest
+  const blindSpot = await a.evaluate(async () => {
+    const s = window.__game.state;
+    const digestOf = async (v) => {
+      const d = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(JSON.stringify(v)));
+      return [...new Uint8Array(d)].map((x) => x.toString(16).padStart(2, '0')).join('');
+    };
+    const before = await digestOf(s);
+    // a two-digit order stays two digits under ±1: JSON length is preserved
+    const p = s.provinces.find((x) => x.order >= 11 && x.order <= 98) ?? s.provinces[0];
+    const was = p.order;
+    p.order = was + 1;
+    const after = await digestOf(s);
+    p.order = was; // restore; nothing dispatched, nothing logged
+    return { before, after };
+  });
+  if (blindSpot.before === blindSpot.after) throw new Error('the state digest failed to notice a length-preserving mutation');
 
   // NET-033: each ended season published a state checkpoint, both clients
   // verified them, and neither table froze (no false desync)

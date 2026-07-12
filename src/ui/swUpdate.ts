@@ -27,11 +27,11 @@ export function registerSw(): void {
         reg.installing?.addEventListener('statechange', watch);
       });
     });
-    // the shell booted far enough to run this module: tell the worker the
-    // new edition stands, and yesterday's cache may go
-    navigator.serviceWorker.ready.then((reg) => {
-      reg.active?.postMessage({ t: 'BOOT_OK' });
-    }).catch(() => undefined);
+    // the shell booted far enough to run this module: tell OUR controller
+    // (the worker that actually served this page, never a bystander) that
+    // this edition stands, and yesterday's cache may go. On the very first
+    // visit there is no controller yet; the sweep waits for the next one.
+    navigator.serviceWorker.controller?.postMessage({ t: 'BOOT_OK' });
   });
 }
 

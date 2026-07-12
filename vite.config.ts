@@ -1,4 +1,4 @@
-import { readFileSync, writeFileSync } from 'node:fs';
+import { readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { defineConfig, type Plugin } from 'vite';
 
@@ -23,7 +23,17 @@ function stampServiceWorker(): Plugin {
       const file = resolve(root, outDir, 'sw.js');
       try {
         const stamp = Date.now().toString(36);
-        writeFileSync(file, readFileSync(file, 'utf8').replaceAll('__BUILD__', stamp));
+        // every hashed bundle joins the precache list, so installing the
+        // worker captures the whole boot, not just the HTML shell
+        let assets: string[] = [];
+        try {
+          assets = readdirSync(resolve(root, outDir, 'assets')).map((f) => `assets/${f}`);
+        } catch {
+          // no assets dir in this build; the shell list stands alone
+        }
+        writeFileSync(file, readFileSync(file, 'utf8')
+          .replaceAll('__BUILD__', stamp)
+          .replace('/* __PRECACHE__ */ []', JSON.stringify(assets)));
       } catch {
         // no sw.js in this build (e.g. lib mode) — nothing to stamp
       }

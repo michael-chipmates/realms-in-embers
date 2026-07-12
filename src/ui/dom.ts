@@ -44,44 +44,6 @@ export function clear(el: HTMLElement): void {
   while (el.firstChild) el.removeChild(el.firstChild);
 }
 
-/**
- * Guard a button that does something irreversible: the first press only
- * arms it (the label turns into a plain question) and the act fires on a
- * second press within a few seconds. A stray tap costs nothing; walking
- * away (or tabbing away) quietly stands the button down.
- */
-export function armToConfirm(btn: HTMLElement, armedText: string, fire: () => void): HTMLElement {
-  let armed = false;
-  let timer = 0;
-  let restHtml = '';
-  let restAria: string | null = null;
-  const disarm = (): void => {
-    if (!armed) return;
-    armed = false;
-    window.clearTimeout(timer);
-    btn.classList.remove('btn-armed');
-    btn.innerHTML = restHtml;
-    if (restAria !== null) btn.setAttribute('aria-label', restAria);
-  };
-  btn.addEventListener('click', (e) => {
-    e.stopPropagation();
-    if (!armed) {
-      armed = true;
-      restHtml = btn.innerHTML;
-      restAria = btn.getAttribute('aria-label');
-      btn.classList.add('btn-armed');
-      btn.textContent = armedText;
-      btn.setAttribute('aria-label', armedText);
-      timer = window.setTimeout(disarm, 3200);
-    } else {
-      disarm();
-      fire();
-    }
-  });
-  btn.addEventListener('blur', disarm);
-  return btn;
-}
-
 /** Replace all children of `el` with `children`. */
 export function mount(el: HTMLElement, ...children: (Child | Child[])[]): void {
   clear(el);

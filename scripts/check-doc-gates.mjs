@@ -1,7 +1,9 @@
 // Doc-gate drift check: the docs must quote the gates the harness actually
 // enforces. Parses the gate constants out of src/sim/harness.ts (the single
-// source of truth) and asserts CHANGELOG.md and docs/ROADMAP.md quote the
-// same numbers. Exits nonzero, naming each drift, otherwise stays silent-ish.
+// source of truth) and asserts CHANGELOG.md quotes the same numbers.
+// (The roadmap ledger moved to the private workspace on 2026-07-12; the
+// public changelog is the doc this repo can and must keep honest.)
+// Exits nonzero, naming each drift, otherwise stays silent-ish.
 //
 //   node scripts/check-doc-gates.mjs
 import { readFileSync } from 'node:fs';
@@ -49,7 +51,7 @@ const requirements = [
   { text: `±${Math.round(parseFloat(gates.ropePp) * 100)}pp`, gate: 'ROPE equivalence band (QA-030)' },
 ];
 
-const docs = ['CHANGELOG.md', 'docs/ROADMAP.md'];
+const docs = ['CHANGELOG.md'];
 const drifts = [];
 for (const doc of docs) {
   const body = read(doc);

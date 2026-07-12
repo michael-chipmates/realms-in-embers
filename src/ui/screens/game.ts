@@ -5,7 +5,7 @@
  */
 import { aiTakeTurn } from '../../engine/ai';
 import { applyAction, moveTargets, previewBattle } from '../../engine/engine';
-import { FERVOR_COST } from '../../engine/combat';
+import { FERVOR_COST, PREVIEW_RUNS } from '../../engine/combat';
 import type { OnlineSession } from './lobby';
 import { emberlightIncome, incomeReport } from '../../engine/economy';
 import { LORD_BY_ID } from '../../engine/content/lords';
@@ -16,6 +16,7 @@ import type { MoveTarget } from '../../engine/actions';
 import { SPELLS, type SpellFxFamily } from '../../engine/content/spells';
 import type { App } from '../app';
 import { audio } from '../audio';
+import { confirmCast } from '../confirm';
 import { h, mount, clear } from '../dom';
 import { fmt, lordDisplay, playerColors, playerPatterns, seasonName, signed } from '../format';
 import { iconSvg } from '../icons';
@@ -328,7 +329,9 @@ export class GameScreen {
     } else if (this.current().kind === 'ai' && !this.online) {
       void this.runAiTurns(); // online: consumeNet drives the wheel once entries land
     } else if (!this.online) {
-      maybeShowOnboarding(this);
+      // the First Ember teaches at the table; it never opens the reading
+      // gate on top of itself (the four-page onboarding is for free play)
+      if (!this.guide) maybeShowOnboarding(this);
       maybeOpenEventModal(this);
     } else {
       maybeShowOnboarding(this);
@@ -337,6 +340,7 @@ export class GameScreen {
 
   dispose(): void {
     this.disposed = true;
+    window.clearTimeout(this.autosaveTimer);
     this.guide?.dispose();
     this.guide = null;
     document.removeEventListener('keydown', this.keyHandler);
@@ -610,11 +614,12 @@ export class GameScreen {
       return;
     }
     if (this.pendingSpell !== null && pid !== null) {
+      // the province is named; the working still asks to be sealed. Stepping
+      // back keeps the targeting armed so another province can be chosen.
       const spell = this.pendingSpell;
-      this.clearSpellTargeting();
-      if (this.dispatch({ t: 'castSpell', spell, province: pid })) {
-        audio.spell();
-      }
+      confirmCast(this, spell, pid, {
+        onDone: () => this.clearSpellTargeting(),
+      });
       return;
     }
     // the signature is armed: this click names its province
@@ -739,21 +744,21 @@ export class GameScreen {
     const content = h('div', { class: 'odds-body' });
     let latestPreview: BattlePreview | null = null;
     const render = (): void => {
-      const preview = previewBattle(this.state, army.id, target.to, target.viaSea, 240, [...chosen], fervor);
+      const preview = previewBattle(this.state, army.id, target.to, target.viaSea, PREVIEW_RUNS, [...chosen], fervor);
       if (!preview) return;
       latestPreview = preview;
       const pct = Math.round(preview.winChance * 100);
-      // 240 trials cannot promise certainty: a clean sweep reads "at least
-      // 99%", a washout "at most 1%": the honest edges of a sampled forecast
+      // a sampled forecast cannot promise certainty: a clean sweep reads
+      // "at least 99%", a washout "at most 1%": the honest sampled edges
       const pctLabel = pct >= 100 ? '≥99%' : pct <= 0 ? '≤1%' : `${pct}%`;
       mount(content,
         h('div', { class: 'odds-meter-row' },
           h('div', { class: 'odds-label' }, `${pctLabel} to carry the field`),
-          h('div', { class: 'odds-meter', role: 'img', 'aria-label': `Victory chance ${pctLabel.replace('%', ' percent')}, from 240 sampled battles` },
+          h('div', { class: 'odds-meter', role: 'img', 'aria-label': `Victory chance ${pctLabel.replace('%', ' percent')}, from ${PREVIEW_RUNS} sampled battles` },
             h('div', { class: 'odds-fill', style: { width: `${Math.max(1, Math.min(99, pct))}%` } }),
           ),
           h('div', { class: 'small muted' },
-            `Expected losses · yours: ${Math.round(preview.aExpectedLoss * 100)}%, theirs: ${Math.round(preview.dExpectedLoss * 100)}% · 240 trials on forked fate`),
+            `Expected losses · yours: ${Math.round(preview.aExpectedLoss * 100)}%, theirs: ${Math.round(preview.dExpectedLoss * 100)}% · ${PREVIEW_RUNS} trials on forked fate`),
         ),
         eligibleSupport.length > 0
           ? h('div', { class: 'odds-support' },
@@ -858,7 +863,22 @@ export class GameScreen {
     }
     this.presentEffects(result.effects);
     this.refresh();
+    this.scheduleAutosave();
     return true;
+  }
+
+  /** A quiet autosave shortly after each local order, so a phone that
+   * closes mid-season resumes mid-season, orders intact (review R3). The
+   * shelf rotates only when the season changes; within one season the
+   * freshest copy simply replaces itself. */
+  private autosaveTimer = 0;
+
+  private scheduleAutosave(): void {
+    if (this.online) return;
+    window.clearTimeout(this.autosaveTimer);
+    this.autosaveTimer = window.setTimeout(() => {
+      if (!this.disposed && this.state.phase === 'playing') saveToSlot(this.state, 'auto');
+    }, 800);
   }
 
   // ------------------------------------------------------------- turns

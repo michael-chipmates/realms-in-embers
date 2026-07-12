@@ -6,7 +6,7 @@ Realms in Embers is built from three kinds of material, each under its own terms
 
 All TypeScript/CSS/HTML in this repository.
 License: **GNU Affero General Public License v3.0** (see `LICENSE`).
-Chosen deliberately: anyone may play, study, modify, and share the game — but
+Chosen deliberately: anyone may play, study, modify, and share the game, but
 any distributed or network-hosted derivative must publish its complete source
 under the same license. No closed-source paid forks.
 
@@ -21,17 +21,17 @@ under the same license. No closed-source paid forks.
 ## Illustrations
 
 - The images in `public/art/` are **AI-generated** (Black Forest Labs FLUX.2 via
-  the Replicate API), art-directed and curated for this game, in a late-1980s
+  the Replicate API), art-directed and hand-picked for this game, in a late-1980s
   game-manual airbrush style. Generated media of this kind may not carry
   copyright protection in some jurisdictions; to whatever extent we hold rights
-  in the curated set, they are licensed under CC BY-SA 4.0 (see `LICENSE-CONTENT`).
+  in the picked set, they are licensed under CC BY-SA 4.0 (see `LICENSE-CONTENT`).
 - All other visual material (map rendering, heraldry, iconography, UI) is
   procedural or hand-authored code, covered by the code license.
 
 ## Everything else
 
-The fiction — the Embermark, the Sundering, the creeds of Flame, Ash, and Umbra,
-Osperan the Unresting, all lords, provinces, events, and prose — is original to
+The fiction (the Embermark, the Sundering, the creeds of Flame, Ash, and Umbra,
+Osperan the Unresting, all lords, provinces, events, and prose) is original to
 this project.
 
 ---

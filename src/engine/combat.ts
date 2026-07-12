@@ -528,7 +528,11 @@ function weaveSpells(
 
 // ----------------------------------------------------------------- preview
 
-export function previewBattle(state: GameState, armyId: number, targetProvince: number, viaSea = false, runs = 240, supportIds: number[] = [], fervor = false): BattlePreview | null {
+/** How many sampled battles a forecast runs. UI copy renders THIS constant,
+ * never a hand-typed number, so the words can't drift from the sampling. */
+export const PREVIEW_RUNS = 240;
+
+export function previewBattle(state: GameState, armyId: number, targetProvince: number, viaSea = false, runs = PREVIEW_RUNS, supportIds: number[] = [], fervor = false): BattlePreview | null {
   const army = state.armies[armyId];
   if (!army) return null;
   const target = state.provinces[targetProvince];

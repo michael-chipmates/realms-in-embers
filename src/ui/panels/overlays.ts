@@ -3,7 +3,7 @@
  * the Other Lords, and the Realm Ledger. Each is one modal, fully live.
  */
 import { ARTIFACTS } from '../../engine/content/artifacts';
-import { QUESTS, TIER_NAMES } from '../../engine/content/quests';
+import { QUESTS, TIER_DEATH_RISK, TIER_NAMES } from '../../engine/content/quests';
 import { SKILLS } from '../../engine/content/skills';
 import { SPELLS } from '../../engine/content/spells';
 import { CREEDS } from '../../engine/content/world';
@@ -17,7 +17,8 @@ import { riteCostFor, spellCostFor } from '../../engine/magic';
 import { questStat, sagaGate } from '../../engine/quests';
 import { armiesOf, getStance, heroesOf, provincesOf } from '../../engine/helpers';
 import type { Hero, PlayerId, SpellId } from '../../engine/types';
-import { armToConfirm, h, mount } from '../dom';
+import { h, mount } from '../dom';
+import { confirmAction, confirmCast } from '../confirm';
 import { classGrowthWords, fmt, lordDisplay, signed } from '../format';
 import { iconSvg } from '../icons';
 import { openModal, closeAllModals, type ModalHandle } from '../modal';
@@ -121,20 +122,34 @@ function renderHeroCard(screen: GameScreen, hero: Hero, canAct: boolean, refresh
         ? 'With the army'
         : 'At court';
 
+  // the whole art is printed on the face and the choice asks to be sealed:
+  // a crossroads is walked once, and phones deserve better than a stray tap
   const skillChoice = hero.levelChoices.length > 0 && canAct
     ? h('div', { class: 'skill-choice' },
         h('div', { class: 'small-caps', style: { color: 'var(--gold-bright)' } }, 'A crossroads. Choose one art:'),
         ...hero.levelChoices.map((skillId) => {
           const skill = SKILLS[skillId];
           if (!skill) return null;
-          const btn = h('button', {
-            class: 'btn compact', style: { margin: '0.2rem 0.3rem 0 0' },
+          return h('button', {
+            class: 'btn compact skill-pick', style: { margin: '0.2rem 0.3rem 0 0' },
             onclick: () => {
-              if (screen.dispatch({ t: 'chooseSkill', heroId: hero.id, skill: skillId })) refresh();
+              confirmAction(screen, {
+                title: `Learn ${skill.name}?`,
+                body: [
+                  h('p', { class: 'small' }, skill.desc),
+                  h('p', { class: 'small muted' }, 'A crossroads is walked once: the other art closes for good.'),
+                  h('p', { class: 'small italic muted' }, skill.flavor),
+                ],
+                action: { t: 'chooseSkill', heroId: hero.id, skill: skillId },
+                confirmLabel: 'Learn it',
+                cancelLabel: 'Consider again',
+                onDone: refresh,
+              });
             },
-          }, skill.name);
-          tip(btn, () => h('div', { class: 'tip-plain' }, h('b', {}, skill.name), h('p', { class: 'small' }, skill.desc), h('p', { class: 'small italic muted' }, skill.flavor)));
-          return btn;
+          },
+            h('b', {}, skill.name),
+            h('span', { class: 'small muted skill-pick-desc' }, skill.desc),
+          );
         }),
       )
     : null;
@@ -208,13 +223,25 @@ function renderHeroCard(screen: GameScreen, hero: Hero, canAct: boolean, refresh
                   if (screen.dispatch({ t: 'attachHero', heroId: hero.id, armyId: null })) refresh();
                 },
               }, 'Recall to court'),
-          armToConfirm(
-            h('button', { class: 'btn btn-quiet compact' }, 'Release from service'),
-            'Release them for good?',
-            () => {
-              if (screen.dispatch({ t: 'dismissHero', heroId: hero.id })) refresh();
+          h('button', {
+            class: 'btn btn-quiet compact',
+            onclick: () => {
+              const wage = HERO_CLASSES[hero.cls].wage + Math.floor(hero.level * 2);
+              const carries = (['weapon', 'armor', 'trinket'] as const).some((s) => hero.artifacts[s] !== null);
+              confirmAction(screen, {
+                title: `Release ${hero.name}?`,
+                body: [
+                  h('p', { class: 'small' },
+                    `${hero.name}, ${hero.epithet} leaves your service for good. Their wage of ${wage} gold each season ends.`),
+                  carries ? h('p', { class: 'small muted' }, 'What they carry returns to your vault.') : null,
+                ],
+                action: { t: 'dismissHero', heroId: hero.id },
+                confirmLabel: 'Release them',
+                cancelLabel: 'Keep them',
+                onDone: refresh,
+              });
             },
-          ),
+          }, 'Release from service'),
         )
       : null,
   );
@@ -259,7 +286,7 @@ function renderMagic(screen: GameScreen, body: HTMLElement): void {
                   class: 'btn compact',
                   disabled: !canCast,
                   onclick: () => {
-                    beginTargetedCast(screen, id);
+                    beginTargetedCast(screen, id, refresh);
                   },
                 }, def.target === 'none' ? 'Cast' : 'Cast: choose a province'),
           )
@@ -310,7 +337,18 @@ function renderMagic(screen: GameScreen, body: HTMLElement): void {
                   disabled: !canAct,
                   style: { justifyContent: 'space-between' },
                   onclick: () => {
-                    if (screen.dispatch({ t: 'startRite', spellId: id })) refresh();
+                    confirmAction(screen, {
+                      title: `Begin the rite of ${def.name}?`,
+                      body: [
+                        h('p', { class: 'small' }, def.desc),
+                        h('p', { class: 'small muted' },
+                          `The rite asks ${cost} Emberlight in all, pledged season by season. When the last is paid, the working is yours for good.`),
+                        h('p', { class: 'small italic muted' }, def.flavor),
+                      ],
+                      action: { t: 'startRite', spellId: id },
+                      confirmLabel: 'Begin the rite',
+                      onDone: refresh,
+                    });
                   },
                 }, h('span', { html: `${iconSvg(def.icon, 16)} ${def.name}` }), h('span', { class: 'small muted' }, `${cost} Emberlight`));
                 tip(btn, () => h('div', { class: 'tip-plain' },
@@ -339,11 +377,13 @@ function renderMagic(screen: GameScreen, body: HTMLElement): void {
   );
 }
 
-/** Realm spells with a province target: close the modal, arm a map click. */
-function beginTargetedCast(screen: GameScreen, spellId: SpellId): void {
+/** Realm spells with a province target: close the modal, arm a map click.
+ * Untargeted workings confirm right here; targeted ones confirm at the
+ * chosen province (see onProvinceClick). */
+function beginTargetedCast(screen: GameScreen, spellId: SpellId, onDone?: () => void): void {
   const def = SPELLS[spellId];
   if (def.target === 'none') {
-    screen.dispatch({ t: 'castSpell', spell: spellId });
+    confirmCast(screen, spellId, undefined, { onDone });
     return;
   }
   closeAllModals();
@@ -376,15 +416,30 @@ function renderQuests(screen: GameScreen, body: HTMLElement): void {
         const d = heroDerived(state, hh);
         const rough = questStat(d, def.stat) + hh.level * 0.5 + d.questAdd + 4.5 - def.dc;
         const feel = rough >= 4 ? 'near-certain' : rough >= 1.5 ? 'favored' : rough >= -1 ? 'chancy' : 'grim';
+        const mathLine = questStat(d, def.stat) > d[def.stat]
+          ? `${hh.name} improvises: best other stat −4 (${questStat(d, def.stat)}) beats their ${def.stat} ${d[def.stat]}, plus level ${hh.level}, against difficulty ${def.dc}.`
+          : `${hh.name}'s ${def.stat} ${d[def.stat]} + level ${hh.level} against difficulty ${def.dc}.`;
+        const deathRisk = Math.max(0.05, TIER_DEATH_RISK[def.tier] - d.deathSave);
         const btn = h('button', {
           class: 'btn compact',
           onclick: () => {
-            if (screen.dispatch({ t: 'startQuest', heroId: hh.id, questDefId: defId, province })) refresh();
+            confirmAction(screen, {
+              title: `Send ${hh.name}?`,
+              body: [
+                h('p', { class: 'small' },
+                  `${def.name}, at ${state.provinces[province].name}: away ${def.duration} ${def.duration === 1 ? 'season' : 'seasons'}.`),
+                h('p', { class: 'small' }, `${mathLine} The odds read ${feel}.`),
+                h('p', { class: 'small muted' },
+                  `A setback wounds them. A disaster wounds deeper, and about ${Math.round(deathRisk * 100)} times in 100 it kills.`),
+              ],
+              action: { t: 'startQuest', heroId: hh.id, questDefId: defId, province },
+              confirmLabel: 'Send them',
+              cancelLabel: 'Not yet',
+              onDone: refresh,
+            });
           },
         }, `${hh.name} (${feel})`);
-        tip(btn, questStat(d, def.stat) > d[def.stat]
-          ? `${hh.name} improvises: best other stat −4 (${questStat(d, def.stat)}) beats their ${def.stat} ${d[def.stat]} + level ${hh.level}, against difficulty ${def.dc}.`
-          : `${hh.name}'s ${def.stat} ${d[def.stat]} + level ${hh.level} against difficulty ${def.dc}. Outcomes: triumph, success, setback, disaster.`);
+        tip(btn, mathLine);
         return btn;
       }),
     );

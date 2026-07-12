@@ -22,12 +22,14 @@ const INTENTIONS = [
   'Hold what is mine',
   'Take new ground',
   'Fill the treasury',
-  'Court the other lords',
-  'Feed the saga',
+  'Win a new oath',
+  'Advance the saga',
 ] as const;
 
+/** Keyed by seed AND seat: hotseat viewers and online seats on one device
+ * each keep their own promise (review R3). */
 function intentionKey(screen: GameScreen): string {
-  return `rie-intent-${screen.state.seed}`;
+  return `rie-intent-${screen.state.seed}:${screen.viewerId()}`;
 }
 
 /** True omissions only: things the season would genuinely waste. */
@@ -176,6 +178,10 @@ interface IntentionSnapshot {
   idx: number;
   turn: number;
   provinces: number;
+  /** The ids actually held when the promise was made: "hold what is mine"
+   * judges these, so losing one and taking another can never read as
+   * "not one slipped" (review R3). */
+  heldIds: number[];
   gold: number;
   bonds: number;
   saga: number;
@@ -193,10 +199,19 @@ function bondsOf(screen: GameScreen): number {
 
 function loadIntention(screen: GameScreen): IntentionSnapshot | null {
   try {
+    // a note left by the one-key-per-seed era can only mislead; burn it
+    localStorage.removeItem(`rie-intent-${screen.state.seed}`);
     const raw = localStorage.getItem(intentionKey(screen));
     if (!raw) return null;
     const parsed = JSON.parse(raw) as IntentionSnapshot;
     if (typeof parsed.idx !== 'number' || !INTENTIONS[parsed.idx]) return null;
+    if (!Array.isArray(parsed.heldIds)) return null;
+    // a promise from a later season than today belongs to some other
+    // campaign on this seed; it says nothing about this one
+    if (parsed.turn > screen.state.turn) {
+      localStorage.removeItem(intentionKey(screen));
+      return null;
+    }
     return parsed;
   } catch {
     return null;
@@ -206,10 +221,12 @@ function loadIntention(screen: GameScreen): IntentionSnapshot | null {
 function saveIntention(screen: GameScreen, idx: number): void {
   const state = screen.state;
   const pid = screen.viewerId();
+  const mine = provincesOf(state, pid);
   const snapshot: IntentionSnapshot = {
     idx,
     turn: state.turn,
-    provinces: provincesOf(state, pid).length,
+    provinces: mine.length,
+    heldIds: mine.map((p) => p.id),
     gold: state.players[pid].gold,
     bonds: bondsOf(screen),
     saga: state.players[pid].sagaChapter,
@@ -224,10 +241,12 @@ function intentionVerdict(screen: GameScreen, then: IntentionSnapshot): { kept: 
   const provinces = provincesOf(state, pid).length;
   const gained = provinces - then.provinces;
   switch (then.idx) {
-    case 0: // hold what is mine
-      return gained >= 0
-        ? { kept: true, text: 'not one province slipped from the banner.' }
-        : { kept: false, text: `${-gained} ${gained === -1 ? 'province' : 'provinces'} slipped from the banner.` };
+    case 0: { // hold what is mine: judged on the very provinces then held
+      const lost = then.heldIds.filter((id) => state.provinces[id]?.owner !== pid).length;
+      return lost === 0
+        ? { kept: true, text: 'every province you held is still yours.' }
+        : { kept: false, text: `${lost} ${lost === 1 ? 'province' : 'provinces'} slipped from the banner.` };
+    }
     case 1: { // take new ground
       return gained > 0
         ? { kept: true, text: `${gained} ${gained === 1 ? 'province' : 'provinces'} joined your banner.` }

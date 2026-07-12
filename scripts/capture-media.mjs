@@ -45,6 +45,21 @@ if (await skip.isVisible().catch(() => false)) await skip.click();
 await page.waitForTimeout(900);
 await shot('war-table');
 
+// the pause before the seal: muster a company through the confirm card
+await page.evaluate(() => {
+  const g = window.__game;
+  g.select(g.state.players[g.state.current].seatProvince, null);
+});
+await page.waitForTimeout(700);
+const muster = page.locator('.side-panel details:has(summary:text("Muster companies")) .option-btn:not([disabled])').first();
+if (await muster.isVisible().catch(() => false)) {
+  await muster.click();
+  await page.waitForTimeout(1300);
+  await shot('confirm');
+  await page.getByRole('button', { name: 'Muster them' }).click();
+  await page.waitForTimeout(700);
+}
+
 // an attack with the odds preview
 await page.evaluate(() => {
   const g = window.__game;

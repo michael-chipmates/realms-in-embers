@@ -11,7 +11,8 @@ import { evaluateActions } from '../../engine/evaluate';
 import { heroDerived } from '../../engine/heroFx';
 import { armiesIn, heroesOf, lordOf, seenBy } from '../../engine/helpers';
 import type { Army, Province, UnitTypeId } from '../../engine/types';
-import { armToConfirm, clear, h, mount } from '../dom';
+import { clear, h, mount } from '../dom';
+import { confirmAction } from '../confirm';
 import { fmt, lordDisplay, signed } from '../format';
 import { iconSvg } from '../icons';
 import { openModal } from '../modal';
@@ -170,11 +171,27 @@ function renderArmyCard(screen: GameScreen, army: Army, selected: boolean): HTML
           h('span', { class: `pip ${i < u.hits ? 'pip-full' : ''}` })),
       ),
       mine
-        ? armToConfirm(
-            h('button', { class: 'btn btn-quiet compact', 'aria-label': `Disband ${def.name}`, html: iconSvg('close', 12) }),
-            'Disband?',
-            () => { screen.dispatch({ t: 'disband', armyId: army.id, index: idx }); },
-          )
+        ? h('button', {
+            class: 'btn btn-quiet compact',
+            'aria-label': `Disband ${def.name}`,
+            html: iconSvg('close', 12),
+            onclick: (e: Event) => {
+              e.stopPropagation();
+              confirmAction(screen, {
+                title: `Disband the ${def.name}?`,
+                body: [
+                  h('p', { class: 'small' },
+                    `The company disbands where it stands, for good. Their upkeep of ${def.upkeep} gold each season ends.`),
+                  u.vet > 0
+                    ? h('p', { class: 'small muted' }, `A ${VET_NAMES[u.vet].toLowerCase()} company: what the seasons taught it is lost.`)
+                    : null,
+                ],
+                action: { t: 'disband', armyId: army.id, index: idx },
+                confirmLabel: 'Disband them',
+                cancelLabel: 'Keep them',
+              });
+            },
+          })
         : null,
     );
     tip(row, () => h('div', { class: 'tip-plain' },
@@ -258,6 +275,14 @@ function renderArmyCard(screen: GameScreen, army: Army, selected: boolean): HTML
           }, '⑂ Split the banner'),
         )
       : null,
+    mine && armiesIn(state, army.province).some((o) => o.id !== army.id && o.owner === army.owner)
+      ? h('div', { style: { padding: '0 0.8rem 0.6rem' } },
+          h('button', {
+            class: 'btn btn-quiet compact',
+            onclick: () => openMergeModal(screen, army.id),
+          }, '⚭ Join the banners'),
+        )
+      : null,
     mine && !army.moved && screen.targets.length > 0 && selected
       ? h('p', { class: 'small muted', style: { padding: '0.2rem 0.8rem 0.6rem' } },
           'Choose a glowing province to march. Crossed swords mean a fight.')
@@ -316,6 +341,60 @@ function openSplitModal(screen: GameScreen, armyId: number): void {
   ));
 }
 
+/** Join the banners: another friendly banner in this province falls in
+ * under the selected one, which keeps its stance and its name on the map.
+ * The engine's evaluation gates the confirm (twelve companies, three
+ * heroes to a banner: its words, not ours). */
+function openMergeModal(screen: GameScreen, armyId: number): void {
+  const state = screen.state;
+  const army = state.armies[armyId];
+  if (!army) return;
+  const others = armiesIn(state, army.province).filter((o) => o.id !== army.id && o.owner === army.owner);
+  if (others.length === 0) return;
+  let chosen = others[0].id;
+  const confirmBtn = h('button', { class: 'btn btn-seal' }, 'Join them') as HTMLButtonElement;
+  const verdictLine = h('p', { class: 'small neg', style: { margin: '0.3rem 0 0' } });
+  const sync = (): void => {
+    const verdict = evaluateActions(state, [{ t: 'mergeArmies', from: chosen, into: armyId }])[0];
+    confirmBtn.disabled = !verdict.legal;
+    verdictLine.textContent = verdict.reasons.join(' ');
+  };
+  const rows = others.map((o) => {
+    const box = h('input', {
+      type: 'radio', name: 'merge-into', id: `merge-${o.id}`,
+      checked: o.id === chosen,
+      onchange: () => { chosen = o.id; sync(); },
+    }) as HTMLInputElement;
+    return h('label', { class: 'odds-support-row', for: `merge-${o.id}` },
+      box,
+      h('span', {}, `${o.units.length} ${o.units.length === 1 ? 'company' : 'companies'}${o.heroIds.length > 0 ? `, ${o.heroIds.length} ${o.heroIds.length === 1 ? 'hero' : 'heroes'}` : ''}`),
+      h('span', { class: 'small muted', html: o.units.slice(0, 6).map((u) => iconSvg(UNITS[u.type].icon, 14)).join(' ') }),
+      o.moved ? h('span', { class: 'chip' }, 'Marched') : null,
+    );
+  });
+  confirmBtn.onclick = () => {
+    if (screen.dispatch({ t: 'mergeArmies', from: chosen, into: armyId })) {
+      modal.close();
+      screen.selectArmy(armyId);
+    }
+  };
+  const modal = openModal('Join the banners', h('div', { style: { padding: '0.3rem 0.6rem 0.7rem', minWidth: 'min(380px, 88vw)' } },
+    h('p', { class: 'small muted', style: { margin: '0 0 0.4rem' } },
+      others.length === 1
+        ? 'The banner below falls in under this one.'
+        : 'Choose the banner that falls in under this one.'),
+    ...rows,
+    h('p', { class: 'small muted', style: { margin: '0.4rem 0 0' } },
+      'The joined banner keeps this one’s stance. If either has marched this season, so has the whole.'),
+    verdictLine,
+    h('div', { style: { display: 'flex', gap: '0.5rem', justifyContent: 'flex-end', marginTop: '0.6rem' } },
+      h('button', { class: 'btn', onclick: () => modal.close() }, 'Keep them apart'),
+      confirmBtn,
+    ),
+  ));
+  sync();
+}
+
 // ---------------------------------------------------------------- build
 
 function renderBuildCard(screen: GameScreen, p: Province): HTMLElement | null {
@@ -346,7 +425,18 @@ function renderBuildCard(screen: GameScreen, p: Province): HTMLElement | null {
           class: 'option-btn',
           disabled: !verdict.legal,
           onclick: () => {
-            if (screen.dispatch({ t: 'build', province: p.id, building: b })) audio.hammer();
+            confirmAction(screen, {
+              title: `Raise the ${def.name}?`,
+              body: [
+                h('p', { class: 'small' }, def.desc),
+                h('p', { class: 'small muted' },
+                  def.turns === 1 ? `Raised within the season in ${p.name}.` : `Raised over ${def.turns} seasons in ${p.name}.`),
+                h('p', { class: 'small italic muted' }, def.flavor),
+              ],
+              action: { t: 'build', province: p.id, building: b },
+              confirmLabel: 'Raise it',
+              onDone: () => audio.hammer(),
+            });
           },
         },
           h('span', { html: iconSvg(def.icon, 18) }),
@@ -403,7 +493,20 @@ function renderRecruitCard(screen: GameScreen, p: Province): HTMLElement | null 
           class: 'option-btn',
           disabled: !verdict.legal,
           onclick: () => {
-            if (screen.dispatch({ t: 'recruit', province: p.id, unit: id })) audio.drum();
+            confirmAction(screen, {
+              title: `Muster ${def.name}?`,
+              body: [
+                h('p', { class: 'small' },
+                  `Attack ${def.atk} · Defense ${def.def} · ${def.hits} hits · upkeep ${def.upkeep}/season`),
+                h('p', { class: 'small' }, def.desc),
+                ...traitLines(def.traits),
+                h('p', { class: 'small muted' }, `They muster in ${p.name} and stand ready next season.`),
+                h('p', { class: 'small italic muted' }, def.flavor),
+              ],
+              action: { t: 'recruit', province: p.id, unit: id },
+              confirmLabel: 'Muster them',
+              onDone: () => audio.drum(),
+            });
           },
         },
           h('span', { html: iconSvg(def.icon, 18) }),

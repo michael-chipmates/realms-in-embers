@@ -152,8 +152,12 @@ function failFrom(e: unknown): SaveResult {
 }
 
 /**
- * Transactional write: temp key -> read back and verify -> rotate onto the
- * real key -> drop the temp. On any failure the previous save is untouched.
+ * Transactional write: temp key -> read back and verify -> commit the real
+ * state key -> drop the temp -> write the label. localStorage's setItem is
+ * atomic per call, so the slot itself is always one complete save, the old
+ * or the new; there is no half. The label (:meta) is only a cache for the
+ * shelf: if its write fails the save is still committed, and listSlots
+ * rebuilds a missing or unreadable label from the save itself.
  */
 function txWrite(ls: Storage, key: string, raw: string, meta: string): SaveResult {
   const tmpKey = `${PREFIX}${key}:tmp`;
@@ -170,12 +174,18 @@ function txWrite(ls: Storage, key: string, raw: string, meta: string): SaveResul
   }
   try {
     ls.setItem(`${PREFIX}${key}`, raw);
-    ls.setItem(`${PREFIX}${key}:meta`, meta);
   } catch (e) {
     safeRemove(ls, tmpKey);
     return failFrom(e);
   }
+  // the save is committed; free the duplicate before writing the label,
+  // so a storage on its last bytes still gets a truthful shelf
   safeRemove(ls, tmpKey);
+  try {
+    ls.setItem(`${PREFIX}${key}:meta`, meta);
+  } catch {
+    // committed but unlabeled: the shelf derives the label from the save
+  }
   return { ok: true };
 }
 
@@ -222,10 +232,26 @@ export function saveToSlot(state: GameState, slot: number | 'auto' | 'emergency'
     return reportResult(txWrite(ls, `slot${slot}`, raw, meta), state.turn);
   }
 
+  // Mid-season autosaves (one lands shortly after every order) replace the
+  // freshest copy in place: rotation and the :lastgood line of retreat move
+  // only when the SEASON changes, so the shelf keeps three different
+  // seasons, never three copies of this one.
+  let sameSeason = false;
+  try {
+    const prevMetaRaw = safeGet(ls, `${PREFIX}auto1:meta`);
+    if (prevMetaRaw) {
+      const prevParsed = JSON.parse(prevMetaRaw);
+      // same campaign, same season: anything else rotates
+      sameSeason = prevParsed?.turn === state.turn && prevParsed?.seed === state.seed;
+    }
+  } catch {
+    sameSeason = false;
+  }
+
   // Keep the previous valid autosave one generation beyond the rotation, so
   // a corrupted write can never take the whole line of retreat with it.
   const prev = safeGet(ls, `${PREFIX}auto1`);
-  if (prev && verifyRaw(prev)) {
+  if (!sameSeason && prev && verifyRaw(prev)) {
     try {
       ls.setItem(AUTOSAVE_LASTGOOD_KEY, prev);
       const prevMeta = safeGet(ls, `${PREFIX}auto1:meta`);
@@ -237,15 +263,17 @@ export function saveToSlot(state: GameState, slot: number | 'auto' | 'emergency'
 
   // rotate: auto2 -> auto3, auto1 -> auto2 (best-effort history; the
   // transactional write below is the one that must succeed)
-  try {
-    for (let i = 2; i >= 1; i--) {
-      const cur = ls.getItem(`${PREFIX}auto${i}`);
-      const curMeta = ls.getItem(`${PREFIX}auto${i}:meta`);
-      if (cur) ls.setItem(`${PREFIX}auto${i + 1}`, cur);
-      if (curMeta) ls.setItem(`${PREFIX}auto${i + 1}:meta`, curMeta);
+  if (!sameSeason) {
+    try {
+      for (let i = 2; i >= 1; i--) {
+        const cur = ls.getItem(`${PREFIX}auto${i}`);
+        const curMeta = ls.getItem(`${PREFIX}auto${i}:meta`);
+        if (cur) ls.setItem(`${PREFIX}auto${i + 1}`, cur);
+        if (curMeta) ls.setItem(`${PREFIX}auto${i + 1}:meta`, curMeta);
+      }
+    } catch {
+      // rotation of old history may fail under pressure; keep going
     }
-  } catch {
-    // rotation of old history may fail under pressure; keep going
   }
 
   let res = txWrite(ls, 'auto1', raw, meta);
@@ -265,21 +293,47 @@ export function listSlots(): SlotInfo[] {
   const keys = ['emergency', 'auto1', 'auto2', 'auto3', 'slot1', 'slot2', 'slot3', 'slot4', 'slot5'];
   for (const key of keys) {
     const meta = safeGet(ls, `${PREFIX}${key}:meta`);
-    if (!meta) continue;
-    try {
-      const parsed = JSON.parse(meta);
-      out.push({
-        key,
-        label: key === 'emergency' ? 'The emergency copy' : key.startsWith('auto') ? `Autosave ${key.slice(4)}` : `Slot ${key.slice(4)}`,
-        auto: key.startsWith('auto') || key === 'emergency',
-        turn: parsed.turn,
-        seed: parsed.seed,
-        lords: parsed.lords,
-        savedAt: parsed.savedAt,
-      });
-    } catch {
-      // unreadable meta: skip
+    let parsed: { turn: number; seed: string; lords: string; savedAt: number } | null = null;
+    if (meta) {
+      try {
+        parsed = JSON.parse(meta);
+      } catch {
+        parsed = null;
+      }
     }
+    if (!parsed) {
+      // a committed save whose label write failed: rebuild the label from
+      // the save itself, so no valid chronicle ever hides from the shelf
+      const raw = safeGet(ls, `${PREFIX}${key}`);
+      if (!raw) continue;
+      try {
+        const file = JSON.parse(raw);
+        const state = file?.state;
+        if (!state?.players) continue;
+        parsed = {
+          turn: state.turn,
+          seed: state.seed,
+          lords: state.players.map((p: { lordId: string }) => LORD_BY_ID[p.lordId]?.name ?? p.lordId).join(', '),
+          savedAt: Date.now(), // the true moment was lost with the label
+        };
+        try {
+          ls.setItem(`${PREFIX}${key}:meta`, JSON.stringify({ ...parsed, auto: key.startsWith('auto') }));
+        } catch {
+          // still unlabeled; it will derive again next time
+        }
+      } catch {
+        continue; // not a readable save
+      }
+    }
+    out.push({
+      key,
+      label: key === 'emergency' ? 'The emergency copy' : key.startsWith('auto') ? `Autosave ${key.slice(4)}` : `Slot ${key.slice(4)}`,
+      auto: key.startsWith('auto') || key === 'emergency',
+      turn: parsed.turn,
+      seed: parsed.seed,
+      lords: parsed.lords,
+      savedAt: parsed.savedAt,
+    });
   }
   return out;
 }

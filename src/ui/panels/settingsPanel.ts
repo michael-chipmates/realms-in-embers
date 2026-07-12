@@ -1,5 +1,5 @@
 /** Settings: accessibility and sound. Available from title and in game. */
-import { serializeGame } from '../../engine/engine';
+import { fnv } from '../../engine/hash';
 import { RULES_VERSION } from '../../engine/state';
 import { h } from '../dom';
 import { audio } from '../audio';
@@ -16,14 +16,22 @@ function bugReport(app: App): string {
   ];
   const state = app.game;
   if (state) {
+    // A redacted diagnostic, safe for a public issue: versions, seed, the
+    // shape of the log, a state hash. Never the save itself: a full save
+    // reveals the whole realm (fog included, every player's moves), so it
+    // must only ever leave by the deliberate Export button (review R3).
+    const kinds: Record<string, number> = {};
+    for (const entry of state.log) kinds[entry.action.t] = (kinds[entry.action.t] ?? 0) + 1;
     lines.push(
       '',
       `Seed: ${state.seed}`,
       `Season: ${state.turn}`,
       `Settings: ${JSON.stringify(state.settings)}`,
+      `State hash: ${fnv(JSON.stringify(state))}`,
+      `Actions logged: ${state.log.length} (${Object.entries(kinds).map(([k, n]) => `${k}:${n}`).join(', ')})`,
       '',
-      'Save (same format as an exported save, full action log included):',
-      serializeGame(state),
+      'No save is included: a full save shows the whole realm, fog and all.',
+      'If the bug needs one, export it from the save shelf and attach it deliberately.',
     );
   } else {
     lines.push('', 'No game was running.');
@@ -116,7 +124,7 @@ function copyBugReportRow(app: App): HTMLElement {
   return h('div', { class: 'settings-row' },
     h('span', {}, 'Found a bug?',
       h('span', { class: 'small muted', style: { display: 'block' } },
-        'Everything a bug hunter needs: seed, settings, and the full action log. Paste it into a GitHub issue.'),
+        'Seed, settings, versions, and the shape of the action log. Nothing fog-hidden leaves with it: attach an exported save deliberately only if the bug needs one. Paste it into a GitHub issue.'),
     ),
     h('span', { style: { display: 'flex', alignItems: 'center', gap: '0.5rem' } }, status, btn),
   );
@@ -223,7 +231,7 @@ export function openSettingsPanel(app: App): void {
     h('div', { class: 'small muted', style: { lineHeight: '1.5' } },
       ...audio.credits().map((line) => h('p', { style: { margin: '0 0 0.3rem' } }, line)),
       h('p', { style: { margin: '0 0 0.3rem' } },
-        'Illustrations: AI-generated (FLUX via Replicate), art-directed and curated for this game; CC BY-SA 4.0 to whatever extent rights exist.'),
+        'Illustrations: AI-generated (FLUX via Replicate), art-directed and hand-picked for this game; CC BY-SA 4.0 to whatever extent rights exist.'),
       h('p', { style: { margin: '0 0 0.3rem' } },
         'Everything else (code, world, words, icons) made for this game. Code AGPL-3.0; story and art CC BY-SA 4.0.'),
       h('p', { style: { margin: '0' } },

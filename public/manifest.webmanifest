@@ -1,10 +1,13 @@
 {
+  "id": "./",
   "name": "Realms in Embers",
   "short_name": "Embers",
   "description": "A turn-based fantasy strategy chronicle. Twelve lords, one cold throne, and a narrator who refuses to stay dead.",
   "start_url": ".",
+  "scope": "./",
   "display": "standalone",
   "orientation": "any",
+  "categories": ["games", "entertainment"],
   "background_color": "#14100b",
   "theme_color": "#14100b",
   "icons": [
