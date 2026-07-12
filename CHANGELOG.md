@@ -1,7 +1,7 @@
 # Changelog
 
 All notable changes to Realms in Embers. The game's rules carry their own
-version (`RULES_VERSION` in `src/engine/state.ts`, currently v15) — bumped
+version (`RULES_VERSION` in `src/engine/state.ts`, currently v16) — bumped
 whenever engine semantics change, with a frozen replay fixture as the canary.
 
 ## [0.5.0] — the open book (2026-07-12)

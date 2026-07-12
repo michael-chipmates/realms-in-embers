@@ -70,8 +70,11 @@ import { NEUTRAL } from './types';
  *     province lowers the attack threshold and raises the prize (converging
  *     wars, not parallel ones); and the fierce or greedy shop for war
  *     against a ≥34% leader someone else already fights (never over a pact,
- *     never from weakness). */
-export const RULES_VERSION = 15;
+ *     never from weakness).
+ * 16: The plain-speech round: every em/en dash leaves the chronicle's and
+ *     the rules' voice (text only, no mechanics); and splitArmy returns
+ *     with a real UI: a banner may raise a second banner in place. */
+export const RULES_VERSION = 16;
 
 export const HANDICAPS: Record<Difficulty, PlayerHandicap> = {
   squire: { incomeMult: 0.85, label: 'Squire: AI earns 15% less gold and attacks only with clear advantage.' },
