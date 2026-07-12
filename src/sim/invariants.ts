@@ -1,5 +1,5 @@
 /**
- * Structural invariants checked after every simulated round — and usable by
+ * Structural invariants checked after every simulated round, and usable by
  * any test that drives full games.
  */
 import { UNITS } from '../engine/content/units';
@@ -38,7 +38,7 @@ export function checkInvariants(state: GameState, seed: string): void {
       const army = state.armies[hero.armyId];
       if (!army) die(`hero ${hero.id} attached to missing army`);
       if (!army.heroIds.includes(hero.id)) die(`hero ${hero.id} not in army roster`);
-      // hero.province is deliberately stale while attached — the banner is
+      // hero.province is deliberately stale while attached; the banner is
       // the source of truth; it re-syncs on every detach
     }
     if (!state.provinces[hero.province]) die(`hero ${hero.id} in missing province`);

@@ -1,6 +1,6 @@
 /**
  * Quests: offers on the board, heroes in the field, outcomes in the
- * chronicle. Includes the Grand Saga — the Legend victory path.
+ * chronicle. Includes the Grand Saga: the Legend victory path.
  */
 import { ARTIFACTS, QUEST_ARTIFACTS } from './content/artifacts';
 import { GENERIC_QUESTS, QUESTS, SAGA_QUESTS, TIER_DEATH_RISK, type QuestDef } from './content/quests';
@@ -32,7 +32,7 @@ function questVenues(state: GameState, pid: PlayerId, def: QuestDef): number[] {
   if (def.site === null) {
     return provincesOf(state, pid).map((p) => p.id);
   }
-  // saga site quests may lie anywhere in the realm — the journey is the story
+  // saga site quests may lie anywhere in the realm; the journey is the story
   const anywhere = def.saga !== undefined;
   return state.provinces
     .filter((p) => p.site === def.site && (anywhere || reachable.has(p.id)))
@@ -74,7 +74,7 @@ export function sagaAvailable(state: GameState, pid: PlayerId): { def: QuestDef;
   return gate.available;
 }
 
-/** Saga availability WITH the reason it is closed — the UI shows the why. */
+/** Saga availability WITH the reason it is closed; the UI shows the why. */
 export function sagaGate(state: GameState, pid: PlayerId): {
   available: { def: QuestDef; venues: number[] } | null;
   def: QuestDef | null;
@@ -90,7 +90,7 @@ export function sagaGate(state: GameState, pid: PlayerId): {
   }
   // chapter 4 needs both shards in this realm's possession
   if (def.saga === 4 && !hasBothShards(state, pid)) {
-    return { available: null, def, reason: 'Both shards — Morning and Noon — must rest in your keeping.' };
+    return { available: null, def, reason: 'Both shards, Morning and Noon, must rest in your keeping.' };
   }
   const venues = questVenues(state, pid, def);
   if (venues.length === 0) {
@@ -100,7 +100,7 @@ export function sagaGate(state: GameState, pid: PlayerId): {
 }
 
 /** The quest's stat, with improvisation: a hero may lean on their best other
- * stat at a steep −4 — a champion CAN keep the vigil, gracelessly. Breaks the
+ * stat at a steep −4; a champion CAN keep the vigil, gracelessly. Breaks the
  * hard class-to-quest lock without erasing specialists. */
 export function questStat(derived: { might: number; lore: number; guile: number }, stat: 'might' | 'lore' | 'guile'): number {
   const primary = derived[stat];
@@ -347,7 +347,7 @@ function resolveQuest(state: GameState, rng: Rng, quest: ActiveQuest, effects: E
 }
 
 function consumeShards(state: GameState, pid: PlayerId, defIds: string[]): void {
-  // only THIS claimant's shards burn — rivals racing the Saga keep their own
+  // only THIS claimant's shards burn; rivals racing the Saga keep their own
   const player = state.players[pid];
   const mine = (defId: string) =>
     Object.values(state.artifacts).find((a) =>

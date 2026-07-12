@@ -133,7 +133,7 @@ export function grantXp(hero: Hero, rng: Rng, xp: number): number {
     gained++;
     // milestone levels offer a choice of arts (3/5/7/9)
     if (SKILL_LEVELS.includes(hero.level)) {
-      // an unclaimed earlier offer resolves to its first option — the road teaches
+      // an unclaimed earlier offer resolves to its first option; the road teaches
       if (hero.levelChoices.length > 0) {
         hero.skills.push(hero.levelChoices[0]);
         hero.levelChoices = [];
@@ -148,7 +148,7 @@ export function grantXp(hero: Hero, rng: Rng, xp: number): number {
 }
 
 export function heroTitleLine(hero: Hero): string {
-  return `${hero.name}, ${hero.epithet} — ${HERO_CLASSES[hero.cls].name}, level ${hero.level}`;
+  return `${hero.name}, ${hero.epithet}: ${HERO_CLASSES[hero.cls].name}, level ${hero.level}`;
 }
 
 export function woundHero(hero: Hero, turns: number): void {

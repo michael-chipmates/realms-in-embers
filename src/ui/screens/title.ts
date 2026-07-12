@@ -1,5 +1,5 @@
 /** The title screen: a dark room, a warm table, and the ways in.
- * It should feel inhabited — the chronicler is still writing when you
+ * It should feel inhabited: the chronicler is still writing when you
  * walk in. Motion here is UI-only (never the game rng) and every effect
  * respects reduced-motion. */
 import { h, mount } from '../dom';
@@ -16,7 +16,7 @@ import type { Difficulty } from '../../engine/types';
 import type { App } from '../app';
 
 /** A Quick Chronicle: one tap, one choice, straight into the fire. A random
- * medium realm, you against three rivals, fog on, 36 seasons — the full game
+ * medium realm, you against three rivals, fog on, 36 seasons: the full game
  * with none of the muster table. Renamed from "Quick War" (2026-07-12):
  * the fastest door in the house should not greet a newcomer with a fist.
  * The gentle option exists so a first evening ends in a story, not a siege
@@ -58,14 +58,14 @@ function openQuickWar(app: App): void {
   };
   const modal = openModal('A Quick Chronicle', h('div', { class: 'quickwar-body' },
     h('p', { class: 'small muted', style: { margin: '0 0 0.7rem' } },
-      'A fresh realm, you and three rivals, 36 seasons, the map unexplored. Pick how hard they fight — then pick your banner.'),
+      'A fresh realm, you and three rivals, 36 seasons, the map unexplored. Pick how hard they fight, then pick your banner.'),
     ...QUICK_WARS.map((q) =>
       h('button', {
         class: 'btn quickwar-option',
         onclick: () => {
           modal.close();
           openLordGallery({
-            title: `A ${q.label.toLowerCase()} war — whose banner do you carry?`,
+            title: `A ${q.label.toLowerCase()} war. Whose banner do you carry?`,
             onPick: (lordId) => begin(q.difficulty, lordId),
             onFate: () => begin(q.difficulty, 'random'),
             onCancel: () => openQuickWar(app),
@@ -81,7 +81,9 @@ function openQuickWar(app: App): void {
 /** The First Ember: a real chronicle on a fixed, friendly seed, with a
  * quiet guide that steps forward only when the real thing has happened.
  * The seed is pinned so the opening always teaches: works to raise,
- * companies to muster, a march, and a fight within reach. */
+ * companies to muster, a march within reach. Fog is ON deliberately
+ * (Michel, 2026-07-12): a newcomer's first page is their seat and its
+ * neighbors, not twelve banners at once. */
 function startFirstEmber(app: App): void {
   app.startGame({
     seed: 'first-ember-1',
@@ -93,7 +95,7 @@ function startFirstEmber(app: App): void {
     ],
     victoryPaths: ['conquest', 'dominion', 'goldenAge', 'legend'],
     maxTurns: 36,
-    fogOfWar: false,
+    fogOfWar: true,
     veteranChronicle: false,
   }, { guide: new FirstEmberGuide() });
 }
@@ -157,9 +159,9 @@ export function renderTitle(app: App): void {
             if (state) { app.continueGame(state); return; }
             // a dead button teaches nothing: say what happened (round-2 audit)
             (e.target as HTMLButtonElement).textContent =
-              'That save could not be read — try Load a Chronicle for an older one.';
+              'That save could not be read. Try Load a Chronicle for an older one.';
           },
-        }, `Continue — ${newest.lords.split(',')[0]?.trim() ?? 'the war'}, season ${newest.turn}`)
+        }, `Continue · ${newest.lords.split(',')[0]?.trim() ?? 'the war'}, season ${newest.turn}`)
       : null,
     h('button', { class: 'btn title-btn', onclick: () => void openOnlineLobby(app) }, 'Play with Friends'),
     h('button', {
@@ -167,7 +169,7 @@ export function renderTitle(app: App): void {
       onclick: () => {
         // The Week's Seed: one realm the whole table shares for seven days.
         // ISO week from UTC, so every player worldwide forges the same land
-        // (weekly, not daily — a campaign is an evening, not a Wordle).
+        // (weekly, not daily: a campaign is an evening, not a Wordle).
         const d = new Date();
         const utc = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
         utc.setUTCDate(utc.getUTCDate() + 4 - (utc.getUTCDay() || 7));
@@ -192,7 +194,7 @@ export function renderTitle(app: App): void {
       h('p', { class: 'muted italic title-sub' },
         'The throne is cold. The chronicler is not quite dead. The war for the ashes begins with you.'),
       menu,
-      h('p', { class: 'small muted italic title-epigraph' }, `“${epigraph}” — O.`),
+      h('p', { class: 'small muted italic title-epigraph' }, `“${epigraph}” (O.)`),
       h('p', { class: 'small muted title-foot' },
         'A turn-based strategy chronicle · an original homage to the spirit of 1993'),
       // iOS keeps its install button three taps deep; one quiet line, once
@@ -200,13 +202,13 @@ export function renderTitle(app: App): void {
     ),
   );
   mount(app.root, screen);
-  // staged update: a waiting edition is offered here, in the quiet room —
+  // staged update: a waiting edition is offered here, in the quiet room:
   // it never seizes a live campaign (BOOT_OK handshake in swUpdate.ts)
   const offerUpdate = (): void => {
     if (!screen.isConnected || screen.querySelector('.title-update')) return;
     screen.querySelector('.title-menu')?.appendChild(
       h('button', { class: 'btn btn-quiet title-btn title-update', onclick: () => applyUpdate() },
-        'A fresh edition is ready — take the table now'));
+        'A fresh edition is ready. Take the table now'));
   };
   if (updateWaiting()) offerUpdate();
   else onUpdateReady(offerUpdate);
@@ -265,7 +267,7 @@ export function openLoadModal(app: App): void {
         : listSlots().map((slot) =>
             h('div', { class: 'slot-row' },
               h('div', { class: 'slot-info' },
-                h('div', {}, `${slot.label} — season ${slot.turn}`),
+                h('div', {}, `${slot.label} · season ${slot.turn}`),
                 h('div', { class: 'small muted' }, `${slot.lords}`),
                 h('div', { class: 'small muted' }, `seed “${slot.seed}” · ${new Date(slot.savedAt).toLocaleString()}`),
               ),
@@ -284,11 +286,11 @@ export function openLoadModal(app: App): void {
                   class: 'btn btn-quiet',
                   'aria-label': `Delete ${slot.label}`,
                   onclick: (e: Event) => {
-                    // two clicks to burn a chronicle — one is an accident
+                    // two clicks to burn a chronicle: one is an accident
                     const btn = e.currentTarget as HTMLButtonElement;
                     if (btn.dataset.armed !== '1') {
                       btn.dataset.armed = '1';
-                      btn.textContent = 'Burn — sure?';
+                      btn.textContent = 'Burn. Sure?';
                       window.setTimeout(() => {
                         if (btn.isConnected) {
                           btn.dataset.armed = '';

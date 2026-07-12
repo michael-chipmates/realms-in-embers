@@ -1,5 +1,5 @@
 /**
- * The vellum map — canvas renderer for the war table.
+ * The vellum map: canvas renderer for the war table.
  *
  * Province shapes are traced from the engine's cell grid (marching the border
  * edges into loops), smoothed with Chaikin's corner cutting, and painted as
@@ -46,7 +46,7 @@ export interface RenderOptions {
   cacheKey?: string;
   /** Army markers to draw (owner -1 = leaderless). */
   armies?: { province: number; owner: number; strength: number; hasHero: boolean; kind?: string }[];
-  /** Transient animation layer (t runs 0→1). UI-only — never reads rng,
+  /** Transient animation layer (t runs 0→1). UI-only: never reads rng,
    * never writes state, and everything here is fog-gated on draw. */
   fx?: {
     ripples?: { province: number; t: number; color: string }[];
@@ -158,11 +158,11 @@ export class MapRenderer {
   }
 
   // ------------------------------------------------ the layer cache (P1)
-  // Three lifetimes, three layers. L0 (base): sea, vellum, terrain — moves
+  // Three lifetimes, three layers. L0 (base): sea, vellum, terrain. Moves
   // only with the camera or the fog. L1 (political): tints, glyphs, rivers,
-  // borders, sites, armies — moves when the STATE moves (callers pass a
+  // borders, sites, armies. Moves when the STATE moves (callers pass a
   // cheap cacheKey; the action log length is perfect). L2 (dynamic): hover,
-  // selection, targets, labels, fx — drawn every frame over two drawImages,
+  // selection, targets, labels, fx. Drawn every frame over two drawImages,
   // so a hover repaint costs composition, not cartography.
   private baseLayer: HTMLCanvasElement | null = null;
   private baseLayerKey = '';
@@ -215,7 +215,7 @@ export class MapRenderer {
     this.drawDynamic(ctx, opts, w, hgt);
   }
 
-  /** L0 — everything that only moves with the camera or the fog. */
+  /** L0: everything that only moves with the camera or the fog. */
   private drawBaseLayer(ctx: CanvasRenderingContext2D, opts: RenderOptions, w: number, hgt: number): void {
     const view = this.view!;
     // --- the sea (table shows through a deep wash)
@@ -295,7 +295,7 @@ export class MapRenderer {
     }
   }
 
-  /** L1 — everything that moves when the STATE moves. */
+  /** L1: everything that moves when the STATE moves. */
   private drawPoliticalLayer(ctx: CanvasRenderingContext2D, opts: RenderOptions, w: number, hgt: number): void {
     const view = this.view!;
     for (const p of view.provinces) {
@@ -305,7 +305,7 @@ export class MapRenderer {
       ctx.save();
       this.pathLoops(ctx, loops);
       ctx.clip();
-      // owner tint — the viewer's own realm reads clearly stronger
+      // owner tint: the viewer's own realm reads clearly stronger
       if (p.owner >= 0 && view.playerColors) {
         const mine = opts.viewer !== undefined && p.owner === opts.viewer;
         ctx.globalAlpha = mine ? 0.52 : 0.38;
@@ -415,7 +415,7 @@ export class MapRenderer {
     }
   }
 
-  /** L2 — hover, selection, targets, labels, fx: every frame, over two
+  /** L2 (hover, selection, targets, labels, fx): every frame, over two
    * cached drawImages. */
   private drawDynamic(ctx: CanvasRenderingContext2D, opts: RenderOptions, w: number, hgt: number): void {
     const view = this.view!;
@@ -524,7 +524,7 @@ export class MapRenderer {
   }
 
   /** The cast moment, by family: gold bloom, ink blot, inscribed ward
-   * circle, rising wisps, or scrying rings. Deterministic — phase offsets
+   * circle, rising wisps, or scrying rings. Deterministic: phase offsets
    * come from the province id, never from Math.random. */
   private drawSpellCast(ctx: CanvasRenderingContext2D, cx: number, cy: number, family: SpellFxFamily, t: number, seedId: number): void {
     const s = this.scale;
@@ -611,7 +611,7 @@ export class MapRenderer {
   }
 
   /** A small wax seal on enchanted ground: round for helpful workings,
-   * torn (diamond) for harmful ones — shape first, color second, so the
+   * torn (diamond) for harmful ones: shape first, color second, so the
    * distinction survives colorblindness. Pips count the seasons left. */
   private drawEnchantSeal(ctx: CanvasRenderingContext2D, x: number, y: number, mod: ProvinceMod): void {
     const s = this.scale;

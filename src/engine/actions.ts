@@ -1,7 +1,7 @@
 /**
  * The one gate for change: applyAction validates, mutates, logs.
  * Humans and AIs dispatch the same actions; replays re-apply the log.
- * Validation never consumes randomness — an invalid action leaves the
+ * Validation never consumes randomness: an invalid action leaves the
  * state (and the RNG stream) untouched.
  */
 import { applyAdvancedAction } from './advanced';
@@ -105,7 +105,7 @@ export function moveTargets(state: GameState, army: Army): MoveTarget[] {
   return out;
 }
 
-/** Returns true when anything NEW came out of the fog — a march that saw
+/** Returns true when anything NEW came out of the fog: a march that saw
  * fresh ground is a season spent, whatever else it did (recallMove). */
 function grantSight(state: GameState, pid: PlayerId, provinceId: number): boolean {
   if (pid < 0) return false;
@@ -150,7 +150,7 @@ export function applyAction(state: GameState, action: Action): ActionResult {
       if (!def) return fail('No such works.');
       if (p.buildings.includes(action.building)) return fail('Already built.');
       if (def.requires && !p.buildings.includes(def.requires)) return fail(`Requires ${BUILDINGS[def.requires].name}.`);
-      if (def.terrain && !def.terrain.includes(p.terrain)) return fail(`The land does not suit it — it wants ${def.terrain.map((t) => TERRAIN[t].name).join(' or ')}.`);
+      if (def.terrain && !def.terrain.includes(p.terrain)) return fail(`The land does not suit it. It wants ${def.terrain.map((t) => TERRAIN[t].name).join(' or ')}.`);
       if (def.coastalOnly && !p.coastal) return fail('Needs a coast.');
       const { cost } = buildingCostFor(state, pid, action.building);
       if (player.gold < cost) return fail(`Needs ${cost} gold.`);
@@ -173,7 +173,7 @@ export function applyAction(state: GameState, action: Action): ActionResult {
       }
       if (gate.terrain && !gate.terrain.includes(p.terrain)) {
         const cragException = action.unit === 'cragguard' && fx.cragguardInHills && p.terrain === 'hills';
-        if (!cragException) return fail(`The land does not breed them — they muster only in ${gate.terrain.map((t) => TERRAIN[t].name).join(' or ')}.`);
+        if (!cragException) return fail(`The land does not breed them. They muster only in ${gate.terrain.map((t) => TERRAIN[t].name).join(' or ')}.`);
       }
       if (gate.creed && lordOf(player).creed !== gate.creed) return fail('Not of your creed.');
       if (action.unit === 'revenants') {
@@ -253,7 +253,7 @@ export function applyAction(state: GameState, action: Action): ActionResult {
       if (!army.moved && !army.seaMoved) return fail('The army has not marched this season.');
       const recall = army.lastMove;
       if (!recall || recall.turn !== state.turn) {
-        return fail('That march cannot be recalled — a fight, a capture, or new ground seen makes a season spent.');
+        return fail('That march cannot be recalled. A fight, a capture, or new ground seen makes a season spent.');
       }
       army.province = recall.from;
       if (recall.setMoved) army.moved = false;
@@ -496,11 +496,11 @@ function diplomacyAction(
       if (getStance(state, target, against) === 'war') return fail('They already fight that war.');
       if (stance === 'war') return fail('They will not take calls from an enemy.');
       const bond = getStance(state, target, against);
-      if (bond === 'pact' || bond === 'alliance') return fail('They are sworn to that lord — the call would be an insult.');
+      if (bond === 'pact' || bond === 'alliance') return fail('They are sworn to that lord. The call would be an insult.');
       const gold = Math.max(0, Math.floor(action.gold ?? 0));
       if (player.gold < gold) return fail('Your treasury cannot cover that inducement.');
       queueProposal(state, pid, target, 'joinWar', gold,
-        `${lordName(state, pid)} calls you to war against ${lordName(state, against)}${gold > 0 ? ` — with ${gold} gold for the war-chest` : ''}.`,
+        `${lordName(state, pid)} calls you to war against ${lordName(state, against)}${gold > 0 ? `, with ${gold} gold for the war-chest` : ''}.`,
         against);
       effects.push({ e: 'proposal', proposal: state.proposals[state.proposals.length - 1] });
       log(state, action);
@@ -527,7 +527,7 @@ function diplomacyAction(
 
     case 'offerAlliance': {
       if (stance !== 'pact') return fail('An alliance grows from a pact.');
-      queueProposal(state, pid, target, 'alliance', 0, `${lordName(state, pid)} proposes a full alliance — shared wars, shared roads.`);
+      queueProposal(state, pid, target, 'alliance', 0, `${lordName(state, pid)} proposes a full alliance: shared wars, shared roads.`);
       effects.push({ e: 'proposal', proposal: state.proposals[state.proposals.length - 1] });
       log(state, action);
       return { ok: true, effects };
@@ -550,7 +550,7 @@ function diplomacyAction(
       if (stance === 'alliance') return fail('One does not shake down an ally.');
       const gold = Math.max(0, Math.floor(action.gold ?? 0));
       if (gold <= 0) return fail('Demand something.');
-      queueProposal(state, pid, target, 'demand', gold, `${lordName(state, pid)} demands ${gold} gold — or consequences.`);
+      queueProposal(state, pid, target, 'demand', gold, `${lordName(state, pid)} demands ${gold} gold, or consequences.`);
       addDeed(state, target, pid, { id: 'demanded', label: 'Made demands of us', delta: -8, decay: 1 });
       effects.push({ e: 'proposal', proposal: state.proposals[state.proposals.length - 1] });
       log(state, action);
@@ -564,7 +564,7 @@ function diplomacyAction(
       scribe(state, {
         kind: 'diplomacy',
         about: pid,
-        text: `${lordName(state, pid)} returned the pact-seal to ${lordName(state, target)} with cold courtesies. Not war — but the ink of peace is drying.`,
+        text: `${lordName(state, pid)} returned the pact-seal to ${lordName(state, target)} with cold courtesies. Not war, but the ink of peace is drying.`,
       });
       effects.push({ e: 'diplo', kind: 'breakPact', from: pid, to: target });
       log(state, action);
@@ -591,7 +591,7 @@ function queueProposal(
   });
 }
 
-/** Everything a declaration of war entails — stance, deeds, oathbreaker
+/** Everything a declaration of war entails: stance, deeds, oathbreaker
  * infamy, the chronicle, the taunt. Used by declareWar, joinWar acceptance,
  * and alliance call-to-arms, so the consequences can never drift apart. */
 export function enactWarDeclaration(
@@ -632,7 +632,7 @@ export function enactWarDeclaration(
   effects.push({ e: 'diplo', kind: 'war', from: pid, to: target });
 
   // Alliances are defensive: every ally of the target now stands in the
-  // aggressor's way (unless bound to the aggressor too — cold feet win).
+  // aggressor's way (unless bound to the aggressor too; cold feet win).
   for (const ally of state.players) {
     if (!ally.alive || ally.id === pid || ally.id === target) continue;
     if (getStance(state, target, ally.id) !== 'alliance') continue;
@@ -691,7 +691,7 @@ export function applyProposalResponse(
       scribe(state, {
         kind: 'diplomacy',
         about: from,
-        text: `${lordName(state, from)} and ${lordName(state, to)} sealed a pact of non-aggression. Wax, ribbon, witnesses — the full theater of trust.`,
+        text: `${lordName(state, from)} and ${lordName(state, to)} sealed a pact of non-aggression. Wax, ribbon, witnesses: the full theater of trust.`,
       });
       effects.push({ e: 'diplo', kind: 'pact', from, to });
       break;
@@ -718,7 +718,7 @@ export function applyProposalResponse(
         break;
       }
       // The war may have ended, or the responder joined it another way,
-      // or new oaths now bind them to the target — never force oathbreaking.
+      // or new oaths now bind them to the target; never force oathbreaking.
       if (getStance(state, from, against) !== 'war') break;
       if (getStance(state, to, against) === 'war') break;
       const bondNow = getStance(state, to, against);
@@ -733,7 +733,7 @@ export function applyProposalResponse(
       scribe(state, {
         kind: 'diplomacy',
         about: to,
-        text: `${lordName(state, to)} answered ${lordName(state, from)}'s call${gold > 0 ? ` (and ${gold} gold for the war-chest)` : ''} and marched against ${lordName(state, against)}. Wars, like dinners, improve with company — for the hosts.`,
+        text: `${lordName(state, to)} answered ${lordName(state, from)}'s call${gold > 0 ? ` (and ${gold} gold for the war-chest)` : ''} and marched against ${lordName(state, against)}. Wars, like dinners, improve with company. For the hosts.`,
       });
       enactWarDeclaration(state, rng, to, against, effects);
       effects.push({ e: 'diplo', kind: 'joinWar', from, to });

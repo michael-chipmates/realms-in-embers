@@ -1,6 +1,6 @@
 /**
  * Procedural audio: a candlelit drone with slow harp arpeggios, and a small
- * SFX vocabulary — all synthesized in WebAudio, no assets. The full mixer
+ * SFX vocabulary: all synthesized in WebAudio, no assets. The full mixer
  * (master/music/sfx) hangs off three gain nodes.
  *
  * Everything is defensive: audio must never break the game, and nothing
@@ -8,7 +8,7 @@
  */
 
 /**
- * Bundled score: Scott Buckley — 'Penumbra' & 'Song Of The Forge',
+ * Bundled score: Scott Buckley, 'Penumbra' & 'Song Of The Forge',
  * CC-BY 4.0 (www.scottbuckley.com.au). Credits shown in Settings & README.
  * Delivered as ~128kbps-class AAC (.m4a) to keep the download light.
  * Drop your own audio files in public/music/ + playlist.json to override.
@@ -47,7 +47,7 @@ class AudioEngine {
   }
 
   /** Narration: generated speech only, no synth stand-in. Waits for the
-   * manifest and the decode, then speaks — the ceremony can breathe first. */
+   * manifest and the decode, then speaks, so the ceremony can breathe first. */
   voice(cue: string): void {
     if (!this.ensure()) return;
     if (this.sfxManifest === null) this.loadSfxManifest();
@@ -154,8 +154,8 @@ class AudioEngine {
   /** Attribution lines for the Settings credits block. */
   credits(): string[] {
     return [
-      "Music: 'Penumbra' by Scott Buckley — released under CC-BY 4.0. www.scottbuckley.com.au",
-      "Music: 'Song Of The Forge' by Scott Buckley — released under CC-BY 4.0. www.scottbuckley.com.au",
+      "Music: 'Penumbra' by Scott Buckley, released under CC-BY 4.0. www.scottbuckley.com.au",
+      "Music: 'Song Of The Forge' by Scott Buckley, released under CC-BY 4.0. www.scottbuckley.com.au",
     ];
   }
 
@@ -195,7 +195,7 @@ class AudioEngine {
           if (Array.isArray(list) && list.length > 0) this.playlist = list;
         }
       } catch {
-        // no override — bundled score
+        // no override: bundled score
       }
       const el = new Audio();
       el.crossOrigin = 'anonymous';
@@ -299,7 +299,7 @@ class AudioEngine {
       window.clearTimeout(this.musicTimer);
       this.musicTimer = null;
     }
-    // the hearth drone never stops on its own — put it out with the rest
+    // the hearth drone never stops on its own: put it out with the rest
     for (const osc of this.droneOscs) {
       try { osc.stop(); } catch { /* already stopped */ }
       osc.disconnect();

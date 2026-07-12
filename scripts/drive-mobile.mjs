@@ -103,30 +103,25 @@ if (target) {
   if (await close.isVisible().catch(() => false)) await close.click();
 }
 
-// the mode bar: four surfaces one thumb away, and the sheet sits on its
-// shoulder instead of underneath it
-const modeBar = page.locator('.mode-bar');
-if (!(await modeBar.isVisible())) { console.error('mode bar missing on a phone'); process.exit(1); }
-const overlap = await page.evaluate(() => {
-  const bar = document.querySelector('.mode-bar').getBoundingClientRect();
-  const sheet = document.querySelector('.side-panel').getBoundingClientRect();
-  return sheet.bottom > bar.top + 2;
-});
-if (overlap) { console.error('the sheet sits under the mode bar'); process.exit(1); }
-await page.getByRole('button', { name: 'Realm', exact: true }).click();
+// ONE bar, ONE row (Michel, 2026-07-12): no bottom chrome, the topbar must
+// not wrap, and the drawers button reaches every overlay
+if (await page.locator('.mode-bar').count() > 0) { console.error('the bottom mode bar is back'); process.exit(1); }
+const barH = await page.evaluate(() => document.querySelector('.topbar').getBoundingClientRect().height);
+if (barH > 64) { console.error(`topbar wraps on a phone (${Math.round(barH)}px tall)`); process.exit(1); }
+const drawersBtn = page.locator('.topbar-drawers');
+if (!(await drawersBtn.isVisible())) { console.error('drawers button missing on a phone'); process.exit(1); }
+await drawersBtn.click();
+await page.waitForTimeout(400);
+const drawerRows = await page.locator('.drawer-row').count();
+if (drawerRows < 9) { console.error(`drawers sheet lists ${drawerRows} rows, wanted 10ish`); process.exit(1); }
+await page.screenshot({ path: `${outdir}/m5b-drawers.png` });
+await page.getByRole('button', { name: /Ledger & victory/ }).click();
 await page.waitForTimeout(500);
 if (!(await page.getByText('The Realm Ledger').isVisible().catch(() => false))) {
-  console.error('mode bar Realm did not open the Ledger'); process.exit(1);
+  console.error('drawers row did not open the Ledger'); process.exit(1);
 }
 await page.keyboard.press('Escape');
-await page.getByRole('button', { name: 'Chronicle', exact: true }).click();
-await page.waitForTimeout(400);
-if (!(await page.locator('.chronicle-feed').isVisible().catch(() => false))) {
-  console.error('mode bar Chronicle did not open the feed'); process.exit(1);
-}
-await page.getByRole('button', { name: 'Map', exact: true }).click();
 await page.waitForTimeout(300);
-await page.screenshot({ path: `${outdir}/m5b-modebar.png` });
 
 // clear the selection sheet
 await page.evaluate(() => window.__game.select(null, null));

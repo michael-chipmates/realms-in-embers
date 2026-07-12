@@ -1,11 +1,11 @@
 /**
  * The online war lobby: one link, friends click it, lords get picked,
- * the host seals the muster. No accounts — a display name and a seat.
+ * the host seals the muster. No accounts: a display name and a seat.
  * Everything past this screen travels encrypted; the relay reads nothing.
  *
  * The seat roster is PINNED inside the encrypted `start` entry, so every
  * client (and every rejoiner, forever) derives the same table from the
- * same bytes — late hellos cannot fork it.
+ * same bytes: late hellos cannot fork it.
  */
 import { LORD_BY_ID } from '../../engine/content/lords';
 import { defaultSettings } from '../../engine/state';
@@ -28,7 +28,7 @@ export interface OnlineSession {
   mySeat: number;
   myCid: string;
   clock: ClockConfig;
-  /** cid per human seat, in seat order — pinned by the start entry. */
+  /** cid per human seat, in seat order, pinned by the start entry. */
   seatCids: (string | null)[];
   /** Next relay seq the game screen will consume. */
   cursor: number;
@@ -55,7 +55,7 @@ function tableFrom(entries: NetEntry[]): LobbyPeer[] {
   for (const e of entries) {
     const p = e.payload;
     if (p.kind === 'hello') {
-      // a hello without `rules` is a pre-v2 client — mark it, don't guess
+      // a hello without `rules` is a pre-v2 client: mark it, don't guess
       peers.set(p.cid, { cid: p.cid, name: p.name, seat: p.seat, lordId: p.lordId ?? null, lastSeq: e.seq, rules: p.rules ?? null });
     }
   }
@@ -103,7 +103,7 @@ export async function openOnlineLobby(app: App, invite?: { roomId: string; key: 
       h('p', { class: 'title-over muted italic' }, 'A war among friends'),
       h('h1', { class: 'title-display', style: { fontSize: 'clamp(1.5rem, 4vw, 2.4rem)' } }, 'The Muster Table'),
       h('p', { class: 'small muted', style: { maxWidth: '52ch', margin: '0.4rem auto' } },
-        'One link seats everyone. The relay carries only ciphertext — the key never leaves this address bar. No accounts, no tracking, ever.'),
+        'One link seats everyone. The relay carries only ciphertext. The key never leaves this address bar. No accounts, no tracking, ever.'),
       h('div', { class: 'lobby-invite' },
         h('input', { class: 'input', type: 'text', readonly: 'readonly', value: link, 'aria-label': 'Invite link', onclick: (e: Event) => (e.target as HTMLInputElement).select() }),
         h('button', {
@@ -146,7 +146,7 @@ export async function openOnlineLobby(app: App, invite?: { roomId: string; key: 
 
   // ---- the Wayhouse: the room where strangers find each other -----------
   // (docs/design/open-tables.md). A second NetClient on the well-known room
-  // with the PUBLISHED key — posting a table there is posting it to the
+  // with the PUBLISHED key: posting a table there is posting it to the
   // public, and the UI says so in plain words before the host agrees.
   const wayhouse = new NetClient(WAYHOUSE_ROOM, WAYHOUSE_KEY);
   let posted = false;
@@ -183,17 +183,17 @@ export async function openOnlineLobby(app: App, invite?: { roomId: string; key: 
     if (started) return;
     const tables = openTables(wayhouse.list(), Date.now(), roomId);
     mount(wayEl,
-      h('h3', { class: 'settings-head' }, 'The Wayhouse — open tables'),
+      h('h3', { class: 'settings-head' }, 'The Wayhouse · open tables'),
       ...(tables.length === 0
         ? [h('p', { class: 'small muted italic' },
-            'No tables at this hour. Post yours below and keep your lamp lit — or the AI rivals are always willing. Embers burn brightest on Sunday evenings.')]
+            'No tables at this hour. Post yours below and keep your lamp lit, or the AI rivals are always willing. Embers burn brightest on Sunday evenings.')]
         : tables.map((ad) => {
             const mins = Math.max(0, Math.round((Date.now() - ad.at) / 60000));
             const foreign = ad.rules !== undefined && ad.rules !== RULES_VERSION;
             return h('div', { class: 'lobby-row' },
               h('b', {}, ad.name),
               h('span', { class: 'small muted' },
-                `${ad.size} realm · ${ad.taken} of ${ad.seats} seated · ${ad.clockLabel.split(' — ')[0]}${ad.fog ? ' · fog' : ''} · ${mins < 1 ? 'just posted' : `${mins} min ago`}`),
+                `${ad.size} realm · ${ad.taken} of ${ad.seats} seated · ${ad.clockLabel.split(/ [·\u2014] /)[0]}${ad.fog ? ' · fog' : ''} · ${mins < 1 ? 'just posted' : `${mins} min ago`}`),
               foreign
                 ? h('span', { class: 'small muted italic' }, 'a different edition')
                 : h('button', { class: 'btn compact', onclick: () => sitDownElsewhere(ad.invite) }, 'Sit down'),
@@ -235,13 +235,13 @@ export async function openOnlineLobby(app: App, invite?: { roomId: string; key: 
       .slice(0, MAX_SEATS);
     if (seated.length < 1) return;
     if (seated.length + aiFill < 2) {
-      status.textContent = 'A war needs a second claimant — invite someone, or add an AI rival.';
+      status.textContent = 'A war needs a second claimant. Invite someone, or add an AI rival.';
       return;
     }
-    // a mixed-edition table would desync on the first act — refuse politely
+    // a mixed-edition table would desync on the first act: refuse politely
     const mismatched = seated.filter((p) => p.rules !== RULES_VERSION);
     if (mismatched.length > 0) {
-      status.textContent = `${mismatched.map((p) => p.name).join(', ')} ${mismatched.length === 1 ? 'plays' : 'play'} a different edition of the rules — everyone must reload to the same version before the war can begin.`;
+      status.textContent = `${mismatched.map((p) => p.name).join(', ')} ${mismatched.length === 1 ? 'plays' : 'play'} a different edition of the rules. Everyone must reload to the same version before the war can begin.`;
       return;
     }
     const seatCids = seated.map((p) => p.cid);
@@ -251,7 +251,7 @@ export async function openOnlineLobby(app: App, invite?: { roomId: string; key: 
     for (let i = 0; i < totalSeats; i++) {
       if (i < seatCids.length) {
         // banner picks ride the hellos; a race the live lobby didn't catch
-        // resolves here the same way — the earlier seat keeps the lord
+        // resolves here the same way: the earlier seat keeps the lord
         let lordId = seated[i].lordId ?? 'random';
         if (lordId !== 'random' && claimed.has(lordId)) lordId = 'random';
         claimed.add(lordId);
@@ -318,7 +318,7 @@ export async function openOnlineLobby(app: App, invite?: { roomId: string; key: 
     // contested banner and we picked later: the earlier claim keeps it
     if (lordLoser(peers, cid)) {
       const mine = peers.find((p) => p.cid === cid)!;
-      status.textContent = `${LORD_BY_ID[mine.lordId!]?.name ?? 'That lord'} was claimed first — choose another banner.`;
+      status.textContent = `${LORD_BY_ID[mine.lordId!]?.name ?? 'That lord'} was claimed first. Choose another banner.`;
       sendHello(mine.seat, null);
       return; // re-render on the echo
     }
@@ -330,7 +330,7 @@ export async function openOnlineLobby(app: App, invite?: { roomId: string; key: 
         p.lordId !== null ? sigilShield(p.lordId, 22) : h('span', { class: 'small muted', style: { width: '22px', textAlign: 'center' } }, '?'),
         h('b', {}, p.name),
         h('span', { class: 'small muted' },
-          `seat ${(p.seat ?? 0) + 1}${p.cid === cid ? ' — you' : ''} · ${p.lordId !== null ? LORD_BY_ID[p.lordId]?.name ?? 'a lord' : 'fate decides'}`),
+          `seat ${(p.seat ?? 0) + 1}${p.cid === cid ? ' (you)' : ''} · ${p.lordId !== null ? LORD_BY_ID[p.lordId]?.name ?? 'a lord' : 'fate decides'}`),
       )),
       ...(unseated.length > 0
         ? [h('p', { class: 'small muted' }, `Watching: ${unseated.map((p) => p.name).join(', ')}`)]
@@ -350,7 +350,7 @@ export async function openOnlineLobby(app: App, invite?: { roomId: string; key: 
               while (taken.has(seat)) seat++;
               if (seat < MAX_SEATS) sendHello(seat);
             },
-          }, tableFull ? 'The table is full — watch, or wait' : 'Take a seat')
+          }, tableFull ? 'The table is full: watch, or wait' : 'Take a seat')
         : h('div', { style: { display: 'flex', gap: '0.4rem', justifyContent: 'center', flexWrap: 'wrap', marginTop: '0.4rem' } },
             h('button', {
               class: 'btn compact',
@@ -387,7 +387,7 @@ export async function openOnlineLobby(app: App, invite?: { roomId: string; key: 
                   if (posted) {
                     postAd();
                     if (heartbeat === null) heartbeat = window.setInterval(() => postAd(), AD_HEARTBEAT_MS);
-                    status.textContent = 'Posted. Anyone may sit down — a posted table is public. Untick to withdraw it.';
+                    status.textContent = 'Posted. Anyone may sit down. A posted table is public. Untick to withdraw it.';
                   } else {
                     postAd(true);
                     if (heartbeat !== null) window.clearInterval(heartbeat);
@@ -398,7 +398,7 @@ export async function openOnlineLobby(app: App, invite?: { roomId: string; key: 
               }),
             ),
             posted && seatedNow() < 2
-              ? h('p', { class: 'small muted italic' }, 'While the lamp burns: you can always call in AI rivals and begin — a posted table never strands its host.')
+              ? h('p', { class: 'small muted italic' }, 'While the lamp burns: you can always call in AI rivals and begin. A posted table never strands its host.')
               : null,
             h('button', { class: 'btn btn-seal', style: { marginTop: '0.6rem' }, onclick: tryStart },
               'Begin the war'),
@@ -411,7 +411,7 @@ export async function openOnlineLobby(app: App, invite?: { roomId: string; key: 
   client.onStatus = (s) => {
     status.textContent = s === 'open'
       ? `Connected · relay ${relayUrl().replace(/^wss?:\/\//, '')}`
-      : s === 'connecting' ? 'Reaching the relay…' : 'Relay lost — retrying…';
+      : s === 'connecting' ? 'Reaching the relay…' : 'Relay lost, retrying…';
   };
   client.onError = (message) => {
     status.textContent = `The relay declined: ${message}`;

@@ -22,7 +22,7 @@ export function maybeShowOnboarding(screen: GameScreen): void {
   if (state.turn !== 1) return;
   if (state.log.some((l) => l.action.t !== 'endTurn')) return;
   if (state.settings.veteranChronicle) return;
-  // online: Osperan addresses YOU, not seat 0 — spectators and mid-war
+  // online: Osperan addresses YOU, not seat 0: spectators and mid-war
   // rejoiners (their relay cursor is already past the opening) get no speech
   if (screen.online) {
     if (screen.online.mySeat < 0) return;
@@ -38,22 +38,22 @@ export function maybeShowOnboarding(screen: GameScreen): void {
     {
       icon: 'quill',
       title: 'A cold hand opens the book',
-      body: `So. ${lord.name}, ${lord.epithet}, sworn to ${creed.name}. I am Osperan — I chronicled this realm for the old kings, and dying in the Sundering has not excused me from finishing the work. Your seat is ${seat.name}; the banner on the map marks it. Everything you rule glows with your color. Everything else is either free, or somebody's, or worse.`,
+      body: `So. ${lord.name}, ${lord.epithet}, sworn to ${creed.name}. I am Osperan. I chronicled this realm for the old kings, and dying in the Sundering has not excused me from finishing the work. Your seat is ${seat.name}; the banner on the map marks it. Everything you rule glows with your color. Everything else is either free, or somebody's, or worse.`,
     },
     {
       icon: 'gold',
       title: 'The realm runs on three things',
-      body: `Gold and Emberlight sit in the bar above; order lives on every province you select — all of it inspectable. Rest your eyes (or your finger) on ANY number in my margins and I will itemize exactly where it comes from and where it goes. If a number in this realm cannot explain itself, I have failed, and I do not intend to fail twice in one age.`,
+      body: `Gold and Emberlight sit in the bar above; order lives on every province you select, all of it inspectable. Rest your eyes (or your finger) on ANY number in my margins and I will itemize exactly where it comes from and where it goes. If a number in this realm cannot explain itself, I have failed, and I do not intend to fail twice in one age.`,
     },
     {
       icon: 'swords',
       title: 'Marching and the arithmetic of blood',
-      body: `Choose a province, then its army, and the map will glow where it can march. Marching into a foe shows you the full odds first — every advantage, both sides, in plain words — and only then asks for blood. Free provinces have militias and opinions; your rivals have armies and memories. They remember gifts. They remember betrayals considerably longer.`,
+      body: `Choose a province, then its army, and the map will glow where it can march. Marching into a foe shows you the full odds first (every advantage, both sides, in plain words) and only then asks for blood. Free provinces have militias and opinions; your rivals have armies and memories. They remember gifts. They remember betrayals considerably longer.`,
     },
     {
       icon: 'crownSmall',
       title: 'How this ends',
-      body: `Ways to the throne: conquest, dominion, a golden age of coin and quiet, or the Grand Saga — five chapters that end with a hero of yours relighting the Ember Throne itself (the Quests screen keeps the count). The Ledger screen tracks every race, and when any rule wants studying, the Codex (the tome in the bar, or the letter c) holds my complete handbook of this realm. And the Chronicle ALWAYS ends — season ${state.victory.maxTurns} at the latest, when I judge the realm as it stands. End your season with the wax-red button. I shall be watching. It is, quite literally, all I can do.`,
+      body: `Ways to the throne: conquest, dominion, a golden age of coin and quiet, or the Grand Saga: five chapters that end with a hero of yours relighting the Ember Throne itself (the Quests screen keeps the count). The Ledger screen tracks every race, and when any rule wants studying, the Codex (the tome in the bar, or the letter c) holds my complete handbook of this realm. And the Chronicle ALWAYS ends: season ${state.victory.maxTurns} at the latest, when I judge the realm as it stands. End your season with the wax-red button. I shall be watching. It is, quite literally, all I can do.`,
     },
   ];
 

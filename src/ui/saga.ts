@@ -1,5 +1,5 @@
 /**
- * The saga export: Osperan's chronicle, bound and finished — a readable
+ * The saga export: Osperan's chronicle, bound and finished: a readable
  * account of the whole campaign, built from the deterministic record.
  */
 import { LORD_BY_ID } from '../engine/content/lords';
@@ -23,16 +23,16 @@ export function buildSaga(state: GameState): string {
   lines.push('THE CLAIMANTS');
   for (const player of state.players) {
     const lord = LORD_BY_ID[player.lordId];
-    lines.push(`  ${lord.name}, ${lord.epithet} — of the ${lord.creed === 'flame' ? 'Flame' : lord.creed === 'ash' ? 'Ash' : 'Umbra'}${player.kind === 'human' ? ' (a mortal hand at the table)' : ''}`);
+    lines.push(`  ${lord.name}, ${lord.epithet} · of the ${lord.creed === 'flame' ? 'Flame' : lord.creed === 'ash' ? 'Ash' : 'Umbra'}${player.kind === 'human' ? ' (a mortal hand at the table)' : ''}`);
   }
   lines.push('');
 
   // the chronicle proper, in acts
   const actLength = Math.max(8, Math.ceil(state.turn / 3));
   const acts: { title: string; entries: typeof state.chronicle }[] = [
-    { title: 'ACT I — THE KINDLING', entries: [] },
-    { title: 'ACT II — THE BLAZE', entries: [] },
-    { title: 'ACT III — THE RECKONING', entries: [] },
+    { title: 'ACT I: THE KINDLING', entries: [] },
+    { title: 'ACT II: THE BLAZE', entries: [] },
+    { title: 'ACT III: THE RECKONING', entries: [] },
   ];
   for (const entry of state.chronicle) {
     if (entry.privateTo !== undefined) continue;
@@ -50,7 +50,7 @@ export function buildSaga(state: GameState): string {
       const keep = entry.ceremony || entry.kind === 'war' || entry.kind === 'hero' || entry.kind === 'diplomacy' || entry.kind === 'realm' || entry.kind === 'event' || entry.kind === 'magic';
       if (!keep) continue;
       if (entry.turn !== lastTurn) {
-        lines.push(`— Season ${entry.turn} —`);
+        lines.push(`· Season ${entry.turn} ·`);
         lastTurn = entry.turn;
       }
       lines.push(wrap(entry.text, width));
@@ -76,7 +76,7 @@ export function buildSaga(state: GameState): string {
   }
   lines.push('');
 
-  // the roll of the fallen — every hero who did not live to see the peace
+  // the roll of the fallen: every hero who did not live to see the peace
   const fallen = Object.values(state.heroes)
     .filter((hh) => hh.status === 'dead')
     .sort((a, b) => (a.diedTurn ?? 0) - (b.diedTurn ?? 0));
@@ -86,12 +86,12 @@ export function buildSaga(state: GameState): string {
     lines.push('');
     for (const hh of fallen) {
       const owner = LORD_BY_ID[state.players[hh.owner].lordId];
-      lines.push(wrap(`  ${hh.name}, ${hh.epithet} — ${owner.name}'s ${hh.cls}, level ${hh.level}; fell — ${hh.deathCause ?? 'in the war'}, season ${hh.diedTurn ?? '?'}.`, width));
+      lines.push(wrap(`  ${hh.name}, ${hh.epithet} · ${owner.name}'s ${hh.cls}, level ${hh.level}; fell: ${hh.deathCause ?? 'in the war'}, season ${hh.diedTurn ?? '?'}.`, width));
     }
     lines.push('');
   }
 
-  // the vaults of the age — where the old things ended up, and who held them
+  // the vaults of the age: where the old things ended up, and who held them
   const artifacts = Object.values(state.artifacts).sort((a, b) => a.foundTurn - b.foundTurn);
   if (artifacts.length > 0) {
     lines.push('WHERE THE OLD THINGS CAME TO REST');
@@ -102,7 +102,7 @@ export function buildSaga(state: GameState): string {
       const provenance = inst.history.length > 1
         ? `; it passed through the hands of ${inst.history.join(', then of ')}`
         : '';
-      lines.push(wrap(`  ${def.name} — surfaced in season ${inst.foundTurn}${provenance}${holder ? `; it rests with ${holder}` : ''}.`, width));
+      lines.push(wrap(`  ${def.name} · surfaced in season ${inst.foundTurn}${provenance}${holder ? `; it rests with ${holder}` : ''}.`, width));
     }
     lines.push('');
   }
@@ -125,7 +125,7 @@ export function buildSaga(state: GameState): string {
     lines.push(wrap(`  ${lord.name}: "${spoke}"`, width));
   }
   lines.push('');
-  lines.push(wrap('Here the ink ends. Whoever reads this: the fire is yours now. Mind it. — O.', width));
+  lines.push(wrap('Here the ink ends. Whoever reads this: the fire is yours now. Mind it. (O.)', width));
   return lines.join('\n');
 }
 

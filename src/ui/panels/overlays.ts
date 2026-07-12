@@ -68,7 +68,7 @@ function renderCourt(screen: GameScreen, body: HTMLElement, modal: ModalHandle, 
           onclick: () => {
             if (screen.dispatch({ t: 'hireHero', offerIdx: idx })) refresh();
           },
-        }, `Take their oath — ${offer.cost} gold`),
+        }, `Take their oath · ${offer.cost} gold`),
       ),
     );
   });
@@ -91,7 +91,7 @@ function renderCourt(screen: GameScreen, body: HTMLElement, modal: ModalHandle, 
     h('div', { class: 'overlay-columns' },
       h('div', { class: 'overlay-col' },
         h('h3', { class: 'settings-head' }, `Your heroes (${heroCards.length} of 5)`),
-        heroCards.length === 0 ? h('p', { class: 'muted italic small' }, 'No names in your margin yet. Heroes fill pages — or graves.') : null,
+        heroCards.length === 0 ? h('p', { class: 'muted italic small' }, 'No names in your margin yet. Heroes fill pages, or graves.') : null,
         ...heroCards,
       ),
       h('div', { class: 'overlay-col' },
@@ -114,16 +114,16 @@ function renderHeroCard(screen: GameScreen, hero: Hero, canAct: boolean, refresh
   const player = state.players[hero.owner];
 
   const statusLine = hero.status === 'questing'
-    ? `Questing — ${QUESTS[hero.questId ?? '']?.name ?? 'away'}`
+    ? `Questing: ${QUESTS[hero.questId ?? '']?.name ?? 'away'}`
     : hero.status === 'wounded'
-      ? `Wounded — ${hero.woundedTurns} ${hero.woundedTurns === 1 ? 'season' : 'seasons'} to mend`
+      ? `Wounded: ${hero.woundedTurns} ${hero.woundedTurns === 1 ? 'season' : 'seasons'} to mend`
       : hero.armyId !== null
         ? 'With the army'
         : 'At court';
 
   const skillChoice = hero.levelChoices.length > 0 && canAct
     ? h('div', { class: 'skill-choice' },
-        h('div', { class: 'small-caps', style: { color: 'var(--gold-bright)' } }, 'A crossroads — choose one art:'),
+        h('div', { class: 'small-caps', style: { color: 'var(--gold-bright)' } }, 'A crossroads. Choose one art:'),
         ...hero.levelChoices.map((skillId) => {
           const skill = SKILLS[skillId];
           if (!skill) return null;
@@ -159,11 +159,11 @@ function renderHeroCard(screen: GameScreen, hero: Hero, canAct: boolean, refresh
             refresh();
           },
         },
-          h('option', { value: 'none', selected: !def }, `— ${slot} —`),
+          h('option', { value: 'none', selected: !def }, `· ${slot} ·`),
           def && artId !== null ? h('option', { value: String(artId), selected: true }, def.name) : null,
           ...options.map((o) => h('option', { value: String(o.id) }, o.def.name)),
         )
-      : h('span', { class: 'small muted' }, def ? def.name : `— ${slot} —`);
+      : h('span', { class: 'small muted' }, def ? def.name : `· ${slot} ·`);
     return h('div', { class: 'slot-line' }, h('span', { class: 'small-caps small' }, slot), select);
   });
 
@@ -261,7 +261,7 @@ function renderMagic(screen: GameScreen, body: HTMLElement): void {
                   onclick: () => {
                     beginTargetedCast(screen, id);
                   },
-                }, def.target === 'none' ? 'Cast' : 'Cast — choose a province'),
+                }, def.target === 'none' ? 'Cast' : 'Cast: choose a province'),
           )
         : null,
     );
@@ -300,7 +300,7 @@ function renderMagic(screen: GameScreen, body: HTMLElement): void {
     : h('div', { class: 'panel spell-card' },
         h('div', { class: 'panel-title' }, 'Begin a rite'),
         player.riteOffers.length === 0
-          ? h('p', { class: 'small muted italic', style: { padding: '0.8rem' } }, 'No undiscovered workings remain to begin. New threads surface in time — or on quests.')
+          ? h('p', { class: 'small muted italic', style: { padding: '0.8rem' } }, 'No undiscovered workings remain to begin. New threads surface in time, or on quests.')
           : h('div', { style: { padding: '0.6rem 0.8rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' } },
               ...player.riteOffers.map((id) => {
                 const def = SPELLS[id];
@@ -324,7 +324,7 @@ function renderMagic(screen: GameScreen, body: HTMLElement): void {
 
   mount(body,
     h('p', { class: 'small muted', style: { margin: '0 0 0.6rem' } },
-      `Emberlight in hand: ${fmt(player.emberlight)}. Battle spells weave themselves when your armies field casters — the odds preview always names them and their price.`),
+      `Emberlight in hand: ${fmt(player.emberlight)}. Battle spells weave themselves when your armies field casters. The odds preview always names them and their price.`),
     h('div', { class: 'overlay-columns' },
       h('div', { class: 'overlay-col' },
         h('h3', { class: 'settings-head' }, 'Workings known'),
@@ -426,7 +426,7 @@ function renderQuests(screen: GameScreen, body: HTMLElement): void {
     ),
     saga
       ? h('div', {},
-          h('p', { class: 'small', style: { padding: '0 0.8rem' } }, h('b', {}, saga.def.name), ` — ${saga.def.desc}`),
+          h('p', { class: 'small', style: { padding: '0 0.8rem' } }, h('b', {}, saga.def.name), `: ${saga.def.desc}`),
           h('p', { class: 'small muted', style: { padding: '0 0.8rem' } },
             `${saga.def.stat} vs ${saga.def.dc} · ${saga.def.duration} seasons · hero level ${saga.def.minLevel}+ · at ${saga.venues.map((v) => state.provinces[v].name).join(' or ')}`),
           h('div', { style: { padding: '0.4rem 0.8rem 0.8rem' } }, heroPicker(saga.def.id, saga.venues[0])),
@@ -442,7 +442,7 @@ function renderQuests(screen: GameScreen, body: HTMLElement): void {
     const hero = state.heroes[q.heroId];
     return h('p', { class: 'small', style: { padding: '0.2rem 0.4rem', display: 'flex', gap: '0.35rem', alignItems: 'center' } },
       h('span', { html: iconSvg('hourglass', 12) }),
-      `${hero?.name ?? 'A hero'} — ${def?.name ?? q.defId}, returns season ${q.endTurn}.`);
+      `${hero?.name ?? 'A hero'}: ${def?.name ?? q.defId}, returns season ${q.endTurn}.`);
   });
 
   mount(body,
@@ -508,7 +508,7 @@ function renderDiplomacy(screen: GameScreen, body: HTMLElement, focusPlayer?: Pl
   const rivals = state.players.filter((o) => o.id !== pid).map((other) => {
     const lord = LORD_BY_ID[other.lordId];
     const stance = getStance(state, pid, other.id);
-    const attitude = attitudeOf(state, other.id, pid); // how THEY see US — the useful direction
+    const attitude = attitudeOf(state, other.id, pid); // how THEY see US (the useful direction)
     const myView = attitudeOf(state, pid, other.id);
     void myView;
     const attEl = h('span', {
@@ -531,7 +531,7 @@ function renderDiplomacy(screen: GameScreen, body: HTMLElement, focusPlayer?: Pl
           },
         }, `${myLord.signature.name}`);
         tip(sigBtn, () => h('div', { class: 'tip-plain' },
-          h('b', {}, `${myLord.signature.name} — your signature, aimed here`),
+          h('b', {}, `${myLord.signature.name} · your signature, aimed here`),
           h('p', { class: 'small' }, myLord.signature.desc),
         ));
         actions.push(sigBtn);
@@ -546,7 +546,7 @@ function renderDiplomacy(screen: GameScreen, body: HTMLElement, focusPlayer?: Pl
           onclick: () => {
             if (screen.dispatch({ t: 'diplomacy', kind: 'declareWar', target: other.id })) refresh();
           },
-        }, stance === 'pact' || stance === 'alliance' ? 'Break faith — war' : 'Declare war'));
+        }, stance === 'pact' || stance === 'alliance' ? 'Break faith: war' : 'Declare war'));
         if (stance === 'peace') {
           actions.push(h('button', {
             class: 'btn compact',
@@ -584,7 +584,7 @@ function renderDiplomacy(screen: GameScreen, body: HTMLElement, focusPlayer?: Pl
           const callBtn = h('button', { class: 'btn compact', onclick: () => openGoldPrompt(screen, `Gold for ${lord.name}'s war-chest? (0 is allowed)`, (gold) => {
             if (screen.dispatch({ t: 'diplomacy', kind: 'joinWar', target: other.id, against: enemy.id, gold })) refresh();
           }) }, `Call to war vs ${enemyLord.name.split(' ')[0]}`);
-          tip(callBtn, `Ask ${lord.name} to enter your war against ${enemyLord.name}. Warm relations, shared enemies, and gold all help. A refusal is remembered — briefly.`);
+          tip(callBtn, `Ask ${lord.name} to enter your war against ${enemyLord.name}. Warm relations, shared enemies, and gold all help. A refusal is remembered, briefly.`);
           actions.push(callBtn);
         }
       }
@@ -618,7 +618,7 @@ function renderDiplomacy(screen: GameScreen, body: HTMLElement, focusPlayer?: Pl
     );
   });
 
-  // the comparison table: every living rival in one glance, one row each —
+  // the comparison table: every living rival in one glance, one row each:
   // only what the Ledger and the cards already tell (fog reveals nothing new
   // here), with the full card below as the dossier
   const living = state.players.filter((o) => o.id !== pid && o.alive);
@@ -631,7 +631,7 @@ function renderDiplomacy(screen: GameScreen, body: HTMLElement, focusPlayer?: Pl
       class: 'rival-row',
       tabindex: '0',
       role: 'button',
-      'aria-label': `${lord.name} — the full dossier below`,
+      'aria-label': `${lord.name}, the full dossier below`,
       onclick: () => renderDiplomacy(screen, body, other.id),
       onkeydown: (e: KeyboardEvent) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); renderDiplomacy(screen, body, other.id); } },
     },
@@ -662,7 +662,7 @@ function renderDiplomacy(screen: GameScreen, body: HTMLElement, focusPlayer?: Pl
     compareTable,
     h('h3', { class: 'settings-head' }, 'The claimants'),
     ...rivals,
-    h('p', { class: 'small muted italic' }, `Your creed: ${CREEDS[LORD_BY_ID[player.lordId].creed].name} — ${CREEDS[LORD_BY_ID[player.lordId].creed].tagline}`),
+    h('p', { class: 'small muted italic' }, `Your creed: ${CREEDS[LORD_BY_ID[player.lordId].creed].name}. ${CREEDS[LORD_BY_ID[player.lordId].creed].tagline}`),
   );
   if (focusPlayer !== undefined) {
     body.querySelector('.army-selected')?.scrollIntoView({ block: 'start' });
@@ -729,12 +729,12 @@ function renderLedger(screen: GameScreen, body: HTMLElement): void {
     const goldStreak = state.victory.goldenStreak[p.id] ?? 0;
     const score = chronicleScore(state, p.id);
     const scoreEl = h('td', {}, String(score.total));
-    tip(scoreEl, () => breakdown(`${lord.name} — chronicle standing`, score.lines, `${score.total} points if the Chronicle closed today`));
+    tip(scoreEl, () => breakdown(`${lord.name} · chronicle standing`, score.lines, `${score.total} points if the Chronicle closed today`));
     return h('tr', { class: p.id === pid ? 'ledger-you' : '' },
       h('td', {}, h('span', { class: 'lord-swatch', style: { background: lord.color, marginRight: '0.4em' } }), lord.name),
       h('td', {}, `${provincesOf(state, p.id).length} (${Math.round(share * 100)}%)`),
-      h('td', {}, domStreak > 0 ? `${domStreak}/${DOMINION_ROUNDS} ⚠` : '—'),
-      h('td', {}, goldStreak > 0 ? `${goldStreak}/${GOLDEN_ROUNDS} ⚠` : '—'),
+      h('td', {}, domStreak > 0 ? `${domStreak}/${DOMINION_ROUNDS} ⚠` : '·'),
+      h('td', {}, goldStreak > 0 ? `${goldStreak}/${GOLDEN_ROUNDS} ⚠` : '·'),
       h('td', {}, `${p.sagaChapter}/5`),
       scoreEl,
     );
@@ -763,7 +763,7 @@ function renderLedger(screen: GameScreen, body: HTMLElement): void {
             h('tbody', {}, ...rows),
           ),
           h('p', { class: 'small muted', style: { marginTop: '0.5rem' } },
-            `Dominion: hold ${Math.round(dominionShareAt(state) * 100)}%${state.turn > WEARINESS_TURN ? ' (the Chronicle wearies — it shrinks each season)' : ''} for ${DOMINION_ROUNDS} seasons. Golden Age: richest treasury over ${GOLDEN_GOLD} with average order ${GOLDEN_ORDER}+, ${GOLDEN_ROUNDS} seasons running. The Chronicle closes at season ${state.victory.maxTurns}.`),
+            `Dominion: hold ${Math.round(dominionShareAt(state) * 100)}%${state.turn > WEARINESS_TURN ? ' (the Chronicle wearies: it shrinks each season)' : ''} for ${DOMINION_ROUNDS} seasons. Golden Age: richest treasury over ${GOLDEN_GOLD} with average order ${GOLDEN_ORDER}+, ${GOLDEN_ROUNDS} seasons running. The Chronicle closes at season ${state.victory.maxTurns}.`),
         ),
       ),
     ),
@@ -780,7 +780,7 @@ export function openMenuOverlay(screen: GameScreen): void {
       onclick: () => {
         const slot = nextFreeSlot();
         if (slot === null) {
-          screen.toast('All five shelf slots hold chronicles — burn one from the title screen first.', 'danger');
+          screen.toast('All five shelf slots hold chronicles. Burn one from the title screen first.', 'danger');
           return;
         }
         saveToSlot(state, slot);
@@ -789,7 +789,7 @@ export function openMenuOverlay(screen: GameScreen): void {
     }, 'Save to a slot'),
     h('button', { class: 'btn', onclick: () => exportSave(state) }, 'Export to a file'),
     h('p', { class: 'small muted', style: { margin: '0 0.2rem' } },
-      'War by letters: export after your turns and send the file to a fellow mortal — they load it and play on. The deterministic chronicle keeps everyone honest.'),
+      'War by letters: export after your turns and send the file to a fellow mortal. They load it and play on. The deterministic chronicle keeps everyone honest.'),
     h('button', {
       class: 'btn',
       onclick: () => {
@@ -826,7 +826,7 @@ export function openMenuOverlay(screen: GameScreen): void {
           },
         }, 'Concede…')
       : null,
-    h('p', { class: 'small muted italic' }, `Seed “${state.seed}” — share it and the realm reforges identically.`),
+    h('p', { class: 'small muted italic' }, `Seed “${state.seed}”. Share it and the realm reforges identically.`),
   );
   const modal = openModal('The Table', content);
 }

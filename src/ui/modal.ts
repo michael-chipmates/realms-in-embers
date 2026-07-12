@@ -54,10 +54,10 @@ export function openModal(
     // stacked modals: only the topmost one listens
     if (openHandles[openHandles.length - 1]?.el !== panel) return;
     if (e.key === 'Escape' && dismissable) {
-      e.stopImmediatePropagation(); // one Escape, one modal — never the whole stack
+      e.stopImmediatePropagation(); // one Escape, one modal, never the whole stack
       close();
     } else if (e.key === 'Tab') {
-      // simple focus trap (disabled controls can't take focus — skip them)
+      // simple focus trap (disabled controls can't take focus, so skip them)
       const focusables = [...panel.querySelectorAll<HTMLElement>(
         'button:not(:disabled), [href], input:not(:disabled), select:not(:disabled), textarea:not(:disabled), [tabindex]:not([tabindex="-1"])',
       )];

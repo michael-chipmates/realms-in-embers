@@ -5,7 +5,7 @@
  * "osperan", "event-harvestGlut"…). If public/art/manifest.json lists a file
  * for that slot, the image is used; otherwise the caller's procedural
  * fallback (sigil heraldry, ink vignettes) renders instead. Ship art by
- * dropping files + manifest — zero code changes. docs/ART.md carries the
+ * dropping files + manifest: zero code changes. docs/ART.md carries the
  * full slot list, sizes, style guide, and generation prompts.
  */
 import { h } from './dom';

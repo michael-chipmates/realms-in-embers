@@ -1,5 +1,5 @@
 /**
- * Hero skills — chosen (1 of 2) at levels 3, 5, 7 and 9.
+ * Hero skills, chosen (1 of 2) at levels 3, 5, 7 and 9.
  * Same fx vocabulary as artifacts, so heroes compose cleanly.
  */
 import type { HeroClass } from '../types';

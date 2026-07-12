@@ -44,7 +44,7 @@ export function serializeGame(state: GameState): string {
 
 /**
  * The save-migration registry: saves from ANY older rules version load and
- * play forward — LOADING is forever, only byte-exact log REPLAY is
+ * play forward; LOADING is forever, only byte-exact log REPLAY is
  * version-bound (the fixture canary). Each entry upgrades the shape one
  * rules version introduced; they run in order against saves older than
  * `sinceRules`. Purely additive versions need no entry, and this list plus
@@ -59,7 +59,7 @@ const SAVE_MIGRATIONS: { sinceRules: number; note: string; apply: (state: GameSt
     },
   },
   // v12 (victory resolution), v13 (digest flags on new entries), v14
-  // (Army.lastMove, optional), v15 (AI + tuning only): additive — no shape
+  // (Army.lastMove, optional), v15 (AI + tuning only): additive; no shape
   // change, nothing to migrate.
 ];
 
@@ -73,7 +73,7 @@ export function deserializeGame(json: string): GameState {
   // version-bound; see RULES_VERSION in state.ts.
   if (!state || typeof state.v !== 'number' || state.v < 1 || state.v > RULES_VERSION
     || !Array.isArray(state.rng) || !Array.isArray(state.provinces)) {
-    throw new Error('The save is damaged or from a newer age — the chronicle cannot be reopened.');
+    throw new Error('The save is damaged or from a newer age. The chronicle cannot be reopened.');
   }
   for (const migration of SAVE_MIGRATIONS) {
     if (state.v < migration.sinceRules) migration.apply(state);

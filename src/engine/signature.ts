@@ -1,6 +1,6 @@
 /**
  * Signature abilities (rules v11): each lord's one active order. The perk is
- * who a lord IS; the signature is what they DO — a cooldown decision, always
+ * who a lord IS; the signature is what they DO: a cooldown decision, always
  * announced to the whole table in the chronicle, never silent.
  *
  * Magnitudes live in SIGNATURE_TUNING so the Codex and the lords' own desc
@@ -14,7 +14,7 @@ import type { Action, Effect, GameState, PlayerId } from './types';
 
 export const SIGNATURE_TUNING = {
   seraphine: { order: 10, goldPerProvince: 3, cooldown: 8 },
-  // v15: cooldown 12→16 — a free knight company was the same standing-army
+  // v15: cooldown 12→16; a free knight company was the same standing-army
   // subsidy as Morrikan's doors (Aldric ran a conclusive 40% at 600 games)
   aldric: { knightCompanies: 1, cooldown: 16 },
   halvard: { defense: 0.25, sallyPct: 12, cooldown: 8 },
@@ -25,7 +25,7 @@ export const SIGNATURE_TUNING = {
   branwen: { incomeCutPct: 20, seasons: 2, cooldown: 10 },
   corvas: { treasuryPct: 6, minGold: 2, cooldown: 10 },
   nyssa: { order: 15, cooldown: 6 },
-  // v15: the doors open dearer and rarer — a permanent, wage-free elite
+  // v15: the doors open dearer and rarer; a permanent, wage-free elite
   // company every 12 seasons made Morrikan a conclusive 41% in the mirror
   // (expected 25%). The living now bolt more than shutters (−8 order), and
   // the dead take longer to gather (cooldown 16).
@@ -64,7 +64,7 @@ export function applySignature(state: GameState, rng: Rng, pid: PlayerId, action
     const p = state.provinces[action.province];
     if (!p || p.owner < 0 || p.owner === pid) return fail('Choose a province a rival rules.');
     const borders = p.neighbors.some((n) => state.provinces[n].owner === pid);
-    if (!borders) return fail('Whispers need ears nearby — the province must border your realm.');
+    if (!borders) return fail('Whispers need ears nearby. The province must border your realm.');
     province = p.id;
     targetPlayer = p.owner;
   }
@@ -81,12 +81,12 @@ export function applySignature(state: GameState, rng: Rng, pid: PlayerId, action
       }
       const tithe = mine.length * T.seraphine.goldPerProvince;
       player.gold += tithe;
-      scribe(state, { kind: 'realm', about: pid, text: `${lordName(state, pid)} called the Great Vigil: one night, every hearth in her realm tended, every district heard — the newly taken most of all, who forgot for an evening that they were taken. Order rose across her banner (+${T.seraphine.order}), and the parishes tithed ${tithe} gold to the war chest unasked.` });
+      scribe(state, { kind: 'realm', about: pid, text: `${lordName(state, pid)} called the Great Vigil: one night, every hearth in her realm tended, every district heard, the newly taken most of all, who forgot for an evening that they were taken. Order rose across her banner (+${T.seraphine.order}), and the parishes tithed ${tithe} gold to the war chest unasked.` });
       break;
     }
     case 'aldric': {
       const seat = state.provinces[player.seatProvince];
-      if (seat.owner !== pid) return fail('The Royal Muster is called from your own seat — retake it first.');
+      if (seat.owner !== pid) return fail('The Royal Muster is called from your own seat. Retake it first.');
       const existing = armiesIn(state, seat.id).find((a) => a.owner === pid && a.units.length <= 10);
       if (existing) existing.units.push(...makeUnits('knights', T.aldric.knightCompanies));
       else newArmy(state, pid, seat.id, makeUnits('knights', T.aldric.knightCompanies));
@@ -103,7 +103,7 @@ export function applySignature(state: GameState, rng: Rng, pid: PlayerId, action
     }
     case 'lyra': {
       player.crusade = { target: targetPlayer!, turnsLeft: T.lyra.seasons };
-      scribe(state, { kind: 'war', about: pid, text: `${lordName(state, pid)} swore the Dawn Oath against ${lordName(state, targetPlayer!)} — at sunrise, loudly, off-key. For ${T.lyra.seasons} seasons her attacks on that banner strike +${T.lyra.atkPct}% harder. The whole realm heard the verse.` });
+      scribe(state, { kind: 'war', about: pid, text: `${lordName(state, pid)} swore the Dawn Oath against ${lordName(state, targetPlayer!)}, at sunrise, loudly, off-key. For ${T.lyra.seasons} seasons her attacks on that banner strike +${T.lyra.atkPct}% harder. The whole realm heard the verse.` });
       break;
     }
     case 'ulvra': {
@@ -120,7 +120,7 @@ export function applySignature(state: GameState, rng: Rng, pid: PlayerId, action
       for (const p of mine) {
         for (const n of p.neighbors) if (!seen.includes(n)) seen.push(n);
       }
-      scribe(state, { kind: 'magic', about: pid, text: `Fen Lights walked the borders of ${lordName(state, pid)}'s realm — kindly to her own, deeply misleading to visitors (+${Math.round(T.maera.defense * 100)}% defense, ${T.maera.seasons} seasons), and the marches around her land stand revealed.` });
+      scribe(state, { kind: 'magic', about: pid, text: `Fen Lights walked the borders of ${lordName(state, pid)}'s realm: kindly to her own, deeply misleading to visitors (+${Math.round(T.maera.defense * 100)}% defense, ${T.maera.seasons} seasons), and the marches around her land stand revealed.` });
       break;
     }
     case 'cormac': {
@@ -137,7 +137,7 @@ export function applySignature(state: GameState, rng: Rng, pid: PlayerId, action
     case 'corvas': {
       // Design rule (D-018): no signature scales linearly with opponent count
       // uncapped. The rate softens by 1/sqrt(rivals−1), so a six-lord table
-      // pays like a three-lord one — the flavor keeps, the arithmetic bows.
+      // pays like a three-lord one: the flavor keeps, the arithmetic bows.
       const rivals = state.players.filter((o) => o.alive && o.id !== pid);
       const pctEff = T.corvas.treasuryPct / Math.sqrt(Math.max(1, rivals.length - 1));
       let collected = 0;
@@ -161,15 +161,15 @@ export function applySignature(state: GameState, rng: Rng, pid: PlayerId, action
       const barrows = mine.filter((p) => p.site === 'barrow');
       if (barrows.length === 0) {
         // No barrow in the realm: the doors still open, just fewer of them.
-        // (Many seeds never hand him one — the signature must not sit dead.)
+        // (Many seeds never hand him one; the signature must not sit dead.)
         const seat = state.provinces[player.seatProvince];
-        if (seat.owner !== pid) return fail('The doors need a barrow, or at least your own seat — retake it first.');
+        if (seat.owner !== pid) return fail('The doors need a barrow, or at least your own seat. Retake it first.');
         const existing = armiesIn(state, seat.id).find((a) => a.owner === pid && a.units.length <= 10);
         if (existing) existing.units.push(...makeUnits('revenants', T.morrikan.seatFallbackCompanies));
         else newArmy(state, pid, seat.id, makeUnits('revenants', T.morrikan.seatFallbackCompanies));
         seat.order = clamp(seat.order - T.morrikan.orderCost, 0, 100);
         province = seat.id;
-        scribe(state, { kind: 'magic', about: pid, text: `${lordName(state, pid)} opened what doors there were. Beneath ${seat.name} the old dead answered thinly — one company, patient as ever. The living bolted their shutters (−${T.morrikan.orderCost} order there).` });
+        scribe(state, { kind: 'magic', about: pid, text: `${lordName(state, pid)} opened what doors there were. Beneath ${seat.name} the old dead answered thinly: one company, patient as ever. The living bolted their shutters (−${T.morrikan.orderCost} order there).` });
         break;
       }
       for (const p of barrows) {
@@ -179,7 +179,7 @@ export function applySignature(state: GameState, rng: Rng, pid: PlayerId, action
         p.order = clamp(p.order - T.morrikan.orderCost, 0, 100);
       }
       province = barrows[0].id;
-      scribe(state, { kind: 'magic', about: pid, text: `${lordName(state, pid)} opened the doors, all of them at once. At ${barrows.length === 1 ? 'his barrow' : `${barrows.length} barrows`} the old dead formed ranks — his constituents, voting in columns. The living bolted their shutters (−${T.morrikan.orderCost} order there).` });
+      scribe(state, { kind: 'magic', about: pid, text: `${lordName(state, pid)} opened the doors, all of them at once. At ${barrows.length === 1 ? 'his barrow' : `${barrows.length} barrows`} the old dead formed ranks: his constituents, voting in columns. The living bolted their shutters (−${T.morrikan.orderCost} order there).` });
       break;
     }
     case 'vaelia': {
@@ -188,7 +188,7 @@ export function applySignature(state: GameState, rng: Rng, pid: PlayerId, action
       break;
     }
     default:
-      return fail('This lord keeps no signature — which would itself be remarkable.');
+      return fail('This lord keeps no signature, which would itself be remarkable.');
   }
 
   player.signatureCooldownLeft = sig.cooldown;

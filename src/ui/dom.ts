@@ -1,4 +1,4 @@
-/** Tiny hyperscript helper — the whole UI is built with this. */
+/** Tiny hyperscript helper: the whole UI is built with this. */
 
 type Child = Node | string | null | undefined | false;
 
@@ -46,7 +46,7 @@ export function clear(el: HTMLElement): void {
 
 /**
  * Guard a button that does something irreversible: the first press only
- * arms it — the label turns into a plain question — and the act fires on a
+ * arms it (the label turns into a plain question) and the act fires on a
  * second press within a few seconds. A stray tap costs nothing; walking
  * away (or tabbing away) quietly stands the button down.
  */

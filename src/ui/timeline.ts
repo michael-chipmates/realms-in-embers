@@ -1,6 +1,6 @@
 /**
  * The war, replayed: rebuild ownership per round from the deterministic
- * action log. Purely derived — the engine's replay IS the data source.
+ * action log. Purely derived: the engine's replay IS the data source.
  */
 import { applyAction, createGame } from '../engine/engine';
 import type { GameState } from '../engine/types';
@@ -26,7 +26,7 @@ export function buildWarTimeline(state: GameState): WarTimeline {
       owners.push(sim.provinces.map((p) => p.owner));
     }
   }
-  // close with the world as it truly ended — unless the replay's last frame
+  // close with the world as it truly ended, unless the replay's last frame
   // already IS that world (same season, same owners): no duplicate frame
   const finalOwners = state.provinces.map((p) => p.owner);
   const last = owners[owners.length - 1];

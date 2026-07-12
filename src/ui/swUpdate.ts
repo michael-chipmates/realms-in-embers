@@ -2,10 +2,10 @@
  * The staged service-worker handshake (trust wave 2):
  *
  *  - Every healthy production boot posts BOOT_OK to the controlling worker.
- *    Only then does the worker sweep older app caches — a shell that never
+ *    Only then does the worker sweep older app caches: a shell that never
  *    manages to boot never destroys the last one that did.
  *  - A freshly installed worker WAITS (no skipWaiting): the update applies
- *    on the next launch, or right now from the title screen — a deliberate
+ *    on the next launch, or right now from the title screen, a deliberate
  *    act in a quiet room, never a seizure mid-campaign.
  */
 

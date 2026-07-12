@@ -10,7 +10,7 @@ import type { App } from '../app';
 
 function bugReport(app: App): string {
   const lines = [
-    'Realms in Embers — bug report',
+    'Realms in Embers: bug report',
     `Rules version: ${RULES_VERSION}`,
     `User agent: ${navigator.userAgent}`,
   ];
@@ -32,7 +32,7 @@ function bugReport(app: App): string {
 }
 
 /** The offline keeper's card: whether it stands watch, how much it holds,
- * and one button that fetches the whole realm — art, score, voice — so a
+ * and one button that fetches the whole realm (art, score, voice) so a
  * phone can leave the network behind after one deliberate tap. */
 function offlineRow(): HTMLElement {
   const status = h('p', { class: 'small muted', 'aria-live': 'polite', style: { margin: '0.2rem 0 0' } });
@@ -79,7 +79,7 @@ function offlineRow(): HTMLElement {
         }
         status.textContent = failed === 0
           ? `The whole realm is kept: ${list.length} files ready with no wire.`
-          : `${list.length - failed} of ${list.length} kept — ${failed} would not come (try again on a better wire).`;
+          : `${list.length - failed} of ${list.length} kept. ${failed} would not come (try again on a better wire).`;
         const est = await navigator.storage?.estimate?.().catch(() => undefined);
         if (est?.usage !== undefined) {
           status.textContent += ` ~${(est.usage / (1024 * 1024)).toFixed(1)} MB on this device.`;
@@ -109,7 +109,7 @@ function copyBugReportRow(app: App): HTMLElement {
     onclick: () => {
       navigator.clipboard.writeText(bugReport(app)).then(
         () => note('Copied.'),
-        () => note('Could not copy — your browser said no.'),
+        () => note('Could not copy. Your browser said no.'),
       );
     },
   }, 'Copy bug report');
@@ -225,11 +225,13 @@ export function openSettingsPanel(app: App): void {
       h('p', { style: { margin: '0 0 0.3rem' } },
         'Illustrations: AI-generated (FLUX via Replicate), art-directed and curated for this game; CC BY-SA 4.0 to whatever extent rights exist.'),
       h('p', { style: { margin: '0 0 0.3rem' } },
-        'Everything else — code, world, words, icons — made for this game. Code AGPL-3.0; story and art CC BY-SA 4.0.'),
+        'Everything else (code, world, words, icons) made for this game. Code AGPL-3.0; story and art CC BY-SA 4.0.'),
       h('p', { style: { margin: '0' } },
         h('a', { href: 'https://github.com/michael-chipmates/realms-in-embers/blob/main/CREDITS.md', target: '_blank', rel: 'noopener' }, 'The full ledger of credits'),
         ' · ',
         h('a', { href: 'https://github.com/michael-chipmates/realms-in-embers', target: '_blank', rel: 'noopener' }, 'source'),
+        ' · ',
+        h('a', { href: '/legal.html', target: '_blank', rel: 'noopener' }, 'legal & privacy'),
       ),
     ),
     h('h3', { class: 'settings-head' }, 'Reading'),

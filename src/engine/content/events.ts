@@ -51,7 +51,7 @@ const hero = (ctx: EventCtx) => ctx.state.heroes[ctx.heroId!];
 const player = (ctx: EventCtx) => ctx.state.players[ctx.pid];
 
 /** The wedding's other lord: first non-warring foreign neighbor of the bound
- * province — the SAME filter `when` used, re-checked at resolution. */
+ * province: the SAME filter `when` used, re-checked at resolution. */
 function weddingNeighbor(ctx: EventCtx): PlayerId | null {
   const p = prov(ctx);
   for (const n of p.neighbors) {
@@ -122,7 +122,7 @@ export const EVENTS: EventDef[] = [
       const p = provincesOf(state, pid).find((pp) => pp.seatOf === pid) ?? provincesOf(state, pid)[0];
       return p ? { province: p.id, heroId: null } : null;
     },
-    text: (ctx) => `A free company — the Broken Wheel, veterans of three losing sides — offers its swords at ${prov(ctx).name}. Their captain is missing an ear and every illusion, and asks for coin, not speeches.`,
+    text: (ctx) => `A free company (the Broken Wheel, veterans of three losing sides) offers its swords at ${prov(ctx).name}. Their captain is missing an ear and every illusion, and asks for coin, not speeches.`,
     choices: [
       {
         label: 'Hire them (120 gold)',
@@ -191,7 +191,7 @@ export const EVENTS: EventDef[] = [
       const p = provincesOf(state, pid)[0];
       return p && state.turn > 6 ? { province: p.id, heroId: null } : null;
     },
-    text: () => `Sergeant Wick — thirty years of other people's wars, one leg, three medals of discontinued realms — petitions for the pension the old kingdom promised and no kingdom has paid. Behind him, visible through the window, several hundred veterans are pretending not to wait for your answer.`,
+    text: () => `Sergeant Wick (thirty years of other people's wars, one leg, three medals of discontinued realms) petitions for the pension the old kingdom promised and no kingdom has paid. Behind him, visible through the window, several hundred veterans are pretending not to wait for your answer.`,
     choices: [
       {
         label: 'Pay the old debts (60 gold)',
@@ -223,7 +223,7 @@ export const EVENTS: EventDef[] = [
       const p = provincesOf(state, pid).find((pp) => pp.site === 'embersite');
       return p ? { province: p.id, heroId: null } : null;
     },
-    text: (ctx) => `The ember-site at ${prov(ctx).name} has flared in the night — light standing off the ground like wheat. The adepts call it a harvest. The villagers call it a warning. Both keep their distance and watch you.`,
+    text: (ctx) => `The ember-site at ${prov(ctx).name} has flared in the night: light standing off the ground like wheat. The adepts call it a harvest. The villagers call it a warning. Both keep their distance and watch you.`,
     choices: [
       {
         label: 'Harvest the flare',
@@ -259,7 +259,7 @@ export const EVENTS: EventDef[] = [
     text: (ctx) => `Your reeve in ${prov(ctx).name} keeps two ledgers: a thin one for you and a fat one for himself. The evidence is a bribe-taker's diary of superb thoroughness. Half the district is implicated; the other half wrote the diary.`,
     choices: [
       {
-        label: 'Hang the ledger, spare the man — take the fat one',
+        label: 'Hang the ledger, spare the man: take the fat one',
         preview: '+80 gold (his hoard); −2 order here.',
         aiScore: (p) => 3 + p.greed * 5,
         apply: (ctx) => {
@@ -318,7 +318,7 @@ export const EVENTS: EventDef[] = [
         apply: (ctx) => {
           player(ctx).gold += 25;
           prov(ctx).order = clamp(prov(ctx).order - 3, 0, 100);
-          return 'The cart was seized for the crown. It was, of course, entirely brass by the time it was inventoried — the humming piece had made other arrangements. (+25 gold, −3 order)';
+          return 'The cart was seized for the crown. It was, of course, entirely brass by the time it was inventoried: the humming piece had made other arrangements. (+25 gold, −3 order)';
         },
       },
       {
@@ -369,7 +369,7 @@ export const EVENTS: EventDef[] = [
               break;
             }
           }
-          return 'The straw crown came back with the messenger’s refusal pinned to it — and by week’s end, new recruits under it. Defiance, it turns out, advertises. (+1 rebel company)';
+          return 'The straw crown came back with the messenger’s refusal pinned to it, and by week’s end, new recruits under it. Defiance, it turns out, advertises. (+1 rebel company)';
         },
       },
     ],
@@ -385,9 +385,9 @@ export const EVENTS: EventDef[] = [
     },
     text: (ctx) => {
       const ready = heroesOf(ctx.state, ctx.pid).filter((h) => h.status === 'ready');
-      if (ready.length < 2) return 'Two of your champions have quarreled — over precedence, over a map, allegedly over a goose — and the court has chosen sides. They demand the old remedy: a public bout, first blood, winner keeps the argument.';
+      if (ready.length < 2) return 'Two of your champions have quarreled (over precedence, over a map, allegedly over a goose) and the court has chosen sides. They demand the old remedy: a public bout, first blood, winner keeps the argument.';
       const [a, b] = ready;
-      return `${a.name} and ${b.name} have quarreled — over precedence, over a map, allegedly over a goose — and the court has chosen sides. They demand the old remedy: a public bout, first blood, winner keeps the argument.`;
+      return `${a.name} and ${b.name} have quarreled (over precedence, over a map, allegedly over a goose) and the court has chosen sides. They demand the old remedy: a public bout, first blood, winner keeps the argument.`;
     },
     choices: [
       {
@@ -426,7 +426,7 @@ export const EVENTS: EventDef[] = [
       const p = provincesOf(state, pid).find((pp) => pp.seatOf === pid);
       return p && state.turn > 10 ? { province: p.id, heroId: null } : null;
     },
-    text: () => `A cold spot manifests in your map room at midnight, politely. Quill-scratch on empty air; a smell of old paper and older smoke. Osperan the Unresting — for it can be no one else — has one question for the chronicle: "Why do you want the throne?"`,
+    text: () => `A cold spot manifests in your map room at midnight, politely. Quill-scratch on empty air; a smell of old paper and older smoke. Osperan the Unresting (for it can be no one else) has one question for the chronicle: "Why do you want the throne?"`,
     choices: [
       {
         label: '"To warm the realm."',
@@ -448,9 +448,9 @@ export const EVENTS: EventDef[] = [
       },
       {
         label: 'Say nothing',
-        preview: 'He writes that down too. Nothing else happens — probably.',
+        preview: 'He writes that down too. Nothing else happens. Probably.',
         aiScore: () => 1,
-        apply: () => 'The silence stretched. The quill scratched anyway — longer than a silence should take to transcribe. The cold spot withdrew, satisfied with whatever it heard in the quiet.',
+        apply: () => 'The silence stretched. The quill scratched anyway, longer than a silence should take to transcribe. The cold spot withdrew, satisfied with whatever it heard in the quiet.',
       },
     ],
   },
@@ -494,7 +494,7 @@ export const EVENTS: EventDef[] = [
               break;
             }
           }
-          return 'The bill came back marked PAST DUE with a bounty notice attached. The wolfsheads recruited on the insult — but their lair is marked on every honest map now. (+1 marauder company)';
+          return 'The bill came back marked PAST DUE with a bounty notice attached. The wolfsheads recruited on the insult, but their lair is marked on every honest map now. (+1 marauder company)';
         },
       },
     ],
@@ -527,7 +527,7 @@ export const EVENTS: EventDef[] = [
         apply: (ctx) => {
           prov(ctx).order = clamp(prov(ctx).order - 6, 0, 100);
           prov(ctx).folk = lordOf(player(ctx)).creed;
-          return 'The festival was curtailed to a procession, the procession to a queue, the queue to a grievance. The folk conform now — outwardly, which is the layer taxes come from. (−6 order, creed conforms)';
+          return 'The festival was curtailed to a procession, the procession to a queue, the queue to a grievance. The folk conform now: outwardly, which is the layer taxes come from. (−6 order, creed conforms)';
         },
       },
     ],
@@ -545,7 +545,7 @@ export const EVENTS: EventDef[] = [
       if (state.victory.maxTurns - state.turn <= 7) return null;
       return p && player.gold < 200 && !player.flags.guildLoanOut ? { province: p.id, heroId: null } : null;
     },
-    text: () => `The Honorable Guild of Weights and Measures — which measures, among other things, opportunity — offers the crown a loan: 180 gold now against 240 within six seasons, secured by "reputational considerations." The clerk smiles like a closing ledger.`,
+    text: () => `The Honorable Guild of Weights and Measures (which measures, among other things, opportunity) offers the crown a loan: 180 gold now against 240 within six seasons, secured by "reputational considerations." The clerk smiles like a closing ledger.`,
     choices: [
       {
         label: 'Take the loan',
@@ -562,7 +562,7 @@ export const EVENTS: EventDef[] = [
         label: 'Decline politely',
         preview: 'No loan, no debt, no smile.',
         aiScore: () => 3,
-        apply: () => 'The clerk bowed, unsurprised — declined offers are also entered in the guild’s books, under a column nobody outside has read.',
+        apply: () => 'The clerk bowed, unsurprised. Declined offers are also entered in the guild’s books, under a column nobody outside has read.',
       },
     ],
   },
@@ -613,7 +613,7 @@ export const EVENTS: EventDef[] = [
           const border = provincesOf(ctx.state, ctx.pid).find((pp) =>
             pp.neighbors.some((n) => ctx.state.provinces[n].owner !== ctx.pid)) ?? prov(ctx);
           newArmy(ctx.state, NEUTRAL, border.id, makeUnits('marauders', 2), { kind: 'marauders', stance: 'bold' });
-          return `The reply went back nailed to the bill. The wolfsheads honored the old forms and declared themselves openly — two companies of them, in ${border.name}. At least the accounting is over. (marauders appear)`;
+          return `The reply went back nailed to the bill. The wolfsheads honored the old forms and declared themselves openly: two companies of them, in ${border.name}. At least the accounting is over. (marauders appear)`;
         },
       },
       {
@@ -629,7 +629,7 @@ export const EVENTS: EventDef[] = [
           const units = makeUnits('spears', 2);
           for (const u of units) u.vet = 1;
           newArmy(ctx.state, ctx.pid, seat.id, units);
-          return 'The crown made the band an offer with a seal on it. They read it twice, laughed once, and mustered under your banner by month’s end — veterans, every one, of robbing you. (+2 seasoned companies)';
+          return 'The crown made the band an offer with a seal on it. They read it twice, laughed once, and mustered under your banner by month’s end: veterans, every one, of robbing you. (+2 seasoned companies)';
         },
       },
     ],
@@ -645,7 +645,7 @@ export const EVENTS: EventDef[] = [
       const anywhere = provincesOf(state, pid)[0];
       return anywhere ? { province: (site ?? anywhere).id, heroId: null } : null;
     },
-    text: () => `The peddler's relic has begun humming in daylight, and always in the same key. The court adepts, consulted, report it is homesick — the note matches the resonance of an ember-site. It would like to be carried there. It is not, they stress, asking.`,
+    text: () => `The peddler's relic has begun humming in daylight, and always in the same key. The court adepts, consulted, report it is homesick: the note matches the resonance of an ember-site. It would like to be carried there. It is not, they stress, asking.`,
     choices: [
       {
         label: 'Carry it to the burning ground',
@@ -698,8 +698,8 @@ export const EVENTS: EventDef[] = [
     },
     text: (ctx) => {
       const other = ctx.state.players.find((o) => o.alive && o.id !== ctx.pid && (ctx.state.stances[`${Math.min(ctx.pid, o.id)}:${Math.max(ctx.pid, o.id)}`] ?? 'peace') !== 'war');
-      if (!other) return 'Storms have closed the passes; a party of foreign envoys sought your hall — and left again when word of new wars reached them. The hearth stays yours.';
-      return `Storms have closed the passes, and ${lordOf(other).name}'s envoys — caught mid-journey — request the hospitality of your hall for the winter. Envoys eat, drink, flatter, and above all watch. Hospitality is never only hospitality.`;
+      if (!other) return 'Storms have closed the passes; a party of foreign envoys sought your hall, and left again when word of new wars reached them. The hearth stays yours.';
+      return `Storms have closed the passes, and ${lordOf(other).name}'s envoys, caught mid-journey, request the hospitality of your hall for the winter. Envoys eat, drink, flatter, and above all watch. Hospitality is never only hospitality.`;
     },
     choices: [
       {
@@ -708,7 +708,7 @@ export const EVENTS: EventDef[] = [
         aiScore: (p, ctx) => (player(ctx).gold > 150 ? 3 + p.loyalty * 3 : 1),
         apply: (ctx) => {
           const other = ctx.state.players.find((o) => o.alive && o.id !== ctx.pid && (ctx.state.stances[`${Math.min(ctx.pid, o.id)}:${Math.max(ctx.pid, o.id)}`] ?? 'peace') !== 'war');
-          if (!other) return 'The envoys were gone before the feast was laid — new wars travel faster than couriers. The kitchens ate well that week.';
+          if (!other) return 'The envoys were gone before the feast was laid: new wars travel faster than couriers. The kitchens ate well that week.';
           player(ctx).gold = Math.max(0, player(ctx).gold - 40);
           addDeed(ctx.state, other.id, ctx.pid, { id: 'winterHost', label: 'Sheltered our envoys in style', delta: 12, decay: 0.4 });
           return `The envoys wintered on the good wine and left in spring with kind reports and several new waistcoat sizes. ${lordOf(other).name} will hear of every course served. (−40 gold, their regard warms)`;
@@ -749,7 +749,7 @@ export const EVENTS: EventDef[] = [
       const p = provincesOf(state, pid);
       return p.length >= 4 && state.turn > 10 ? { province: p[0].id, heroId: null } : null;
     },
-    text: () => `The counting-house proposes a census of hearths — every roof, herd, and mill in the realm, entered fair. Costly, slow, and deeply unpopular with everyone who has ever rounded a number in their own favor. But a realm that knows itself taxes true.`,
+    text: () => `The counting-house proposes a census of hearths: every roof, herd, and mill in the realm, entered fair. Costly, slow, and deeply unpopular with everyone who has ever rounded a number in their own favor. But a realm that knows itself taxes true.`,
     choices: [
       {
         label: 'Commission it (60 gold)',
@@ -758,7 +758,7 @@ export const EVENTS: EventDef[] = [
         apply: (ctx) => {
           player(ctx).gold = Math.max(0, player(ctx).gold - 60);
           for (const p of provincesOf(ctx.state, ctx.pid)) p.order = clamp(p.order + 3, 0, 100);
-          return 'The census took a season and cost three clerks their eyesight, but the rolls came back true. Fair tithes fell on fair numbers, and the grumbling — for once — had nowhere to put its lever. (+3 order everywhere)';
+          return 'The census took a season and cost three clerks their eyesight, but the rolls came back true. Fair tithes fell on fair numbers, and the grumbling, for once, had nowhere to put its lever. (+3 order everywhere)';
         },
       },
       {
@@ -778,7 +778,7 @@ export const EVENTS: EventDef[] = [
       const p = provincesOf(state, pid).find((pp) => pp.terrain === 'meadow' || pp.terrain === 'hills');
       return p && state.turn > 6 ? { province: p.id, heroId: null } : null;
     },
-    text: (ctx) => `A plow-team in ${prov(ctx).name} has turned up the realm's older business: a battlefield of the Sundering wars, shallow-buried — rusted mail, split shields, and bones lying where the lines broke. The field waits on your word before anyone plants over it.`,
+    text: (ctx) => `A plow-team in ${prov(ctx).name} has turned up the realm's older business: a battlefield of the Sundering wars, shallow-buried: rusted mail, split shields, and bones lying where the lines broke. The field waits on your word before anyone plants over it.`,
     choices: [
       {
         label: 'Bury them with honors',
@@ -786,7 +786,7 @@ export const EVENTS: EventDef[] = [
         aiScore: (p) => 3 + p.loyalty * 4,
         apply: (ctx) => {
           prov(ctx).order = clamp(prov(ctx).order + 7, 0, 100);
-          return 'The dead were raised, named where names survived, and buried under one long barrow with the honors of both their armies — nobody now recalls which bone fought for which side. The province plants over peace this spring. (+7 order)';
+          return 'The dead were raised, named where names survived, and buried under one long barrow with the honors of both their armies. Nobody now recalls which bone fought for which side. The province plants over peace this spring. (+7 order)';
         },
       },
       {
@@ -801,11 +801,11 @@ export const EVENTS: EventDef[] = [
       },
       {
         label: 'Call for the old banners’ kin',
-        preview: 'Gain 1 militia company here — descendants come to claim their grandfathers’ war.',
+        preview: 'Gain 1 militia company here. Descendants come to claim their grandfathers’ war.',
         aiScore: (p) => 2 + p.aggression * 3,
         apply: (ctx) => {
           newArmy(ctx.state, ctx.pid, prov(ctx).id, makeUnits('militia', 1));
-          return 'Word went out for the kin of the fallen, and they came — for the burial, then for the swords, then, hesitantly, for the muster. Grief drills surprisingly well. (+1 militia company)';
+          return 'Word went out for the kin of the fallen, and they came: for the burial, then for the swords, then, hesitantly, for the muster. Grief drills surprisingly well. (+1 militia company)';
         },
       },
     ],
@@ -826,7 +826,7 @@ export const EVENTS: EventDef[] = [
     text: (ctx) => {
       const p = prov(ctx);
       const otherId = weddingNeighbor(ctx);
-      if (otherId === null) return `A miller's daughter of ${p.name} was to marry across the march — but the border closed with the banns half-read. The village keeps the bunting for better seasons.`;
+      if (otherId === null) return `A miller's daughter of ${p.name} was to marry across the march, but the border closed with the banns half-read. The village keeps the bunting for better seasons.`;
       return `A miller's daughter of ${p.name} is to marry a horse-trader from across ${lordOf(ctx.state.players[otherId]).name}'s march. Both villages have invited both lords, in the cheerful conviction that rulers exist to bless weddings and pay for the second barrel.`;
     },
     choices: [
@@ -879,7 +879,7 @@ export const EVENTS: EventDef[] = [
       const p = provincesOf(state, pid).find((pp) => pp.coastal);
       return p ? { province: p.id, heroId: null } : null;
     },
-    text: (ctx) => `Your excisemen report boats landing below ${prov(ctx).name} on moonless nights — untaxed salt, untaxed silk, and untaxed answers about both. Half the village is in on it. The honest half, mostly.`,
+    text: (ctx) => `Your excisemen report boats landing below ${prov(ctx).name} on moonless nights: untaxed salt, untaxed silk, and untaxed answers about both. Half the village is in on it. The honest half, mostly.`,
     choices: [
       {
         label: 'Look the other way, for a consideration',
@@ -923,7 +923,7 @@ export const EVENTS: EventDef[] = [
       const p = provincesOf(state, pid)[0];
       return unknown.length >= 3 && p ? { province: p.id, heroId: null } : null;
     },
-    text: () => `A monastery clearing its flooded undercroft has found pre-Sundering survey charts — the whole realm, inked when it was one. Forty years stale, but rivers move slower than borders. The abbot offers them to the crown, for the roof fund.`,
+    text: () => `A monastery clearing its flooded undercroft has found pre-Sundering survey charts: the whole realm, inked when it was one. Forty years stale, but rivers move slower than borders. The abbot offers them to the crown, for the roof fund.`,
     choices: [
       {
         label: 'Buy the charts (45 gold)',
@@ -938,7 +938,7 @@ export const EVENTS: EventDef[] = [
             player(ctx).seen.push(pp.id);
             n++;
           }
-          return `The charts came rolled in oilcloth, smelling of forty years of dark. The realm as it was — and mostly, still, as it is. Your map-room filled in ${n} blank ${n === 1 ? 'province' : 'provinces'} by candlelight. (−45 gold)`;
+          return `The charts came rolled in oilcloth, smelling of forty years of dark. The realm as it was, and mostly, still, as it is. Your map-room filled in ${n} blank ${n === 1 ? 'province' : 'provinces'} by candlelight. (−45 gold)`;
         },
       },
       {
@@ -959,7 +959,7 @@ export const EVENTS: EventDef[] = [
       const p = provincesOf(state, pid).find((pp) => pp.seatOf === pid);
       return fallen && p ? { province: p.id, heroId: null } : null;
     },
-    text: () => `Veterans of a fallen claimant's host stand at your gate under a rolled, colorless banner — soldiers of a realm that stopped existing around them. They ask for service. Their sergeant asks only that nobody say their old lord's name like a joke.`,
+    text: () => `Veterans of a fallen claimant's host stand at your gate under a rolled, colorless banner: soldiers of a realm that stopped existing around them. They ask for service. Their sergeant asks only that nobody say their old lord's name like a joke.`,
     choices: [
       {
         label: 'Take their oath',

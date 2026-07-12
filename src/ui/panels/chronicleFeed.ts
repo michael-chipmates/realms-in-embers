@@ -30,7 +30,7 @@ const KIND_ICON: Record<ChronicleEntry['kind'], string> = {
 let collapsed = window.innerWidth < 900;
 
 /** The phone mode bar's Chronicle button flips the same state the spine
- * toggle does — one truth for whether the feed is open. */
+ * toggle does: one truth for whether the feed is open. */
 export function chronicleCollapsed(): boolean {
   return collapsed;
 }
@@ -105,7 +105,7 @@ export function renderChronicleFeed(screen: GameScreen, root: HTMLElement): void
     class: 'chronicle-toggle btn btn-quiet',
     'aria-expanded': String(!collapsed),
     'aria-label': collapsed
-      ? `Open the chronicle${unread > 0 ? ` — ${unread} unread` : ''}`
+      ? `Open the chronicle${unread > 0 ? `, ${unread} unread` : ''}`
       : 'Close the chronicle',
     onclick: () => {
       collapsed = !collapsed;
@@ -147,7 +147,7 @@ export function renderChronicleFeed(screen: GameScreen, root: HTMLElement): void
         class: `chronicle-filter chronicle-digest-chip ${digestOn ? 'active' : ''}`,
         'aria-pressed': String(digestOn),
         'aria-label': 'Digest mode',
-        title: "Digest — fold each season's routine lines into Osperan's one-line summary",
+        title: "Digest: fold each season's routine lines into Osperan's one-line summary",
         onclick: () => {
           digestOn = !digestOn;
           localStorage.setItem(DIGEST_KEY, digestOn ? 'on' : 'off');
@@ -168,7 +168,7 @@ export function renderChronicleFeed(screen: GameScreen, root: HTMLElement): void
 /** Group entries by season under collapsible headers. Only the current
  * season starts open; a collapsed season still shows its digest line and
  * its ceremonies (those are never hidden), so even a sixty-season war
- * reads in a couple of screens. Mirrors engine digestView — keep in step. */
+ * reads in a couple of screens. Mirrors engine digestView. Keep in step. */
 function renderSeasons(
   screen: GameScreen,
   root: HTMLElement,

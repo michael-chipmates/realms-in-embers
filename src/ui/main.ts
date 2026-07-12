@@ -1,4 +1,4 @@
-/** Boot: theme, app shell, title screen — or straight to a war you were
+/** Boot: theme, app shell, title screen, or straight to a war you were
  * invited to (the invite key rides the URL fragment; it never leaves
  * this device). */
 import './theme.css';
@@ -14,7 +14,7 @@ if (!root) throw new Error('no #app mount point');
 
 // The static landing in index.html exists for crawlers and the no-JS crowd;
 // the app takes the room over from here. (Screens also clear #app, but the
-// invite path renders asynchronously — remove it now so it never lingers.)
+// invite path renders asynchronously: remove it now so it never lingers.)
 document.getElementById('landing')?.remove();
 
 preloadArtManifest();
@@ -31,7 +31,7 @@ if (fromHash) {
   history.replaceState(null, '', location.pathname);
 }
 // a shared seed link (#seed=…) opens the muster table with that realm
-// pinned — it carries nothing but the seed
+// pinned: it carries nothing but the seed
 const seedMatch = location.hash.match(/#seed=([^&]+)/);
 if (invite) {
   // a truncated or tampered invite key must fail into the hall, not a blank room
@@ -48,7 +48,7 @@ if (invite) {
 }
 
 // a seed link pasted over the OPEN app is a same-document navigation; honor
-// it — but never over a live chronicle, which a stray link must not destroy
+// it, but never over a live chronicle, which a stray link must not destroy
 window.addEventListener('hashchange', () => {
   const m = location.hash.match(/#seed=([^&]+)/);
   if (!m || app.gameScreen) return;
@@ -57,7 +57,7 @@ window.addEventListener('hashchange', () => {
 });
 
 // offline keeper: after first visit the whole game works with no network.
-// The registration is staged — see swUpdate.ts for the BOOT_OK handshake.
+// The registration is staged: see swUpdate.ts for the BOOT_OK handshake.
 if (import.meta.env.PROD) {
   registerSw();
 }

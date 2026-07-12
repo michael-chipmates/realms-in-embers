@@ -69,12 +69,12 @@ export interface Army {
   kind?: 'rebels' | 'marauders' | 'revenants';
   /** The last peaceful march this season, if it can still be recalled
    * (rules v14). A march that fought, captured, or parted the fog is not
-   * recorded — those cannot be taken back. Cleared by merges, hero moves,
+   * recorded; those cannot be taken back. Cleared by merges, hero moves,
    * and disbands, since the banner is no longer the one that marched. */
   lastMove?: { from: ProvinceId; turn: number; setMoved: boolean; setSeaMoved: boolean };
 }
 
-/** Visual family of a working — drives the war-table cast animation, the
+/** Visual family of a working: drives the war-table cast animation, the
  * map seal, and the Codex spell cards. Lives here so mods and signatures can
  * carry it without importing content. */
 export type SpellFxFamily = 'bless' | 'curse' | 'ward' | 'summon' | 'scry';
@@ -137,7 +137,7 @@ export interface ArtifactInstance {
   id: number;
   defId: string;
   foundTurn: number;
-  /** Who has held it — lord names, for the saga. */
+  /** Who has held it: lord names, for the saga. */
   history: string[];
 }
 
@@ -148,7 +148,7 @@ export interface Province {
   terrain: Terrain;
   coastal: boolean;
   site: SiteType | null;
-  /** Folk creed of the population — mismatch with the owner costs order. */
+  /** Folk creed of the population; mismatch with the owner costs order. */
   folk: Creed;
   /** Centroid in cell coordinates (for UI + distance math). */
   cx: number;
@@ -313,7 +313,7 @@ export interface ChronicleEntry {
   /** Osperan's one-line season summary, written at round end. Digest mode
    * shows this in place of the season's routine lines. */
   digest?: true;
-  /** Routine bookkeeping line (insolvency, loan ledgers) — folded behind
+  /** Routine bookkeeping line (insolvency, loan ledgers), folded behind
    * the season digest when Digest mode is on. */
   minor?: true;
 }
@@ -355,7 +355,7 @@ export interface Player {
   flags: Record<string, boolean>;
   /** Signature ability (rules v11): seasons until it may be used again. */
   signatureCooldownLeft: number;
-  /** The season the signature last fired — one-season effects check it. */
+  /** The season the signature last fired; one-season effects check it. */
   signatureTurn?: number | null;
   /** Lyra: sworn crusade against one rival. */
   crusade?: { target: PlayerId; turnsLeft: number } | null;
@@ -439,7 +439,7 @@ export interface LoggedAction {
 
 // ----------------------------------------------------------- engine effects
 
-/** Things that happened during applyAction — the UI/narrator/audio feed. */
+/** Things that happened during applyAction: the UI/narrator/audio feed. */
 export type Effect =
   | { e: 'battle'; report: BattleReport }
   | { e: 'captured'; province: ProvinceId; by: PlayerId; from: PlayerId }
@@ -544,7 +544,7 @@ export interface GameState {
   flags: Record<string, boolean>;
   /** Narrator variety memory: line key -> turn last used. */
   narratorUsed: Record<string, number>;
-  /** Rounds a player has been leader — drives visible strain/defiance. */
+  /** Rounds a player has been leader; drives visible strain/defiance. */
   leaderSince: PlayerId | null;
   leaderRounds: number;
 }

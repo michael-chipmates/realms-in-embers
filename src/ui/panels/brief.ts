@@ -1,10 +1,10 @@
 /**
- * The Council Brief — the season at a glance, before you spend it.
+ * The Council Brief: the season at a glance, before you spend it.
  * Three registers, all read straight off the engine's own selectors:
  * what the next season will pay, what just happened around your banner,
  * and what stands open. Every line deep-links to the surface that acts
  * on it, no line claims to know the best move, and nothing here writes
- * state — the Brief is a reader, the war table is the pen.
+ * state: the Brief is a reader, the war table is the pen.
  */
 import { emberlightIncome, incomeReport } from '../../engine/economy';
 import { armiesOf, heroesOf, provincesOf } from '../../engine/helpers';
@@ -30,7 +30,7 @@ function intentionKey(screen: GameScreen): string {
   return `rie-intent-${screen.state.seed}`;
 }
 
-/** True omissions only — things the season would genuinely waste. */
+/** True omissions only: things the season would genuinely waste. */
 export function seasonOmissions(screen: GameScreen): { text: string; go: () => void }[] {
   const state = screen.state;
   const pid = screen.viewerId();
@@ -90,7 +90,7 @@ export function openBriefOverlay(screen: GameScreen): void {
       `(income ${fmt(income.gold)}, upkeep −${fmt(income.upkeep)}, wages −${fmt(income.wages)}) ` +
       `and ${signed(ember.total)} Emberlight.`),
     income.net < 0
-      ? h('p', { class: 'small neg' }, 'The realm spends more than it raises — the ledger names every cause.')
+      ? h('p', { class: 'small neg' }, 'The realm spends more than it raises. The ledger names every cause.')
       : null,
   );
 
@@ -105,7 +105,7 @@ export function openBriefOverlay(screen: GameScreen): void {
     h('h3', { class: 'settings-head' }, 'Developments'),
     ...(recent.length > 0
       ? recent.map((e) => h('p', { class: 'small' }, e.text))
-      : [h('p', { class: 'small muted italic' }, 'A quiet stretch — the kind historians skip and rulers treasure.')]),
+      : [h('p', { class: 'small muted italic' }, 'A quiet stretch: the kind historians skip and rulers treasure.')]),
   );
 
   // ------------------------------------------------------- what's open
@@ -144,7 +144,7 @@ export function openBriefOverlay(screen: GameScreen): void {
     h('h3', { class: 'settings-head' }, 'The intention'),
     savedIdx >= 0 && INTENTIONS[savedIdx]
       ? h('p', { class: 'small muted' }, `You set out to: ${INTENTIONS[savedIdx].toLowerCase()}.`)
-      : h('p', { class: 'small muted' }, 'Name the season\'s purpose — the Brief will hold you to it, gently.'),
+      : h('p', { class: 'small muted' }, 'Name the season\'s purpose. The Brief will hold you to it, gently.'),
     h('div', { class: 'brief-intents' },
       ...INTENTIONS.map((label, i) =>
         h('button', {

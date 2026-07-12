@@ -19,16 +19,16 @@ import { audio } from '../audio';
 import type { GameScreen } from './game';
 
 const PATH_TEXT: Record<string, string> = {
-  conquest: 'by conquest — the last banner standing',
-  dominion: 'by dominion — the realm held past arguing',
-  goldenAge: 'by golden age — the war ended by prosperity',
-  legend: 'by legend — the Ember Throne rekindled',
+  conquest: 'by conquest, the last banner standing',
+  dominion: 'by dominion, the realm held past arguing',
+  goldenAge: 'by golden age, the war ended by prosperity',
+  legend: 'by legend, the Ember Throne rekindled',
   chronicle: 'by the judgment of the Chronicle',
 };
 
 /** Turning points, read deterministically off the season stats: the great
  * land-grabs, the banners that left the map, and the season the winner took
- * a lead they never returned. Facts only — the judgment quotes these. */
+ * a lead they never returned. Facts only. The judgment quotes these. */
 function turningPoints(state: import('../../engine/types').GameState): string[] {
   const stats = state.stats;
   const winner = state.victory.winner;
@@ -49,8 +49,8 @@ function turningPoints(state: import('../../engine/types').GameState): string[] 
   }
   if (Math.abs(swing) >= 2) {
     out.push(swing > 0
-      ? `Season ${swingAt}: ${name(swingWho)} took ${swing} provinces in a single season — the map never quite recovered.`
-      : `Season ${swingAt}: ${name(swingWho)} lost ${-swing} provinces in one season — the kind of arithmetic no treasury survives.`);
+      ? `Season ${swingAt}: ${name(swingWho)} took ${swing} provinces in a single season. The map never quite recovered.`
+      : `Season ${swingAt}: ${name(swingWho)} lost ${-swing} provinces in one season, the kind of arithmetic no treasury survives.`);
   }
   // every banner that left the map, in order
   for (const p of state.players) {
@@ -82,7 +82,7 @@ export function showGameEnd(screen: GameScreen): void {
   const winner = state.victory.winner;
   if (winner === null) return;
   const winnerLord = LORD_BY_ID[state.players[winner].lordId];
-  // online, "you" is exactly one seat — losers and spectators get the dirge
+  // online, "you" is exactly one seat: losers and spectators get the dirge
   const viewerWon = screen.online
     ? winner === screen.online.mySeat
     : state.players[winner].kind === 'human';
@@ -103,10 +103,10 @@ export function showGameEnd(screen: GameScreen): void {
       const row = h('div', { class: 'standing-row' },
         h('span', { class: 'standing-rank' }, `${idx + 1}.`),
         sigilShield(lord.id, 26),
-        h('span', { class: 'standing-name' }, `${lord.name}${p.alive ? '' : ' †'}${p.id === winner ? ' — the victor' : ''}`),
+        h('span', { class: 'standing-name' }, `${lord.name}${p.alive ? '' : ' †'}${p.id === winner ? ' · the victor' : ''}`),
         h('span', { class: 'standing-score' }, String(score.total)),
       );
-      tip(row, () => breakdown(`${lord.name} — final standing`, score.lines, `${score.total} points`));
+      tip(row, () => breakdown(`${lord.name} · final standing`, score.lines, `${score.total} points`));
       return row;
     });
 
@@ -115,8 +115,8 @@ export function showGameEnd(screen: GameScreen): void {
     .sort((a, b) => b.level - a.level)
     .slice(0, 6)
     .map((hh) => h('p', { class: 'small' },
-      `${hh.name}, ${hh.epithet} — ${lordDisplay(state, hh.owner).name.split(' ')[0]}'s ${hh.cls}, level ${hh.level}` +
-      (hh.status === 'dead' ? `; fell — ${hh.deathCause ?? 'in the war'} (season ${hh.diedTurn})` : '; lives to see the peace')));
+      `${hh.name}, ${hh.epithet} · ${lordDisplay(state, hh.owner).name.split(' ')[0]}'s ${hh.cls}, level ${hh.level}` +
+      (hh.status === 'dead' ? `; fell: ${hh.deathCause ?? 'in the war'} (season ${hh.diedTurn})` : '; lives to see the peace')));
 
   const content = h('div', { class: 'gameend-body' },
     artSlot(viewerWon ? 'ceremony-victory' : 'ceremony-defeat', h('span'), { className: 'ceremony-art', alt: '' }),
@@ -133,7 +133,7 @@ export function showGameEnd(screen: GameScreen): void {
         ...points.map((t) => h('p', { class: 'small' }, `※ ${t}`)),
         h('p', { class: 'small italic muted', style: { marginTop: '0.3rem' } },
           `Osperan's judgment: ${viewerWon
-            ? 'the pen concedes that this one was earned — the record above will say how.'
+            ? 'the pen concedes that this one was earned. The record above will say how.'
             : `the record will show ${winnerLord.name} did not luck into this. The turning seasons are listed; so, quietly, are the ones where it could have gone otherwise.`}`),
       );
     })(),
@@ -192,7 +192,7 @@ export function showGameEnd(screen: GameScreen): void {
   );
 
   const modal = openModal(
-    viewerWon ? 'The Chronicle Ends — in Your Name' : 'The Chronicle Ends',
+    viewerWon ? 'The Chronicle Ends, in Your Name' : 'The Chronicle Ends',
     content,
     { wide: true, className: 'gameend-modal' },
   );
@@ -220,12 +220,12 @@ function renderCampaignGraph(screen: GameScreen): HTMLElement {
     html: `<svg viewBox="0 0 ${w} ${hgt}" preserveAspectRatio="none" role="img" aria-label="Provinces held by each lord across the war">${lines}</svg>`,
   });
   return h('div', {},
-    h('h3', { class: 'settings-head' }, 'The shape of the war — provinces held, season by season'),
+    h('h3', { class: 'settings-head' }, 'The shape of the war: provinces held, season by season'),
     graph,
   );
 }
 
-/** The whole war scrubbed on a slider — rebuilt from the action log. */
+/** The whole war scrubbed on a slider, rebuilt from the action log. */
 export function openWarReplay(screen: GameScreen): void {
   const state = screen.state;
   const body = h('div', { style: { padding: '0.4rem 0.6rem 0.8rem', width: 'min(760px, 92vw)' } },

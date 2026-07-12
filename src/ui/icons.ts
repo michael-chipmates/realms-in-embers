@@ -1,5 +1,5 @@
 /**
- * The ink-line icon set — every glyph hand-authored as one or two 24×24
+ * The ink-line icon set: every glyph hand-authored as one or two 24×24
  * paths, drawn with currentColor so it takes the ink of its surroundings.
  */
 

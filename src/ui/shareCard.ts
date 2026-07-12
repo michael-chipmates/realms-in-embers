@@ -1,6 +1,6 @@
 /**
  * The share card: one PNG, rendered entirely on this device, saying how the
- * war ended — final map, the victor, the path, the score, and the seed so a
+ * war ended: final map, the victor, the path, the score, and the seed so a
  * friend can forge the same realm. Nothing is uploaded anywhere; sharing is
  * the player's hand on the player's file. (RELEASE-STRATEGY: the share loop
  * must never cost the no-tracking promise.)
@@ -21,7 +21,7 @@ const PATH_LINE: Record<string, string> = {
 };
 
 /** The seed link: opens the muster table with this realm's seed pinned.
- * Carries only the seed — no state, no names, nothing private. */
+ * Carries only the seed: no state, no names, nothing private. */
 export function seedLink(state: GameState): string {
   return `${location.origin}${location.pathname}#seed=${encodeURIComponent(state.seed)}`;
 }
@@ -106,7 +106,7 @@ export async function downloadShareCard(state: GameState, colorblind: boolean): 
 
   ctx.fillStyle = '#e07830';
   ctx.font = `28px ${serif}`;
-  ctx.fillText(`${PATH_LINE[path]} — season ${state.turn}`, 64, 340);
+  ctx.fillText(`${PATH_LINE[path]} · season ${state.turn}`, 64, 340);
   ctx.fillStyle = 'rgba(232, 220, 192, 0.85)';
   ctx.font = `24px ${serif}`;
   ctx.fillText(`Chronicle score ${score}`, 64, 382);
@@ -120,7 +120,7 @@ export async function downloadShareCard(state: GameState, colorblind: boolean): 
 
   ctx.fillStyle = 'rgba(232, 220, 192, 0.6)';
   ctx.font = `20px ${serif}`;
-  ctx.fillText(`seed “${state.seed}” — the same realm awaits anyone`, 64, 474);
+  ctx.fillText(`seed “${state.seed}” · the same realm awaits anyone`, 64, 474);
   ctx.fillStyle = '#c9a227';
   ctx.font = `bold 26px ${serif}`;
   ctx.fillText('rie.gg', 64, 540);

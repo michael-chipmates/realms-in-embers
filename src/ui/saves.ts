@@ -31,17 +31,17 @@ export type ImportResult =
   | { ok: false; code: 'too-large' | 'invalid'; message: string };
 
 const MSG_QUOTA =
-  'The realm could not be saved — the browser refused the space. Export the chronicle to keep it safe.';
+  'The realm could not be saved. The browser refused the space. Export the chronicle to keep it safe.';
 const MSG_UNAVAILABLE =
-  'This browser is keeping no saves — private windows often refuse them. Export the chronicle to a file to keep it safe.';
+  'This browser is keeping no saves. Private windows often refuse them. Export the chronicle to a file to keep it safe.';
 const MSG_VERIFY =
   'The save came back damaged when checked, so the previous one was kept. Try again, or export the chronicle to a file.';
 const MSG_TOO_LARGE =
-  'That file is far too large to be a chronicle — nothing was changed.';
+  'That file is far too large to be a chronicle. Nothing was changed.';
 const MSG_INVALID =
-  'That file is not a chronicle this game can read — nothing was changed.';
+  'That file is not a chronicle this game can read. Nothing was changed.';
 const MSG_NEWER_AGE =
-  'That chronicle was written by a newer age of the game — nothing was changed.';
+  'That chronicle was written by a newer age of the game. Nothing was changed.';
 
 // ------------------------------------------------------------- save health
 
@@ -214,7 +214,7 @@ export function saveToSlot(state: GameState, slot: number | 'auto' | 'emergency'
 
   if (slot === 'emergency') {
     // SAVE-033: the crash boundary sets the chronicle down here on the way
-    // out. One slot, always overwritten — the freshest wreck is the one
+    // out. One slot, always overwritten: the freshest wreck is the one
     // worth salvaging.
     return reportResult(txWrite(ls, 'emergency', raw, meta), state.turn);
   }

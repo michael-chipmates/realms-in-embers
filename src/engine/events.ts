@@ -70,7 +70,7 @@ export function resolveEventChoice(
   scribe(state, {
     kind: 'event',
     about: pid,
-    text: `${def.title} — ${resolution}`,
+    text: `${def.title}: ${resolution}`,
   });
   effects.push({ e: 'chronicle', entry: state.chronicle[state.chronicle.length - 1] });
   return { ok: true };

@@ -35,7 +35,7 @@ export class App {
 
   /** SAVE-033: when an uncaught error escapes with a local chronicle open,
    * set the game down as "The emergency copy" before anything else is lost.
-   * Once per session — a crash loop must not thrash storage — and never for
+   * Once per session (a crash loop must not thrash storage) and never for
    * online wars, whose truth lives in the relay log, not local slots. */
   private crashSaved = false;
 
@@ -47,7 +47,7 @@ export class App {
       if (saved.ok) {
         console.warn('[saves] an uncaught error escaped; the chronicle was set down as The emergency copy');
         this.gameScreen.toast(
-          'Something broke backstage — your chronicle was set down safely as “The emergency copy” on the shelf.',
+          'Something broke backstage. Your chronicle was set down safely as “The emergency copy” on the shelf.',
           'danger');
       }
     };

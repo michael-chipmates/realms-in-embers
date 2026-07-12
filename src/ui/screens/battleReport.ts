@@ -1,5 +1,5 @@
 /**
- * The battle report: a readable account of a resolved fight — rounds as a
+ * The battle report: a readable account of a resolved fight: rounds as a
  * swinging balance, casualties by company, and everything the field said.
  * (The engine already decided everything; this only presents.)
  */
@@ -47,7 +47,7 @@ export function openBattleReport(screen: GameScreen, report: BattleReport): void
         : null,
     );
 
-  // rounds reveal one by one — a playback, not a spreadsheet. Skippable,
+  // rounds reveal one by one: a playback, not a spreadsheet. Skippable,
   // timer-driven (never framerate-bound), and closing the modal never blocks.
   const reduced = screen.app.settings.reducedMotion;
   const roundEls = report.rounds.map((r, i) => {

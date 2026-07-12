@@ -1,5 +1,5 @@
 /**
- * The Province Navigator — the map as rows. A semantic twin of the war
+ * The Province Navigator: the map as rows. A semantic twin of the war
  * table for keyboards and screen readers, and a fast index for everyone
  * else. It shows exactly what the painted map shows and not one thing
  * more: the same seenBy() set gates every row, armies appear only where
@@ -91,7 +91,7 @@ function renderGroups(screen: GameScreen, into: HTMLElement, filter: string): vo
 
   const parts: HTMLElement[] = sections.map((g) =>
     h('div', { class: 'nav-group' },
-      h('h3', { class: 'settings-head' }, `${g.title} — ${g.provinces.length}`),
+      h('h3', { class: 'settings-head' }, `${g.title} · ${g.provinces.length}`),
       ...[...g.provinces].sort((a, b) => a.name.localeCompare(b.name)).map((p) => rowFor(screen, p, !!g.own, into, filter)),
     ));
   if (parts.length === 0) {

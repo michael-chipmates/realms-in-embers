@@ -3,7 +3,7 @@
  *
  * sfc32 PRNG seeded from a human-readable string via cyrb128. The four-word
  * state lives INSIDE GameState (as a plain number[]), and Rng mutates that
- * array in place — so saving mid-turn and loading resumes the exact stream.
+ * array in place, so saving mid-turn and loading resumes the exact stream.
  *
  * `fork(label)` derives an independent side-stream from the current state
  * WITHOUT advancing it: previews (battle odds, quest odds) roll on forks, so
@@ -101,7 +101,7 @@ export class Rng {
     return arr[arr.length - 1];
   }
 
-  /** Fisher–Yates shuffle of a copy. */
+  /** Fisher-Yates shuffle of a copy. */
   shuffle<T>(arr: readonly T[]): T[] {
     const out = [...arr];
     for (let i = out.length - 1; i > 0; i--) {
@@ -111,7 +111,7 @@ export class Rng {
     return out;
   }
 
-  /** Roughly-normal sample (Irwin–Hall of 3), mean 0, clipped to [-1.5, 1.5]. */
+  /** Roughly-normal sample (Irwin-Hall of 3), mean 0, clipped to [-1.5, 1.5]. */
   wobble(): number {
     return (this.next() + this.next() + this.next()) - 1.5;
   }

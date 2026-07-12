@@ -33,13 +33,13 @@ import { NEUTRAL } from './types';
  *     (iteration 7).
  * v7: guild loan no longer offered when its due date would outlive the
  *     Chronicle (model-playtest exploit finding).
- * v8: adversarial-review round — smugglers prosperity fixed to the real
+ * v8: adversarial-review round: smugglers prosperity fixed to the real
  *     multiplier scale, wedding/envoy events re-bind safely, paid wolfshead
  *     tolls actually protect (and die with the band), undefended sacks go
  *     through captureProvince (breakable rituals), joinWar refuses
  *     oathbreaking and re-clamps bribes, fervor preview matches battle,
  *     heroes detach where the banner fell.
- * v9: final-audit round — a lone concession closes the chronicle (no
+ * v9: final-audit round: a lone concession closes the chronicle (no
  *     soft-lock), lords eliminated by their own rising get no ghost turn,
  *     Morrikan's revenants and terror immunity and Vaelia's wolfshead
  *     amnesty now real (their perks said so all along), Saga shards burn
@@ -48,25 +48,25 @@ import { NEUTRAL } from './types';
  *     endTurn escapes its action budget and chapter 5 finds its own
  *     Emberheart, rites never double-teach, rebel bands besiege the
  *     garrison in their own province, splitArmy (never reachable) removed.
- * 10: Spell Theater — province mods carry spellId/by so the map can seal
+ * 10: Spell Theater: province mods carry spellId/by so the map can seal
  *     enchanted ground and the panel can name the caster.
- * 11: Signature abilities — every lord gains an active order with a cooldown
+ * 11: Signature abilities: every lord gains an active order with a cooldown
  *     (engine/signature.ts); players carry signatureCooldownLeft and the
  *     timed states (crusade, mark, embargo, signatureTurn).
- * 12: The fairness round (review night) — simultaneous victory claims are
+ * 12: The fairness round (review night): simultaneous victory claims are
  *     collected from one snapshot and tie-broken on the path's own virtue
  *     (never seat order); DOMINION_ROUNDS 3→4; Corvas' debts soften by
  *     1/sqrt(rivals−1) (D-018: nothing scales uncapped with table size);
  *     Fen Lights gain their offensive half; Morrikan's doors open at his
  *     seat when the seed gave him no barrow; empty victory-path setups are
  *     rejected instead of silently rewritten.
- * 13: Season Digest — Osperan closes every round with one digest entry
+ * 13: Season Digest: Osperan closes every round with one digest entry
  *     (ChronicleEntry.digest; routine ledger lines carry minor); the new
  *     seasonDigest bank draws from the Rng at roundEnd.
- * 14: recallMove — a peaceful march onto already-seen ground can be taken
+ * 14: recallMove: a peaceful march onto already-seen ground can be taken
  *     back the same season (armies carry lastMove; a fight, a capture, or
  *     new sight spends the season for good; the AI never recalls).
- * 15: Allies press the same front — an allied banner beside a shared enemy's
+ * 15: Allies press the same front: an allied banner beside a shared enemy's
  *     province lowers the attack threshold and raises the prize (converging
  *     wars, not parallel ones); and the fierce or greedy shop for war
  *     against a ≥34% leader someone else already fights (never over a pact,
@@ -74,9 +74,9 @@ import { NEUTRAL } from './types';
 export const RULES_VERSION = 15;
 
 export const HANDICAPS: Record<Difficulty, PlayerHandicap> = {
-  squire: { incomeMult: 0.85, label: 'Squire — AI earns 15% less gold and attacks only with clear advantage.' },
-  knight: { incomeMult: 1.0, label: 'Knight — AI plays with even hands. No bonuses either way.' },
-  warlord: { incomeMult: 1.25, label: 'Warlord — AI earns +25% gold and presses attacks harder.' },
+  squire: { incomeMult: 0.85, label: 'Squire: AI earns 15% less gold and attacks only with clear advantage.' },
+  knight: { incomeMult: 1.0, label: 'Knight: AI plays with even hands. No bonuses either way.' },
+  warlord: { incomeMult: 1.25, label: 'Warlord: AI earns +25% gold and presses attacks harder.' },
 };
 
 export const START_GOLD = 260;
@@ -144,7 +144,7 @@ export function makeCourtOffer(rng: Rng, turn: number, preferred?: HeroClass): C
 /** Build the full initial state. Deterministic for (settings.seed, settings). */
 export function initGame(settings: GameSettings): GameState {
   if (settings.victoryPaths.length === 0) {
-    // the UI blocks this too — but the engine never silently rewrites a
+    // the UI blocks this too, but the engine never silently rewrites a
     // player's choice (rules v12; the old behavior restored conquest unasked)
     throw new Error('A chronicle needs at least one road to the throne.');
   }
@@ -224,7 +224,7 @@ export function initGame(settings: GameSettings): GameState {
       riteOffers: [],
       seatProvince: seats[i],
       vault: [],
-      handicap: setup.kind === 'ai' ? HANDICAPS[difficulty] : { incomeMult: 1, label: 'None — mortal hands.' },
+      handicap: setup.kind === 'ai' ? HANDICAPS[difficulty] : { incomeMult: 1, label: 'None: mortal hands.' },
       sagaChapter: 0,
       courtOffers: [],
       seen: [],

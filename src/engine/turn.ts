@@ -131,13 +131,13 @@ export function beginTurn(state: GameState, rng: Rng, effects: Effect[]): void {
         player.gold -= 240;
         scribe(state, {
           kind: 'realm', about: pid, minor: true,
-          text: `${lordName(state, pid)} repaid the Guild of Weights and Measures in full — 240 gold, counted twice. The clerk's smile flickered, which the treasury counts as a victory.`,
+          text: `${lordName(state, pid)} repaid the Guild of Weights and Measures in full: 240 gold, counted twice. The clerk's smile flickered, which the treasury counts as a victory.`,
         });
       } else {
         for (const p of provincesOf(state, pid)) p.order = clamp(p.order - 5, 0, 100);
         scribe(state, {
           kind: 'realm', about: pid, minor: true,
-          text: `${lordName(state, pid)} defaulted on the Guild loan. No bailiffs came — only a realm-wide whisper about credit, which is worse. (−5 order everywhere)`,
+          text: `${lordName(state, pid)} defaulted on the Guild loan. No bailiffs came, only a realm-wide whisper about credit, which is worse. (−5 order everywhere)`,
         });
       }
     }
@@ -215,7 +215,7 @@ export function spawnRebellion(state: GameState, rng: Rng, p: Province, effects:
   say(state, rng, 'rebellion', { lord: lordName(state, owner), province: p.name, leader }, { about: owner });
   teach(state, owner, 'firstRebellion');
   effects.push({ e: 'rebellion', province: p.id });
-  // a rising strikes at once if the province is garrisoned — steel decides
+  // a rising strikes at once if the province is garrisoned; steel decides
   const garrison = armiesIn(state, p.id).filter((a) => a.owner !== NEUTRAL);
   if (garrison.length > 0 && state.armies[rebels.id]) {
     const outcome = resolveBattle(state, rng, rebels.id, p.id, false, p.id);
@@ -236,7 +236,7 @@ export function endTurnAdvance(state: GameState, rng: Rng, effects: Effect[]): v
     }
   }
   if (next === -1) {
-    // no one left alive — a lone concession can do this; close the chronicle
+    // no one left alive: a lone concession can do this; close the chronicle
     checkVictory(state, rng, effects);
     return;
   }
@@ -262,7 +262,7 @@ function roundEnd(state: GameState, rng: Rng, effects: Effect[]): void {
     if (!rng.chance(raidChance)) continue;
     // target: adjacent owned province, weakest garrison, richest for marauders.
     // A paid wolfshead toll is honored, and the Crowqueen's lands are simply
-    // never worth the trouble — that band skips that lord's provinces.
+    // never worth the trouble; that band skips that lord's provinces.
     const paidOff = (owner: number): boolean =>
       kind === 'marauders' && owner >= 0 && (
         !!state.players[owner].flags[`tollPaid:${army.id}`] ||
@@ -285,7 +285,7 @@ function roundEnd(state: GameState, rng: Rng, effects: Effect[]): void {
       : rng.pick(viable);
     const defenders = armiesIn(state, target.id).filter((a) => a.owner !== NEUTRAL);
     if (defenders.length === 0) {
-      // undefended: the province falls out of the realm entirely — through
+      // undefended: the province falls out of the realm entirely, through
       // captureProvince, so everything a capture entails (broken seat
       // rituals included) happens here too
       if (target.owner >= 0) {
@@ -297,13 +297,13 @@ function roundEnd(state: GameState, rng: Rng, effects: Effect[]): void {
           kind: 'realm',
           about: prevOwner,
           text: kind === 'rebels'
-            ? `${target.name} threw off ${lordName(state, prevOwner)}'s governors entirely. The straw crown flies over a free province — for now.`
+            ? `${target.name} threw off ${lordName(state, prevOwner)}'s governors entirely. The straw crown flies over a free province, for now.`
             : `Wolfsheads sacked ${target.name} and no banner came to stop them. ${lordName(state, prevOwner)}'s writ ends at its borders now.`,
         });
         if (target.id !== army.province) army.province = target.id;
       }
     } else {
-      // defended — the band gives battle, even for the province it infests
+      // defended: the band gives battle, even for the province it infests
       effects.push(...resolveBattle(state, rng, army.id, target.id, false, army.province).effects);
     }
   }
@@ -389,7 +389,7 @@ function roundEnd(state: GameState, rng: Rng, effects: Effect[]): void {
   if (state.turn === WEARINESS_TURN + 1) {
     scribe(state, {
       kind: 'ceremony', about: null, ceremony: true,
-      text: 'Hear this, all claimants: the Chronicle wearies of your caution. From this season the realm asks less and less of whoever would hold it — the demanded share of the land shrinks each season until somebody takes what the rest keep failing to. Endings come. I prefer them written on purpose.',
+      text: 'Hear this, all claimants: the Chronicle wearies of your caution. From this season the realm asks less and less of whoever would hold it. The demanded share of the land shrinks each season until somebody takes what the rest keep failing to. Endings come. I prefer them written on purpose.',
     });
   }
 

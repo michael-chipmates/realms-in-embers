@@ -1,5 +1,5 @@
 /**
- * The First Ember — a guided first chronicle. Not a tutorial fork: a real
+ * The First Ember: a guided first chronicle. Not a tutorial fork: a real
  * game on a fixed seed, with a quiet card that watches the actual action
  * log and steps forward when the real thing has really happened. Nothing
  * here touches the engine; the guide reads state and log, never writes.
@@ -25,27 +25,27 @@ const logged = (state: GameState, t: string): boolean =>
 const STEPS: GuideStep[] = [
   {
     title: 'Your seat',
-    body: 'The province flying your banner is your seat — lose it and the realm shakes. Select it to open its ledger: land, coin, order, works.',
+    body: 'The province flying your banner is your seat. Lose it and the realm shakes. Select it to open its ledger: land, coin, order, works.',
     done: (screen, state) => screen.sel.provinceId === state.players[0].seatProvince,
   },
   {
     title: 'Raise works',
-    body: 'Every province pays its way. In Raise works, queue any building — the cost in gold and seasons is printed on the button, and the tooltip names every cause.',
+    body: 'Every province pays its way. In Raise works, queue any building. The cost in gold and seasons is printed on the button, and the tooltip names every cause.',
     done: (_screen, state) => logged(state, 'build'),
   },
   {
     title: 'Muster a company',
-    body: 'Armies are companies under a banner. In Muster companies, queue one — it stands ready next season, and wages come due every season after.',
+    body: 'Armies are companies under a banner. In Muster companies, queue one. It stands ready next season, and wages come due every season after.',
     done: (_screen, state) => logged(state, 'recruit'),
   },
   {
     title: 'March',
-    body: 'Select your army, then a glowing province. Crossed swords mean a fight — and the odds, itemized, are shown before you commit to anything.',
+    body: 'Select your army, then a glowing province. The realm beyond your sight is fog until your banners walk it. Crossed swords mean a fight, and the odds, itemized, are shown before you commit to anything.',
     done: (_screen, state) => logged(state, 'moveArmy'),
   },
   {
     title: 'Close the season',
-    body: 'End the Season (E). Rivals move, coin arrives, queues finish their work. The realm breathes in seasons — nothing happens until you let it.',
+    body: 'End the Season (E). Rivals move, coin arrives, queues finish their work. The realm breathes in seasons: nothing happens until you let it.',
     done: (_screen, state) => state.turn > 1 || logged(state, 'endTurn'),
   },
   {
@@ -77,7 +77,7 @@ export class FirstEmberGuide {
   private render(screen: GameScreen): void {
     if (!this.el) {
       this.live = h('div', { class: 'guide-step-body', 'aria-live': 'polite' });
-      this.el = h('aside', { class: 'guide-card', role: 'complementary', 'aria-label': 'The First Ember — a guided start' });
+      this.el = h('aside', { class: 'guide-card', role: 'complementary', 'aria-label': 'The First Ember, a guided start' });
       // anchored inside the war table, so it can never cover the topbar
       (screen.el.querySelector('.war-table') ?? screen.el).appendChild(this.el);
     }

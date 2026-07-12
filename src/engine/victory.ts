@@ -1,6 +1,6 @@
 /**
  * Victory paths and the guarantee that every game ends.
- * All progress is public and countdowns are chronicled — nobody wins quietly.
+ * All progress is public and countdowns are chronicled; nobody wins quietly.
  */
 import { incomeReport } from './economy';
 import { heroesOf, lordName, lordOf, provincesOf } from './helpers';
@@ -9,8 +9,8 @@ import type { Rng } from './rng';
 import type { Effect, GameState, PlayerId, VictoryPath } from './types';
 
 export const DOMINION_SHARE = 0.55;
-// v12: 3→4 (dominion carried 44–48% of endings); v15: 4→5 (still 41–42%
-// across four mirrored sweeps against a ≤40% gate — the same dial, turned
+// v12: 3→4 (dominion carried 44-48% of endings); v15: 4→5 (still 41-42%
+// across four mirrored sweeps against a ≤40% gate; the same dial, turned
 // once more, refereed by the 600-game sweep)
 export const DOMINION_ROUNDS = 5;
 export const GOLDEN_GOLD = 900;
@@ -18,7 +18,7 @@ export const GOLDEN_ORDER = 65;
 export const GOLDEN_ROUNDS = 4;
 
 /** The Chronicle wearies: from this season the dominion threshold erodes
- * 0.8 points per season, down to its floor — late games end in thrones,
+ * 0.8 points per season, down to its floor; late games end in thrones,
  * not points. Visible in the ledger; announced when it begins. */
 export const WEARINESS_TURN = 38;
 export const DOMINION_FLOOR = 0.38;
@@ -33,7 +33,7 @@ export interface ScoreLine {
   amount: number;
 }
 
-/** Chronicle-close scoring — itemized for the summary screen. */
+/** Chronicle-close scoring, itemized for the summary screen. */
 export function chronicleScore(state: GameState, pid: PlayerId): { total: number; lines: ScoreLine[] } {
   const player = state.players[pid];
   const lines: ScoreLine[] = [];
@@ -76,7 +76,7 @@ function setWinner(state: GameState, rng: Rng, pid: PlayerId, path: VictoryPath 
     conquest: 'the last banner standing over a realm of ash and obedience',
     dominion: 'holding the great share of the realm until no argument remained',
     goldenAge: 'not by the sword, but by full granaries, quiet streets, and a treasury that ended the war by making it pointless',
-    legend: 'by the Saga fulfilled — the Ember Throne rekindled by a living legend',
+    legend: 'by the Saga fulfilled, the Ember Throne rekindled by a living legend',
     chronicle: 'by the judgment of the Chronicle when the page ran out',
   };
   if (path === 'chronicle') {
@@ -96,14 +96,14 @@ export function checkVictory(state: GameState, rng: Rng, effects: Effect[]): voi
   const paths = state.victory.paths;
   const alive = state.players.filter((p) => p.alive);
 
-  // conquest — always checked; a war with one claimant left is simply over
+  // conquest: always checked; a war with one claimant left is simply over
   if (alive.length === 1) {
     setWinner(state, rng, alive[0].id, paths.includes('conquest') ? 'conquest' : 'chronicle', effects);
     return;
   }
   if (alive.length === 0) {
     // mutual annihilation (should be unreachable): everyone scores nothing,
-    // so the chronicle draws a seeded lot over the ruins — deterministic,
+    // so the chronicle draws a seeded lot over the ruins: deterministic,
     // and never seat order
     const lot = state.players[rng.intRange(0, state.players.length - 1)];
     setWinner(state, rng, lot.id, 'chronicle', effects);
@@ -114,7 +114,7 @@ export function checkVictory(state: GameState, rng: Rng, effects: Effect[]): voi
 
   // ---- collect every claim from ONE snapshot before naming any winner
   // (v12): with the old first-claimant-wins loops, two lords completing a
-  // path in the same round were resolved by seat order — invisible, unfair,
+  // path in the same round were resolved by seat order: invisible, unfair,
   // and it once let an equal-richest Golden Age tie fall to whoever sat
   // earlier at the table. Ties now break on the path's own virtue, then on
   // the chronicle score, then on a seeded lot the chronicle admits to.
@@ -171,7 +171,7 @@ export function checkVictory(state: GameState, rng: Rng, effects: Effect[]): voi
       pool = pool.filter((pid) => key(pid) === best);
       if (pool.length === 1) return pool[0];
     }
-    // every virtue equal: a seeded lot — deterministic, never seat order
+    // every virtue equal: a seeded lot: deterministic, never seat order
     return pool[rng.intRange(0, pool.length - 1)];
   };
 

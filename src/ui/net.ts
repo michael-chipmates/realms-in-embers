@@ -3,20 +3,20 @@
  *
  * Everything that leaves this device is AES-GCM encrypted with a room key
  * that lives only in the invite link's URL fragment (fragments are never
- * sent to any server). The relay sees ciphertext and ordinals — nothing
+ * sent to any server). The relay sees ciphertext and ordinals, nothing
  * else. Reconnection is free: the relay replays the encrypted backlog and
  * the deterministic engine rebuilds the exact game.
  *
  * Integrity model (documented honestly): the room id is bound into each
  * blob as AES-GCM additional data, so ciphertext cannot be replayed across
- * rooms; WITHIN a room the relay is trusted for ordering — this is a
+ * rooms; WITHIN a room the relay is trusted for ordering: this is a
  * trust-your-friends table, not an adversarial ladder.
  *
  * Message kinds inside the encrypted envelope:
- *   hello   {cid, seat?, name}                        — presence + seat claims
- *   start   {settings, clock, seatCids}               — host begins the war
- *   act     {seat, action}                            — one game action
- *   chat    {name, text}                              — table talk
+ *   hello   {cid, seat?, name}                        · presence + seat claims
+ *   start   {settings, clock, seatCids}               · host begins the war
+ *   act     {seat, action}                            · one game action
+ *   chat    {name, text}                              · table talk
  */
 import type { Action, GameSettings } from '../engine/types';
 import { RULES_VERSION } from '../engine/state';
@@ -24,7 +24,7 @@ import { RULES_VERSION } from '../engine/state';
 /** Wire-protocol level. v2 (2026-07-12): hellos carry protocol+rules versions
  * so mixed-edition tables refuse cleanly instead of desyncing; appends carry a
  * client message id the relay dedupes, so a lost ack can never duplicate an
- * action. Old (v1) clients ignore the new fields and still interoperate —
+ * action. Old (v1) clients ignore the new fields and still interoperate:
  * the lobby marks them as "an older edition" and the host cannot start with
  * them seated. */
 export const PROTOCOL_VERSION = 2;
@@ -39,16 +39,16 @@ export interface ClockConfig {
 }
 
 export const CLOCK_PRESETS: ClockConfig[] = [
-  { perTurn: 0, bank: 0, label: 'No clock — take your seasons' },
-  { perTurn: 240, bank: 480, label: 'Relaxed — 4 min a season, 8 min reserve' },
-  { perTurn: 90, bank: 360, label: 'Standard — 90s a season, 6 min reserve' },
-  { perTurn: 45, bank: 300, label: 'Blitz — 45s a season, 5 min reserve' },
+  { perTurn: 0, bank: 0, label: 'No clock · take your seasons' },
+  { perTurn: 240, bank: 480, label: 'Relaxed · 4 min a season, 8 min reserve' },
+  { perTurn: 90, bank: 360, label: 'Standard · 90s a season, 6 min reserve' },
+  { perTurn: 45, bank: 300, label: 'Blitz · 45s a season, 5 min reserve' },
 ];
 
 export type NetPayload =
   /** lordId rides along since the gallery (2026-07-11); old clients ignore
    * unknown JSON fields, so the wire stays compatible in both directions.
-   * `mid` (v2) is the client message id — random, meaningless, used only to
+   * `mid` (v2) is the client message id: random, meaningless, used only to
    * spot our own echo and to let the relay drop retransmitted duplicates.
    * `proto`/`rules` (v2) ride the hello for the compatibility handshake. */
   | { kind: 'hello'; cid: string; name: string; seat: number | null; lordId?: string | null; proto?: number; rules?: number; mid?: string }
@@ -62,13 +62,13 @@ export type NetPayload =
   /** NET-033: a state checkpoint. After applying the endTurn act at relay
    * seq `afterSeq`, the sender's serialized state hashed to `hash`. Every
    * client reaches that exact point deterministically, so a mismatch means
-   * someone's table has left the shared story — freeze and rebuild. */
+   * someone's table has left the shared story: freeze and rebuild. */
   | { kind: 'check'; seat: number; afterSeq: number; turn: number; hash: string; mid?: string }
   | { kind: 'chat'; name: string; text: string; mid?: string }
   /** An open-table ad in the Wayhouse room (encrypted with the PUBLISHED
-   * wayhouse key — public by design; see docs/design/open-tables.md). */
+   * wayhouse key: public by design; see docs/design/open-tables.md). */
   | { kind: 'ad'; v: 1; name: string; size: GameSettings['mapSize']; seats: number; taken: number; clockLabel: string; fog: boolean; courier: boolean; invite: string; at: number; roomId: string; gone?: boolean; rules?: number; mid?: string }
-  /** A relay entry that failed to decrypt or validate — recorded so the log
+  /** A relay entry that failed to decrypt or validate, recorded so the log
    * has no permanent gap. Every honest client holds the same key and runs
    * the same checks on the same bytes, so every honest client tombstones the
    * SAME entries: skipping is consistent, never a fork. */
@@ -198,7 +198,7 @@ function newMid(): string {
 
 // ------------------------------------------------------------- the wayhouse
 /** The Wayhouse: one well-known room per relay where hosts who WANT
- * strangers post their open tables. Its key is published on purpose —
+ * strangers post their open tables. Its key is published on purpose:
  * "public" is simply "everyone holds the key", which keeps one code path
  * and keeps the relay as blind as ever. Full design:
  * docs/design/open-tables.md. */
@@ -248,12 +248,12 @@ export class NetClient {
   private outbox: NetPayload[] = [];
   /** Sent-but-unechoed payloads by mid. If the socket dies between the relay
    * storing an append and us seeing the echo, the backlog replay tells us
-   * (our mid appears) — anything still unaccounted for is retransmitted, and
+   * (our mid appears). Anything still unaccounted for is retransmitted, and
    * the relay's mid-dedupe makes retransmission a no-op if it DID land. This
    * closes the lost-ack duplicate for good. */
   private pending = new Map<string, NetPayload>();
   /** Decrypted entries INDEXED BY SEQ (dense from the relay; gaps only while
-   * a blob is still decrypting — consumers must treat undefined as "wait"). */
+   * a blob is still decrypting: consumers must treat undefined as "wait"). */
   readonly entries: (NetEntry | undefined)[] = [];
   onEntry: ((e: NetEntry) => void) | null = null;
   onBacklogReady: (() => void) | null = null;
@@ -288,7 +288,7 @@ export class NetClient {
     ws.addEventListener('open', () => {
       this.backoff = 500;
       this.onStatus?.('open');
-      // delta fetch: a reconnect asks only for what it missed — the relay
+      // delta fetch: a reconnect asks only for what it missed: the relay
       // replies with `since`, and old relays ignore the field (full log)
       ws.send(JSON.stringify({ t: 'join', room: this.roomId, since: this.entries.length }));
     });
@@ -323,7 +323,7 @@ export class NetClient {
       }
       this.joined = true;
       // settle the unacked ledger against the backlog: whatever landed is
-      // cleared; whatever didn't goes back on the wire (same mid — the relay
+      // cleared; whatever didn't goes back on the wire (same mid: the relay
       // dedupes, so this is safe even if the entry arrives twice)
       for (const e of this.entries) {
         const mid = e && 'mid' in e.payload ? e.payload.mid : undefined;
@@ -362,7 +362,7 @@ export class NetClient {
 
   /** Decrypt + validate; anything unreadable or out of bounds becomes a
    * tombstone. Same key + same bytes + same checks on every honest client
-   * means every honest client tombstones identically — no forks. */
+   * means every honest client tombstones identically: no forks. */
   private async readBlob(blob: string, seq: number): Promise<NetPayload> {
     const raw = await decrypt(this.key!, this.roomId, blob);
     const valid = raw === null ? null : validatePayload(raw);

@@ -1,5 +1,5 @@
 /**
- * The lord gallery — choosing a banner is the set piece, solo and online.
+ * The lord gallery: choosing a banner is the set piece, solo and online.
  * One lord at a time, painted large: portrait, creed, both abilities,
  * temperament in ink, and one dry line from the chronicler who has
  * buried most of these families at least once.
@@ -17,7 +17,7 @@ import { trapFocus } from '../modal';
 import { audio } from '../audio';
 
 /** Osperan's margin note on each claimant. Presentation copy, deliberately
- * not in the engine content — the chronicle itself never says these aloud. */
+ * not in the engine content: the chronicle itself never says these aloud. */
 const OSPERAN_LINES: Record<string, string> = {
   seraphine: 'She will pray for your soldiers. Then she will spend them. Both sincerely.',
   aldric: 'Two coronations and not one lesson between them. Magnificent, though.',
@@ -45,10 +45,10 @@ export interface GalleryOptions {
   /** Header line above the gallery, e.g. whose banner is being chosen. */
   title?: string;
   initial?: string | null;
-  /** Lord ids already claimed elsewhere — shown, but not pickable. */
+  /** Lord ids already claimed elsewhere: shown, but not pickable. */
   taken?: string[];
   onPick: (lordId: string) => void;
-  /** "Let fate deal" — omit to hide the option. */
+  /** "Let fate deal": omit to hide the option. */
   onFate?: () => void;
   onCancel?: () => void;
 }
@@ -124,9 +124,9 @@ export function openLordGallery(opts: GalleryOptions): void {
           h('p', { class: 'small italic', style: { color: 'var(--gold)' } }, creed.tagline),
           h('div', { class: 'gallery-archetype-row' },
             h('span', { class: 'chip' },
-              lord.complexity === 'forthright' ? 'forthright — reads at a glance'
-                : lord.complexity === 'measured' ? 'measured — rewards a plan'
-                : 'subtle — plays the long game'),
+              lord.complexity === 'forthright' ? 'forthright: reads at a glance'
+                : lord.complexity === 'measured' ? 'measured: rewards a plan'
+                : 'subtle: plays the long game'),
             lord.firstBanner ? h('span', { class: 'chip chip-win' }, 'a good first banner') : null,
           ),
           h('p', { class: 'small gallery-archetype' }, lord.archetype),
@@ -163,7 +163,7 @@ export function openLordGallery(opts: GalleryOptions): void {
           : null,
       ),
       h('p', { class: 'small muted', style: { textAlign: 'center', margin: '0.3rem 0 0' } },
-        `${index + 1} of ${list.length} — arrows, swipe, or ← → turn the page`),
+        `${index + 1} of ${list.length} · arrows, swipe, or ← → turn the page`),
     );
   };
 

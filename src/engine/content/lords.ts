@@ -48,7 +48,7 @@ export interface LordPerkEffects {
 }
 
 /** The active half of a lord's identity (rules v11). The passive perk gives
- * a lord their SHAPE; the signature gives them a DECISION — an order with a
+ * a lord their SHAPE; the signature gives them a DECISION: an order with a
  * cooldown, announced to the whole table when it fires. Magnitudes live in
  * SIGNATURE_TUNING (engine/signature.ts); a test pins each desc to them. */
 export interface LordSignature {
@@ -70,7 +70,7 @@ export interface LordDef {
   creed: Creed;
   /** Two-to-three sentence portrait shown at setup and in the lords panel. */
   blurb: string;
-  /** One line on HOW this lord plays — the archetype, not the fiction. */
+  /** One line on HOW this lord plays: the archetype, not the fiction. */
   archetype: string;
   /** How much of the game the kit asks you to hold in your head:
    * forthright (a first banner), measured, or subtle. */
@@ -101,7 +101,7 @@ export const LORDS: LordDef[] = [
     name: 'Seraphine Vael',
     epithet: 'the Cinder Rose',
     creed: 'flame',
-    blurb: 'Last abbess of the burned Hearthmother convent, now a claimant with a relic sword and a following that would walk into fire for her — several already have. She wars gently and governs fiercely.',
+    blurb: 'Last abbess of the burned Hearthmother convent, now a claimant with a relic sword and a following that would walk into fire for her (several already have). She wars gently and governs fiercely.',
     archetype: 'A realm in good order pays for its own defense. Shepherd the parishes first; the war chest follows.',
     complexity: 'measured',
     personality: { aggression: 0.45, greed: 0.25, mysticism: 0.55, loyalty: 0.9, pride: 0.5 },
@@ -119,7 +119,7 @@ export const LORDS: LordDef[] = [
       cooldown: 8, target: 'none', fxFamily: 'bless',
     },
     lines: {
-      intro: 'The realm is cold, my lords. I intend to warm it — with hearths where possible.',
+      intro: 'The realm is cold, my lords. I intend to warm it. With hearths where possible.',
       taunt: 'I lit a candle for you. I light one for everyone I am about to ruin.',
       gracious: 'Kindness is not weakness. Test the difference at your leisure.',
       defeat: 'Keep the fires lit. That is all I ever asked of anyone.',
@@ -140,8 +140,8 @@ export const LORDS: LordDef[] = [
     color: '#b8860b', colorAlt: '#3a2c14', pattern: 'checks', sigil: 'crown',
     perk: {
       label: 'The Old Blood',
-      // v15 balance: capital +10% → +5% — the compounding half of the perk
-      // ran Aldric to a conclusive 38–40% per seat at 600 mirrored games.
+      // v15 balance: capital +10% → +5% (the compounding half of the perk
+      // ran Aldric to a conclusive 38-40% per seat at 600 mirrored games).
       // The knights keep their discount; a king keeps his cavalry.
       desc: 'Your capital yields +5% gold. Banner Knights cost 10% less.',
       fx: { capitalIncomePct: 5, unitDiscountId: 'knights', unitDiscountPct: 10 },
@@ -179,7 +179,7 @@ export const LORDS: LordDef[] = [
     },
     signature: {
       id: 'standFast', name: 'Stand Fast',
-      desc: 'Every province you rule defends +25% until your next season, and attacks you launch from your own ground strike +12% harder — a held gate opens both ways.',
+      desc: 'Every province you rule defends +25% until your next season, and attacks you launch from your own ground strike +12% harder: a held gate opens both ways.',
       flavor: 'No speech. He walks the wall once, and the wall understands.',
       cooldown: 8, target: 'none', fxFamily: 'ward',
     },
@@ -240,7 +240,7 @@ export const LORDS: LordDef[] = [
     },
     signature: {
       id: 'deepRoads', name: 'The Deep Roads',
-      desc: 'This season your armies march one province further — the under-mountain ways open.',
+      desc: 'This season your armies march one province further: the under-mountain ways open.',
       flavor: 'The mountain keeps roads it never mentions. Guests use them once, blindfolded, and arrive very surprised.',
       cooldown: 8, target: 'none', fxFamily: 'ward',
     },
@@ -300,7 +300,7 @@ export const LORDS: LordDef[] = [
     },
     signature: {
       id: 'greenwoodAmbush', name: 'Greenwood Ambush',
-      desc: 'This season your attacks strike +12% harder wherever the battle touches forest — theirs or yours.',
+      desc: 'This season your attacks strike +12% harder wherever the battle touches forest, theirs or yours.',
       flavor: 'The wood goes quiet a day before. Woodcutters know to take a holiday.',
       cooldown: 8, target: 'none', fxFamily: 'curse',
     },
@@ -309,7 +309,7 @@ export const LORDS: LordDef[] = [
       taunt: 'The wood is patient. I, regrettably for you, am the wood.',
       gracious: 'Plant a thing and keep it alive. Then we may talk of ruling.',
       defeat: 'Cut the tree; the roots remain. Mind where you build.',
-      victory: 'Good. Now — everyone out of my forest.',
+      victory: 'Good. Now: everyone out of my forest.',
     },
   },
   {
@@ -362,16 +362,16 @@ export const LORDS: LordDef[] = [
     },
     signature: {
       id: 'callTheDebts', name: 'Call in the Debts',
-      desc: 'Every living rival immediately pays you a cut of their treasury — 6% against one rival, gentler per head as the table grows. None of them thanks you for it.',
+      desc: 'Every living rival immediately pays you a cut of their treasury: 6% against one rival, gentler per head as the table grows. None of them thanks you for it.',
       flavor: 'The appendix, gentlemen. Nobody reads the appendix. The appendix reads you.',
       cooldown: 10, target: 'none', fxFamily: 'curse',
     },
     lines: {
-      intro: 'Peace, war — details of scheduling. Shall we discuss terms?',
+      intro: 'Peace, war: details of scheduling. Shall we discuss terms?',
       taunt: 'I already own the ground you’re standing on. Ask your treasurer.',
       gracious: 'A pleasure doing business. Do read the appendix.',
       defeat: 'Very well. Everything I own is hidden, and everything you found is cursed. Good day.',
-      victory: 'The realm signs here, here, and — yes — in blood is traditional.',
+      victory: 'The realm signs here, here, and (yes) in blood is traditional.',
     },
   },
   {
@@ -379,7 +379,7 @@ export const LORDS: LordDef[] = [
     name: 'Lady Nyssa Vex',
     epithet: 'the Quiet Knife',
     creed: 'umbra',
-    blurb: 'Nobody remembers inviting Lady Vex to court, and nobody has managed to make her leave. Wars, in her view, are decided in pantries, bedchambers, and margins — battles merely announce the result.',
+    blurb: 'Nobody remembers inviting Lady Vex to court, and nobody has managed to make her leave. Wars, in her view, are decided in pantries, bedchambers, and margins. Battles merely announce the result.',
     archetype: 'Order is a rumor she can start or end. Wars are won at dinner parties.',
     complexity: 'subtle',
     personality: { aggression: 0.4, greed: 0.5, mysticism: 0.6, loyalty: 0.3, pride: 0.55 },
@@ -401,7 +401,7 @@ export const LORDS: LordDef[] = [
       taunt: 'You talk of armies. I know what your cook knows.',
       gracious: 'Secrets kept are sweeter than gold. I keep both, at interest.',
       defeat: 'Kill the spider, keep the web. You’ll wish you’d burned it.',
-      victory: 'Strange — no one saw me win. No one ever sees the important part.',
+      victory: 'Strange: no one saw me win. No one ever sees the important part.',
     },
   },
   {
@@ -429,7 +429,7 @@ export const LORDS: LordDef[] = [
     lines: {
       intro: 'Three graves could not hold me. One throne should manage nicely.',
       taunt: 'I have more soldiers under your fields than you have upon them.',
-      gracious: 'Loyalty outlasting death — that, I respect. Everything else is weather.',
+      gracious: 'Loyalty outlasting death: that, I respect. Everything else is weather.',
       defeat: 'Bury me deep this time. I do so enjoy the walk back.',
       victory: 'The living and the dead agree at last: sit down, Morrikan. So I shall.',
     },

@@ -24,7 +24,7 @@ const SUFFIX: Record<Terrain, string[]> = {
   moor: ['mere', 'moor', 'mire', 'marsh', 'wash', 'slough', 'hag', 'water', 'sink', 'vigil'],
 };
 
-/** Names too good to leave to chance — sprinkled in before generation. */
+/** Names too good to leave to chance, sprinkled in before generation. */
 const CURATED: Record<Terrain, string[]> = {
   meadow: ['The Braided Vale', 'Kingsbarley', 'Widow’s Acre', 'The Long Larder'],
   forest: ['The Unswept Wood', 'Vesper Weald', 'The Quiet Fathoms', 'Owlmark'],
@@ -73,7 +73,7 @@ const FLAVOR: Record<Terrain, string[]> = {
     'Feeds three provinces and complains for six.',
     'The barley here grows tall enough to hide a modest cavalry ambush. It has.',
     'Its markets sell everything, including, twice now, the deed to itself.',
-    'Peaceful, prosperous, and utterly indefensible — the tax collector’s favorite words.',
+    'Peaceful, prosperous, and utterly indefensible: the tax collector’s favorite words.',
     'The bell in the granary tower rings for weddings, harvests, and approaching armies, in the same cheerful tone.',
     'Local proverb: a full barn has many heirs.',
   ],
@@ -86,7 +86,7 @@ const FLAVOR: Record<Terrain, string[]> = {
     'What the wood takes, the wood keeps. Ask after the toll bridge of 402.',
   ],
   hills: [
-    'Wool, stone, and stubbornness — the three exports, in rising order of supply.',
+    'Wool, stone, and stubbornness: the three exports, in rising order of supply.',
     'Every hilltop has a cairn; every cairn has an opinion.',
     'The shepherds here can tell a storm two days out and a war three.',
     'Its drystone walls have outlasted four dynasties without mortar or enthusiasm.',
@@ -187,7 +187,7 @@ export function makePersonName(rng: Rng, cls: HeroClass): { name: string; epithe
   return { name, epithet: rng.pick(EPITHETS[cls]) };
 }
 
-/** Rebellion leaders, wolfshead captains — one-line notorieties. */
+/** Rebellion leaders, wolfshead captains: one-line notorieties. */
 export function makeTroubleName(rng: Rng): string {
   const who = rng.pick(FIRST_NAMES);
   const what = rng.pick([

@@ -4,7 +4,7 @@
  * One function (`fight`) drives both the real thing and the preview:
  * `resolveBattle` runs it once with the live RNG and applies every
  * consequence to state; `previewBattle` runs it ~240 times on a forked RNG
- * that never advances the real stream — checking your odds never changes them.
+ * that never advances the real stream; checking your odds never changes them.
  *
  * Every modifier that touches the math is an OddsModifier with a plain-
  * language label. The preview shows exactly what the battle will use.
@@ -34,7 +34,7 @@ import { NEUTRAL } from './types';
 // ---------------------------------------------------------------- tuning
 
 /** The battle engine's tuning table, exported so the Codex renders the same
- * numbers the fights use. Change a value here and the book follows — never
+ * numbers the fights use. Change a value here and the book follows; never
  * restate these numbers in UI copy by hand. */
 export const COMBAT_TUNING = {
   /** Melee clashes before night ends it; a stalemate keeps the field with the defender. */
@@ -187,7 +187,7 @@ function buildSide(
       if (ctx.wallsWork) {
         mods.push({ label: wallLabel(ctx.province), mult: 1 + ctx.wallBonus });
       } else {
-        mods.push({ label: `${wallLabel(ctx.province)} — leveled by siegeworks`, mult: 1 });
+        mods.push({ label: `${wallLabel(ctx.province)}, leveled by siegeworks`, mult: 1 });
       }
     }
     for (const mod of ctx.province.mods) {
@@ -240,7 +240,7 @@ function buildSide(
   }
 
   // creed grudge perks (atkVsCreed) are appended by the caller via
-  // addCreedGrudgeMod — it needs the enemy lord's creed, unknown here.
+  // addCreedGrudgeMod; it needs the enemy lord's creed, unknown here.
 
   if (arts > 0) {
     mods.push({ label: 'Banner arts of the heroes', mult: 1 + arts / 100 });
@@ -386,7 +386,7 @@ function fight(rng: Rng, attacker: Side, defender: Side, ctx: FightCtx): FightRe
       if (check(attacker, aPow2, dPow2)) {
         withdrew = 'attacker';
         dealDamage(rng, attacker, dPow2 * DMG * COMBAT_TUNING.withdrawParting);
-        notes.push({ kind: 'withdraw', text: 'The attackers broke off and fell back in order — mostly.' });
+        notes.push({ kind: 'withdraw', text: 'The attackers broke off and fell back in order. Mostly.' });
         break;
       }
       if (check(defender, dPow2, aPow2)) {
@@ -443,7 +443,7 @@ function addCreedGrudgeMod(state: GameState, side: Side, enemyPlayer: PlayerId):
 }
 
 /** Signature battle bonuses: Lyra's sworn crusade, Cormac's season of
- * ambushes. Previewed like everything else — the odds never lie. */
+ * ambushes. Previewed like everything else; the odds never lie. */
 function addSignatureMods(state: GameState, side: Side, enemyPlayer: PlayerId, ctx: FightCtx, fromProvince: number | null): void {
   if (side.player < 0) return;
   const player = state.players[side.player];
@@ -462,7 +462,7 @@ function addSignatureMods(state: GameState, side: Side, enemyPlayer: PlayerId, c
     }
   }
   // Fen Lights lead outward too (rules v12): attacks launched FROM a lit
-  // province strike harder — the lights walk ahead of her columns and lead
+  // province strike harder; the lights walk ahead of her columns and lead
   // the enemy's line somewhere it regrets.
   if (side.role === 'attacker' && fromProvince !== null) {
     const lit = state.provinces[fromProvince].mods.some((m) => m.label === 'Fen Lights' && m.by === side.player);
@@ -471,7 +471,7 @@ function addSignatureMods(state: GameState, side: Side, enemyPlayer: PlayerId, c
       side.mods.push({ label: 'Fen Lights lead the column', mult });
       side.mult *= mult;
     }
-    // Stand Fast (v12): a held gate opens both ways — Halvard's sallies from
+    // Stand Fast (v12): a held gate opens both ways; Halvard's sallies from
     // his own warded ground carry the wall's confidence with them.
     const standing = state.provinces[fromProvince].mods.some((m) => m.label === 'Stand Fast' && m.by === side.player);
     if (standing) {
@@ -510,11 +510,11 @@ function weaveSpells(
     if (fx.enemyMult && fx.enemyMult !== 1) {
       other.mods.push({ label: `${def.name} against them (−${woven.cost} Emberlight)`, mult: fx.enemyMult });
       other.mult *= fx.enemyMult;
-      if (!fx.powerMult) side.mods.push({ label: `${def.name} (−${woven.cost} Emberlight) — weakens the foe`, mult: 1 });
+      if (!fx.powerMult) side.mods.push({ label: `${def.name} (−${woven.cost} Emberlight): weakens the foe`, mult: 1 });
     }
     if (fx.lossMult && fx.lossMult !== 1) {
       side.lossMult *= fx.lossMult;
-      side.mods.push({ label: `${def.name} (−${woven.cost} Emberlight) — shields the ranks`, mult: 1 });
+      side.mods.push({ label: `${def.name} (−${woven.cost} Emberlight): shields the ranks`, mult: 1 });
     }
     if (fx.calmGround) {
       other.calmed = true;
@@ -550,7 +550,7 @@ export function previewBattle(state: GameState, armyId: number, targetProvince: 
     const aSide = buildSide(state, atkArmies, 'attacker', ctx, enemyTerrorA);
     const dSide = buildSide(state, defenders, 'defender', ctx, attackerTerror);
     if (supports.length > 0 && i === 0) {
-      aSide.mods.push({ label: `Combined assault — ${atkArmies.length} banners converge`, mult: 1 });
+      aSide.mods.push({ label: `Combined assault: ${atkArmies.length} banners converge`, mult: 1 });
     }
     const fervorPaid = fervor && army.owner >= 0 && state.players[army.owner].emberlight >= FERVOR_COST;
     if (fervorPaid) {
@@ -562,7 +562,7 @@ export function previewBattle(state: GameState, armyId: number, targetProvince: 
     addSignatureMods(state, aSide, dSide.player, ctx, army.province);
     addSignatureMods(state, dSide, aSide.player, ctx, null);
     // spells must be affordability-checked against the post-fervor pool,
-    // exactly as resolveBattle will see it — deduct, weave, restore
+    // exactly as resolveBattle will see it: deduct, weave, restore
     if (fervorPaid) state.players[army.owner].emberlight -= FERVOR_COST;
     weaveSpells(state, aSide, dSide, atkArmies, defenders, false);
     if (fervorPaid) state.players[army.owner].emberlight += FERVOR_COST;
@@ -584,7 +584,7 @@ export function previewBattle(state: GameState, armyId: number, targetProvince: 
   const wallBonus = wallBonusOf(target);
   if (wallBonus > 0 && defenders.some((d) => d.owner === target.owner)) {
     const hasSiege = atkArmies.some((a) => a.units.some((u) => UNITS[u.type].traits.includes('siege')));
-    notes.push(hasSiege ? 'Your siegeworks will level the walls.' : 'Walls stand against you — siegeworks would level them.');
+    notes.push(hasSiege ? 'Your siegeworks will level the walls.' : 'Walls stand against you. Siegeworks would level them.');
   }
   if (state.provinces[army.province].riverBorders.includes(target.id)) notes.push('You attack across a river (−15%).');
   if (viaSea) notes.push('An assault from the sea (−15%).');
@@ -642,14 +642,14 @@ export function resolveBattle(
   const aSide = buildSide(state, atkArmies, 'attacker', ctx, defTerror);
   const dSide = buildSide(state, defenders, 'defender', ctx, atkTerror);
   if (supports.length > 0) {
-    aSide.mods.push({ label: `Combined assault — ${atkArmies.length} banners converge`, mult: 1 });
+    aSide.mods.push({ label: `Combined assault: ${atkArmies.length} banners converge`, mult: 1 });
   }
   const spellNotes: BattleEventNote[] = [];
   if (fervor && army.owner >= 0 && state.players[army.owner].emberlight >= FERVOR_COST) {
     state.players[army.owner].emberlight -= FERVOR_COST;
     aSide.mods.push({ label: `Emberlight fervor (−${FERVOR_COST} Emberlight)`, mult: FERVOR_MULT });
     aSide.mult *= FERVOR_MULT;
-    spellNotes.push({ kind: 'spell', text: 'The attackers burned raw Emberlight for fervor — the line advanced glowing.' });
+    spellNotes.push({ kind: 'spell', text: 'The attackers burned raw Emberlight for fervor. The line advanced glowing.' });
   }
   addCreedGrudgeMod(state, aSide, dSide.player);
   addCreedGrudgeMod(state, dSide, aSide.player);
@@ -908,7 +908,7 @@ export function heroDies(
     }
   }
   effects.push({ e: 'heroDied', heroId: hero.id, name: hero.name, cause, owner: hero.owner });
-  notes?.push({ kind: 'heroDeath', text: `${hero.name}, ${hero.epithet}, fell — ${cause}.` });
+  notes?.push({ kind: 'heroDeath', text: `${hero.name}, ${hero.epithet}, fell: ${cause}.` });
   if (hero.owner >= 0) {
     say(state, rng, 'heroDied', {
       hero: hero.name,

@@ -1,4 +1,4 @@
-/** FNV-1a 32-bit — stable, dependency-free, deterministic across engines
+/** FNV-1a 32-bit: stable, dependency-free, deterministic across engines
  * (only integer ops and Math.imul). One source for the fixture canary and
  * the online state checkpoints; if this ever changed shape, both would
  * notice at once. */

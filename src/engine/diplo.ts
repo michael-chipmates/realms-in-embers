@@ -1,6 +1,6 @@
 /**
  * Attitude: how one lord regards another, itemized so the player can always
- * read WHY. Deeds decay a little each round — memory fades, slowly, and
+ * read WHY. Deeds decay a little each round; memory fades, slowly, and
  * broken oaths fade slowest of all (their decay rates are set where the
  * deed is written).
  */

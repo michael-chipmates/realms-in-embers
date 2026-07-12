@@ -1,5 +1,5 @@
 /**
- * Setup — the muster table. Players, lords, difficulty, realm size, seed
+ * Setup: the muster table. Players, lords, difficulty, realm size, seed
  * (visible, shareable, previewed), victory paths, chronicle length, fog.
  */
 import { LORDS, LORD_BY_ID } from '../../engine/content/lords';
@@ -19,7 +19,7 @@ import { artSlot } from '../art';
 import { tip } from '../tooltip';
 
 // Every number below renders from the engine's own constants. The screen
-// shipped "3 consecutive seasons" for a night after rules v12 made it four —
+// shipped "3 consecutive seasons" for a night after rules v12 made it four:
 // exactly the drift this project promises cannot happen. Never hand-write
 // a victory number again.
 export const VICTORY_INFO: Record<VictoryPath, { name: string; desc: string }> = {
@@ -107,7 +107,7 @@ export function renderSetup(app: App, presetSeed?: string): void {
               value: l.id,
               selected: player.lordId === l.id,
               disabled: l.id !== player.lordId && takenLords.includes(l.id),
-            }, `${lordOptionLabel(l.id)} — ${CREEDS[l.creed].name}`),
+            }, `${lordOptionLabel(l.id)} · ${CREEDS[l.creed].name}`),
           ),
         );
 
@@ -150,7 +150,7 @@ export function renderSetup(app: App, presetSeed?: string): void {
           html: iconSvg('crownSmall', 15),
           onclick: () => {
             openLordGallery({
-              title: `Seat ${idx + 1} — whose banner?`,
+              title: `Seat ${idx + 1}: whose banner?`,
               initial: player.lordId !== 'random' ? player.lordId : null,
               taken: settings.players.filter((p, i) => i !== idx && p.lordId !== 'random').map((p) => p.lordId),
               onPick: (lordId) => { player.lordId = lordId; renderPlayers(); },
@@ -159,7 +159,7 @@ export function renderSetup(app: App, presetSeed?: string): void {
             });
           },
         });
-        tip(galleryBtn, 'Leaf through the twelve lords — portraits, both abilities, temperament.');
+        tip(galleryBtn, 'Leaf through the twelve lords: portraits, both abilities, temperament.');
 
         const row = h('div', { class: 'setup-player-row' }, creedDot, kindSelect, lordSelect, galleryBtn, diffSelect, removeBtn);
         if (lord) {
@@ -183,7 +183,7 @@ export function renderSetup(app: App, presetSeed?: string): void {
           }, '+ Another claimant')
         : null,
       h('p', { class: 'small muted', style: { padding: '0 0.9rem 0.6rem' } },
-        'Two or more mortals at one table means hotseat — the map hides between seasons.'),
+        'Two or more mortals at one table means hotseat: the map hides between seasons.'),
     );
   }
 
@@ -211,9 +211,9 @@ export function renderSetup(app: App, presetSeed?: string): void {
       settings.maxTurns = parseInt((e.target as HTMLSelectElement).value, 10);
     },
   },
-    h('option', { value: '40' }, 'Short — 40 seasons'),
-    h('option', { value: '60', selected: true }, 'Standard — 60 seasons'),
-    h('option', { value: '90' }, 'Long — 90 seasons'),
+    h('option', { value: '40' }, 'Short · 40 seasons'),
+    h('option', { value: '60', selected: true }, 'Standard · 60 seasons'),
+    h('option', { value: '90' }, 'Long · 90 seasons'),
   );
 
   const fogToggle = h('input', {
@@ -285,10 +285,10 @@ export function renderSetup(app: App, presetSeed?: string): void {
           h('div', { class: 'field' }, h('label', { for: 'setup-length' }, 'Chronicle'), lengthSelect),
           h('label', { class: 'field', style: { flexDirection: 'row', alignItems: 'center', gap: '0.4rem', minHeight: '44px' } }, fogToggle, 'Fog of war'),
         ),
-        // progressive disclosure: the defaults suit a first muster — the
+        // progressive disclosure: the defaults suit a first muster: the
         // fine print unfolds for those who came to argue with it
         h('details', { class: 'panel setup-fineprint', style: { marginTop: '0.6rem' } },
-          h('summary', { class: 'panel-title' }, 'Roads to the throne — the fine print'),
+          h('summary', { class: 'panel-title' }, 'Roads to the throne · the fine print'),
           h('p', { class: 'small muted', style: { margin: '0.2rem 0 0.4rem' } },
             'All roads stand open by default. Close some to force a different kind of war.'),
           victoryBoxes,

@@ -1,6 +1,6 @@
 /**
  * The battle theater: the same resolved battle the report shows, staged as
- * a scene — ranks of companies, a balance that tips clash by clash, the
+ * a scene: ranks of companies, a balance that tips clash by clash, the
  * field's own words between rounds, and an aftermath that answers "what
  * changed, and why did it differ from the augurs?"
  *
@@ -8,7 +8,7 @@
  * this file runs; every number here is quoted, never derived: per-round
  * numbers are hits struck (BattleRound), end-of-battle numbers are
  * companies lost (BattleSideSummary), and the two are never conflated.
- * Reduced motion never lands here — battleReport.ts keeps the still page.
+ * Reduced motion never lands here: battleReport.ts keeps the still page.
  */
 import { UNITS } from '../../engine/content/units';
 import type { BattleEventNote, BattleReport, BattleRound } from '../../engine/types';
@@ -54,7 +54,7 @@ function shareOf(r: BattleRound): number {
 }
 
 /** Deterministic, replay-stable: the moments are read off the typed report,
- * in a fixed order — never sampled, never random. */
+ * in a fixed order: never sampled, never random. */
 function decisiveMoments(report: BattleReport, labels: string[]): string[] {
   const out: string[] = [];
   const rounds = report.rounds;
@@ -66,7 +66,7 @@ function decisiveMoments(report: BattleReport, labels: string[]): string[] {
       if (d > swing) { swing = d; swingAt = i; }
     }
     if (swing >= 0.08) {
-      out.push(`${labels[swingAt]} turned the day — the balance swung ${Math.round(swing * 100)} points in one exchange.`);
+      out.push(`${labels[swingAt]} turned the day: the balance swung ${Math.round(swing * 100)} points in one exchange.`);
     }
   }
   if (rounds.length >= 1) {
@@ -203,7 +203,7 @@ export function openBattleTheater(screen: GameScreen, report: BattleReport, prev
     const r = report.rounds[i];
     roundsList.appendChild(renderRound(i));
     balanceFill.style.width = `${Math.round(shareOf(r) * 100)}%`;
-    balanceLabel.textContent = `${labels[i]} — ${r.aPower} against ${r.dPower}`;
+    balanceLabel.textContent = `${labels[i]}: ${r.aPower} against ${r.dPower}`;
     dots[i]?.classList.add('theater-dot-past');
     if (withSound) audio.clash();
     roundsList.scrollTop = roundsList.scrollHeight;
@@ -235,7 +235,7 @@ export function openBattleTheater(screen: GameScreen, report: BattleReport, prev
     const beneficiary = attackerWon ? report.aMods : report.dMods;
     const strongest = [...beneficiary].sort((a, b) => (b.mult - 1) - (a.mult - 1))[0];
     return h('p', { class: 'small' },
-      `The augurs gave ${previewLabel} — the field ruled otherwise. `,
+      `The augurs gave ${previewLabel}. The field ruled otherwise. `,
       strongest && strongest.mult > 1
         ? `${strongest.label} weighed heaviest against the forecast; the rest was the fortune 240 sampled battles can only bracket.`
         : 'Fortune inside the forecast’s own bracket decided it.',
@@ -244,7 +244,7 @@ export function openBattleTheater(screen: GameScreen, report: BattleReport, prev
 
   const aftermath = h('div', { class: 'theater-aftermath', style: { display: 'none' } },
     h('p', { class: 'battle-captured small-caps' },
-      `${attackerWon ? atk.name : def.name} holds the field${report.captured ? ` — ${report.provinceName} changes hands.` : '.'}`),
+      `${attackerWon ? atk.name : def.name} holds the field${report.captured ? `. ${report.provinceName} changes hands.` : '.'}`),
     h('div', { class: 'battle-sides' },
       lossSide(report.attacker, atk, attackerWon),
       lossSide(report.defender, def, !attackerWon),

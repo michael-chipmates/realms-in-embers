@@ -18,7 +18,7 @@ export interface BattleSpellFx {
 }
 
 /** Visual family for the war-table cast animation and the Codex's
- * illuminated spell cards. UI-only — the engine never reads it. */
+ * illuminated spell cards. UI-only: the engine never reads it. */
 export type SpellFxFamily = 'bless' | 'curse' | 'ward' | 'summon' | 'scry';
 
 export interface SpellDef {

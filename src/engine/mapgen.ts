@@ -19,9 +19,9 @@ export interface MapSizeCfg {
 }
 
 export const MAP_SIZES: Record<MapSize, MapSizeCfg> = {
-  small: { w: 42, h: 32, provinces: 12, label: 'Small — 12 provinces' },
-  medium: { w: 54, h: 40, provinces: 20, label: 'Medium — 20 provinces' },
-  large: { w: 66, h: 48, provinces: 30, label: 'Large — 30 provinces' },
+  small: { w: 42, h: 32, provinces: 12, label: 'Small: 12 provinces' },
+  medium: { w: 54, h: 40, provinces: 20, label: 'Medium: 20 provinces' },
+  large: { w: 66, h: 48, provinces: 30, label: 'Large: 30 provinces' },
 };
 
 export interface GeneratedMap {

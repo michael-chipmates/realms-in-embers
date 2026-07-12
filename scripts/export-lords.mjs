@@ -1,4 +1,4 @@
-// Export /lords/ — the twelve claimants as one static, crawlable page,
+// Export /lords/: the twelve claimants as one static, crawlable page,
 // rendered straight from the engine's own content so it can never drift
 // (same doctrine as the Codex export). Regenerate whenever lords change:
 //   npx tsx scripts/export-lords.mjs
@@ -17,9 +17,9 @@ const rulesVersion = stateSrc.match(/export const RULES_VERSION = (\d+)/)?.[1];
 const esc = (s) => s.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('"', '&quot;');
 
 const COMPLEXITY = {
-  forthright: 'forthright — reads at a glance',
-  measured: 'measured — rewards a plan',
-  subtle: 'subtle — plays the long game',
+  forthright: 'forthright: reads at a glance',
+  measured: 'measured: rewards a plan',
+  subtle: 'subtle: plays the long game',
 };
 
 const cards = LORDS.map((lord) => {
@@ -27,12 +27,12 @@ const cards = LORDS.map((lord) => {
   return `
     <article id="${lord.id}">
       ${art ? `<img src="/art/${esc(art)}" alt="${esc(lord.name)}, ${esc(lord.epithet)}" loading="lazy" width="132" height="165">` : ''}
-      <h2>${esc(lord.name)} <span class="muted">— ${esc(lord.epithet)}</span></h2>
+      <h2>${esc(lord.name)}<span class="muted">, ${esc(lord.epithet)}</span></h2>
       <p class="small muted">${esc(CREEDS[lord.creed].name)} · ${esc(COMPLEXITY[lord.complexity])}${lord.firstBanner ? ' · a good first banner' : ''}</p>
       <p class="archetype">${esc(lord.archetype)}</p>
       <p class="small">${esc(lord.blurb)}</p>
-      <p class="small"><b>${esc(lord.perk.label)}</b> (legacy) — ${esc(lord.perk.desc)}</p>
-      <p class="small"><b>${esc(lord.signature.name)}</b> (signature, every ${lord.signature.cooldown + 1} seasons) — ${esc(lord.signature.desc)}</p>
+      <p class="small"><b>${esc(lord.perk.label)}</b> (legacy): ${esc(lord.perk.desc)}</p>
+      <p class="small"><b>${esc(lord.signature.name)}</b> (signature, every ${lord.signature.cooldown + 1} seasons): ${esc(lord.signature.desc)}</p>
       <p class="small italic muted">“${esc(lord.lines.intro)}”</p>
     </article>`;
 }).join('\n');
@@ -42,12 +42,12 @@ const html = `<!doctype html>
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>The Twelve Lords — Realms in Embers</title>
-  <meta name="description" content="Every claimant to the Ember Throne compared: creeds, archetypes, legacies and signature abilities — from the free, no-account browser strategy game Realms in Embers.">
+  <title>The Twelve Lords, Realms in Embers</title>
+  <meta name="description" content="Every claimant to the Ember Throne compared: creeds, archetypes, legacies and signature abilities, from the free, no-account browser strategy game Realms in Embers.">
   <link rel="canonical" href="https://rie.gg/lords/">
   <link rel="icon" href="/favicon.svg">
-  <meta property="og:title" content="The Twelve Lords — Realms in Embers">
-  <meta property="og:description" content="Every claimant to the Ember Throne compared — pick your banner.">
+  <meta property="og:title" content="The Twelve Lords, Realms in Embers">
+  <meta property="og:description" content="Every claimant to the Ember Throne compared. Pick your banner.">
   <meta property="og:image" content="https://rie.gg/og.png">
   <style>
     body { margin: 0; background: #16100a; color: #ede2c8; font-family: Georgia, 'Times New Roman', serif; line-height: 1.55; }
@@ -73,10 +73,10 @@ const html = `<!doctype html>
 <main>
   <nav class="crumbs"><a href="/">Play the game</a> <a href="/codex/">The Codex</a> <a href="/press.html">Press</a></nav>
   <h1>The Twelve Lords</h1>
-  <p class="muted">Every claimant to the Ember Throne — how they play, what they keep, and what they do to you.
+  <p class="muted">Every claimant to the Ember Throne: how they play, what they keep, and what they do to you.
   Free in the browser, no account, no tracking. Rules v${rulesVersion}; regenerated from the engine itself so this page cannot lie.</p>
   ${cards}
-  <p class="small muted" style="margin-top:2rem">Realms in Embers — a turn-based strategy chronicle. <a href="/">Take up a banner.</a></p>
+  <p class="small muted" style="margin-top:2rem">Realms in Embers, a turn-based strategy chronicle. <a href="/">Take up a banner.</a></p>
 </main>
 </body>
 </html>

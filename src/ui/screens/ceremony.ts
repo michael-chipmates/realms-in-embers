@@ -25,7 +25,7 @@ const CEREMONY_ART: Record<string, string> = {
 let ceremonyShowing = false;
 const queue: { icon: string; art?: string; title: string; text: string }[] = [];
 
-/** Reset the ceremony channel when a game screen is torn down — a ceremony
+/** Reset the ceremony channel when a game screen is torn down: a ceremony
  * left up across games would wedge the module-level queue forever. */
 export function resetCeremonies(): void {
   queue.length = 0;
@@ -44,7 +44,7 @@ export function presentCeremonies(screen: GameScreen, effects: Effect[]): void {
         icon: CEREMONY_ICON.heroDied,
         art: CEREMONY_ART.heroDied,
         title: `${effect.name} has fallen`,
-        text: entry?.text ?? `${effect.name} fell — ${effect.cause}.`,
+        text: entry?.text ?? `${effect.name} fell: ${effect.cause}.`,
       });
     } else if (effect.e === 'eliminated') {
       const entry = [...state.chronicle].reverse().find((c) => c.ceremony && c.kind === 'ceremony');

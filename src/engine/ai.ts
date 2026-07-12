@@ -45,7 +45,7 @@ export function aiTakeTurn(state: GameState): Effect[] {
   };
 
   const endTurn = (): void => {
-    // never subject to the action budget — a turn must always end
+    // never subject to the action budget; a turn must always end
     if (state.phase === 'ended') return;
     const result = applyAction(state, { t: 'endTurn' });
     effects.push(...result.effects);
@@ -114,7 +114,7 @@ function respondToProposals(state: GameState, pid: PlayerId, dispatch: (a: Actio
       case 'joinWar': {
         const against = proposal.target;
         if (against === undefined || !state.players[against].alive) { accept = false; break; }
-        // never against a lord we are sworn to — that road is oathbreaking
+        // never against a lord we are sworn to; that road is oathbreaking
         const bond = getStance(state, pid, against);
         if (bond === 'pact' || bond === 'alliance') { accept = false; break; }
         const attToTarget = attitudeOf(state, pid, against).total;
@@ -248,7 +248,7 @@ function isFrontier(state: GameState, p: Province): boolean {
 
 function recruitTroops(state: GameState, pid: PlayerId, dispatch: (a: Action) => boolean): void {
   const player = state.players[pid];
-  // a golden-age hoard grows in coffers, not in barracks — muster only
+  // a golden-age hoard grows in coffers, not in barracks; muster only
   // if genuinely menaced
   if (pursuesGoldenAge(state, pid) && player.gold > 350) {
     const menace = strongestThreat(state, pid);
@@ -435,7 +435,7 @@ function runQuests(state: GameState, pid: PlayerId, dispatch: (a: Action) => boo
         let hero = candidates.reduce((a, b) =>
           heroDerived(state, b)[saga.def.stat] > heroDerived(state, a)[saga.def.stat] ? b : a,
         );
-        // chapter 5 needs the Emberheart equipped on the quester — OUR heart,
+        // chapter 5 needs the Emberheart equipped on the quester; OUR heart,
         // wherever it sits: with its bearer if they can go, else reclaimed
         if (saga.def.saga === 5) {
           const isHeart = (id: number | null) => id !== null && state.artifacts[id]?.defId === 'emberheart';
@@ -557,7 +557,7 @@ function riteWeight(state: GameState, pid: PlayerId, id: (typeof SPELLS)[keyof t
 // ----------------------------------------------------------------- armies
 
 /** The merchant's road to the throne: low-aggression, high-greed lords with
- * a quiet realm start playing for the Golden Age — hoarding, defending,
+ * a quiet realm start playing for the Golden Age: hoarding, defending,
  * declining wars. This makes the economic ending a real presence at the
  * table instead of an advertised impossibility. */
 export function pursuesGoldenAge(state: GameState, pid: PlayerId): boolean {
@@ -616,7 +616,7 @@ function consolidateArmies(state: GameState, pid: PlayerId, dispatch: (a: Action
 
 function moveArmies(state: GameState, pid: PlayerId, nerve: number, dispatch: (a: Action) => boolean): void {
   // consider strongest armies first; re-read the map after every move.
-  // NB: "holding" is tracked locally — state is only ever touched via actions.
+  // NB: "holding" is tracked locally; state is only ever touched via actions.
   const held = new Set<number>();
   for (let guard = 0; guard < 24; guard++) {
     const armies = armiesOf(state, pid)
@@ -662,7 +662,7 @@ function actWithArmy(state: GameState, pid: PlayerId, army: Army, nerve: number,
     if (rebelsInMyLand) need -= 0.12; // put down risings with prejudice
     if (neutral) need -= 0.06; // free provinces are cheap meat
     // allies press the same front (v15): a shared enemy's province with an
-    // allied banner beside it is both safer to strike and sweeter to take —
+    // allied banner beside it is both safer to strike and sweeter to take;
     // two allied AIs converge instead of fighting parallel private wars
     const allyBeside = p.owner >= 0 && p.owner !== pid && state.players.some((al) =>
       al.alive && al.id !== pid
@@ -798,7 +798,7 @@ function totalPower(state: GameState, pid: PlayerId): number {
   return armiesOf(state, pid).reduce((s, a) => s + roughArmyPower(a), 0);
 }
 
-/** Fire the lord's signature when its moment is genuinely here — each lord
+/** Fire the lord's signature when its moment is genuinely here; each lord
  * reads a different moment, so rivals learn twelve rhythms, not one. */
 function maybeUseSignature(state: GameState, pid: PlayerId, dispatch: (a: Action) => boolean): void {
   const player = state.players[pid];
@@ -815,7 +815,7 @@ function maybeUseSignature(state: GameState, pid: PlayerId, dispatch: (a: Action
 
   switch (lord.id) {
     case 'seraphine': {
-      // v12: her old gate (avg < 55) almost never opened — her own perk keeps
+      // v12: her old gate (avg < 55) almost never opened; her own perk keeps
       // order high. The Vigil now also pays and heals conquest grief, so she
       // calls it whenever the realm is merely unsettled or freshly enlarged.
       const avg = mine.reduce((s, p) => s + p.order, 0) / mine.length;
@@ -829,7 +829,7 @@ function maybeUseSignature(state: GameState, pid: PlayerId, dispatch: (a: Action
     }
     case 'halvard': {
       // a real siege coming, not every wandering rebel band: hostile armies
-      // of a lord he is at war with beside his land, or rebels inside it —
+      // of a lord he is at war with beside his land, or rebels inside it,
       // or (v12) a war of his own to finish, sallying from the standing wall
       const threatened = mine.some((p) =>
         armiesIn(state, p.id).some((a) => a.owner === NEUTRAL)
@@ -887,7 +887,7 @@ function maybeUseSignature(state: GameState, pid: PlayerId, dispatch: (a: Action
     }
     case 'morrikan': {
       // barrows make it strong; the seat fallback (v12) keeps it alive on
-      // seeds that never hand him one — but the doors open for wars and the
+      // seeds that never hand him one, but the doors open for wars and the
       // long middle of the age, not as a free standing army subscription
       if (warTarget || state.turn >= 12) use();
       break;
@@ -941,7 +941,7 @@ function proactiveDiplomacy(
     }
   }
 
-  // pick a war deliberately (one at a time, neighbors only) — unless the
+  // pick a war deliberately (one at a time, neighbors only), unless the
   // realm is playing for the Golden Age, in which case war is bad business
   if (atWarWith.length === 0 && state.turn > 5 && !pursuesGoldenAge(state, pid)) {
     let bestTarget: PlayerId | null = null;
@@ -979,7 +979,7 @@ function proactiveDiplomacy(
   }
 
   // war shopping (v15, A§5.4): a runaway leader already under someone
-  // else's steel is safer meat — the fierce and the greedy pile in rather
+  // else's steel is safer meat; the fierce and the greedy pile in rather
   // than watch the realm be won. Never over a pact; never from weakness.
   if (atWarWith.length === 0 && state.turn > 8 && !pursuesGoldenAge(state, pid) && lead !== null && lead !== pid) {
     const leadShare = provincesOf(state, lead).length / state.provinces.length;
@@ -994,7 +994,7 @@ function proactiveDiplomacy(
   }
 
   // call friends into a hard war (the scheming layer): if my enemy outweighs
-  // me — or is the runaway leader — recruit the willing against them.
+  // me, or is the runaway leader, recruit the willing against them.
   if (atWarWith.length > 0) {
     const enemy = atWarWith
       .map((o) => ({ o, power: totalPower(state, o.id) }))

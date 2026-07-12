@@ -35,7 +35,7 @@ export const CREEDS: Record<Creed, CreedDef> = {
     id: 'umbra',
     name: 'The Umbra',
     tagline: 'The dark between embers is a ladder.',
-    desc: 'Creed of ambition and cunning. Umbra lords forgive treachery as professional courtesy — and remember kindness as weakness.',
+    desc: 'Creed of ambition and cunning. Umbra lords forgive treachery as professional courtesy, and remember kindness as weakness.',
     passive: 'Winning a battle plunders +10 gold.',
   },
 };
@@ -119,7 +119,7 @@ export interface BuildingDef {
   terrain?: Terrain[];
   coastalOnly?: boolean;
   /** Engine effect data. NOTE: buildings also grant effects that live in code,
-   * keyed by building id — roads/harbor movement in actions.ts reachableFrom(),
+   * keyed by building id: roads/harbor movement in actions.ts reachableFrom(),
    * Hearthshrine order in economy.ts orderDrift() (creed-dependent), and unit
    * tiers via UNITS[unit].recruit.building. Tune those there, not here. */
   incomeAdd?: number;

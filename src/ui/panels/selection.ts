@@ -1,5 +1,5 @@
 /**
- * The left-hand panel: whatever is selected, fully inspectable — province
+ * The left-hand panel: whatever is selected, fully inspectable: province
  * economics with itemized causes, armies with orders, recruit & build.
  */
 import { BUILDINGS, BUILD_ORDER, TERRAIN } from '../../engine/content/world';
@@ -19,7 +19,7 @@ import { audio } from '../audio';
 import { codexHint } from './codex';
 import type { GameScreen } from '../screens/game';
 
-/** One plain line per trait — TRAIT_INFO is the player's contract with the
+/** One plain line per trait. TRAIT_INFO is the player's contract with the
  * combat code, so tooltips never restate it by hand. */
 function traitLines(traits: UnitTrait[]): HTMLElement[] {
   return traits
@@ -62,8 +62,8 @@ export function renderSelectionPanel(screen: GameScreen, root: HTMLElement): voi
       },
         h('span', { class: 'sheet-handle-bar' }),
         screen.sheetCollapsed
-          ? `${p.name} — tap for details`
-          : 'Hide — show the map',
+          ? `${p.name}, tap for details`
+          : 'Hide (show the map)',
       )
     : null;
 
@@ -76,7 +76,7 @@ export function renderSelectionPanel(screen: GameScreen, root: HTMLElement): voi
     handle,
     renderProvinceCard(screen, p),
     ...armiesIn(state, p.id).map((a) => renderArmyCard(screen, a, a.id === sel.armyId)),
-    // build/recruit only on YOUR turn — online, a rival's season would price
+    // build/recruit only on YOUR turn: online, a rival's season would price
     // everything off their treasury and refuse the click anyway
     army === null && p.owner === viewer && state.current === viewer ? renderBuildCard(screen, p) : null,
     army === null && p.owner === viewer && state.current === viewer ? renderRecruitCard(screen, p) : null,
@@ -98,12 +98,12 @@ function renderProvinceCard(screen: GameScreen, p: Province): HTMLElement {
   const orderStat = h('div', { class: 'stat-block' },
     h('span', { html: iconSvg('order', 15) }), h('b', {}, fmt(p.order)),
     h('span', { class: `small ${drift.total >= 0 ? 'pos' : 'neg'}` }, signed(drift.total)));
-  tip(orderStat, () => breakdown(`Order in ${p.name} (0–100)`, drift.lines,
+  tip(orderStat, () => breakdown(`Order in ${p.name} (0 to 100)`, drift.lines,
     p.order < 25 ? 'DANGER: below 25, rebellion brews each season' : `Drifting ${signed(drift.total)} each season`));
 
   const prosperityStat = h('div', { class: 'stat-block' },
     h('span', { html: iconSvg('wheat', 15) }), h('b', {}, `${Math.round(p.prosperity * 100)}%`));
-  tip(prosperityStat, 'Prosperity multiplies income. It follows order — patiently.');
+  tip(prosperityStat, 'Prosperity multiplies income. It follows order, patiently.');
 
   return h('div', { class: 'panel side-card' },
     h('div', { class: 'side-card-head' },
@@ -126,7 +126,7 @@ function renderProvinceCard(screen: GameScreen, p: Province): HTMLElement {
         }))
       : null,
     p.buildQueue
-      ? h('p', { class: 'small muted build-note' }, h('span', { html: iconSvg('hammer', 12) }), `Building ${BUILDINGS[p.buildQueue.id].name} — ${p.buildQueue.turnsLeft} ${p.buildQueue.turnsLeft === 1 ? 'season' : 'seasons'} left`)
+      ? h('p', { class: 'small muted build-note' }, h('span', { html: iconSvg('hammer', 12) }), `Building ${BUILDINGS[p.buildQueue.id].name} · ${p.buildQueue.turnsLeft} ${p.buildQueue.turnsLeft === 1 ? 'season' : 'seasons'} left`)
       : null,
     p.recruitQueue
       ? h('p', { class: 'small muted build-note' }, h('span', { html: iconSvg('banner', 12) }), `Mustering ${UNITS[p.recruitQueue.unit].name}`)
@@ -229,8 +229,8 @@ function renderArmyCard(screen: GameScreen, army: Army, selected: boolean): HTML
     h('div', { class: 'side-card-head' },
       h('div', {},
         h('div', { class: 'side-card-title small-caps' },
-          kindLabel ? `${kindLabel} — ${army.units.length} ${army.units.length === 1 ? 'company' : 'companies'}`
-            : `Army — ${army.units.length} ${army.units.length === 1 ? 'company' : 'companies'}`),
+          kindLabel ? `${kindLabel} · ${army.units.length} ${army.units.length === 1 ? 'company' : 'companies'}`
+            : `Army · ${army.units.length} ${army.units.length === 1 ? 'company' : 'companies'}`),
         h('div', { class: 'small muted' }, army.owner >= 0 ? owner.name : 'Under no banner'),
       ),
       army.owner >= 0 ? h('span', { class: 'lord-swatch', style: { background: owner.color } }) : null,
@@ -272,7 +272,7 @@ function renderBuildCard(screen: GameScreen, p: Province): HTMLElement | null {
     return true;
   });
   if (options.length === 0) return null;
-  // verdicts come from the engine's own evaluation — the button can only
+  // verdicts come from the engine's own evaluation: the button can only
   // disagree with dispatch if this line is deleted
   const verdicts = evaluateActions(state, options.map((b) => ({ t: 'build', province: p.id, building: b } as const)));
   return h('details', { class: 'panel side-card side-section', open: true },
@@ -294,7 +294,7 @@ function renderBuildCard(screen: GameScreen, p: Province): HTMLElement | null {
           h('span', { class: 'option-cost' }, `${cost}`, iconElInline()),
         );
         tip(btn, () => h('div', { class: 'tip-plain' },
-          h('b', {}, `${def.name} — ${cost} gold, ${def.turns} ${def.turns === 1 ? 'season' : 'seasons'}`),
+          h('b', {}, `${def.name} · ${cost} gold, ${def.turns} ${def.turns === 1 ? 'season' : 'seasons'}`),
           h('p', { class: 'small' }, def.desc),
           ...verdict.reasons.map((r) => h('p', { class: 'small neg' }, r)),
           ...lines.map((l) => h('p', { class: 'small pos' }, l)),
@@ -351,7 +351,7 @@ function renderRecruitCard(screen: GameScreen, p: Province): HTMLElement | null 
           h('span', { class: 'option-cost' }, `${cost}`, iconElInline()),
         );
         tip(btn, () => h('div', { class: 'tip-plain' },
-          h('b', {}, `${def.name} — ${cost} gold, ready next season`),
+          h('b', {}, `${def.name} · ${cost} gold, ready next season`),
           h('p', { class: 'small' }, `Attack ${def.atk} · Defense ${def.def} · ${def.hits} hits · upkeep ${def.upkeep}/season`),
           h('p', { class: 'small' }, def.desc),
           ...traitLines(def.traits),

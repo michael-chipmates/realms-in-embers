@@ -1,6 +1,6 @@
 /**
  * Heraldic shields: each lord's sigil on a heater shield in their colors.
- * Pure SVG — crisp at any size, themeable, zero assets.
+ * Pure SVG: crisp at any size, themeable, zero assets.
  */
 import { LORD_BY_ID } from '../engine/content/lords';
 import type { SigilPattern } from '../engine/content/lords';
@@ -14,7 +14,7 @@ export const SIGIL_PATTERNS: readonly SigilPattern[] =
 /**
  * Deterministic, collision-free pattern assignment for the lords actually
  * seated this game. Twelve lords share six patterns, so two seated lords can
- * carry the same one — invisible in color, hostile in colorblind mode.
+ * carry the same one: invisible in color, hostile in colorblind mode.
  *
  * Each lord keeps their heraldic pattern when it is free (first come in seat
  * order wins); a lord whose pattern is taken receives the first unused
@@ -43,7 +43,7 @@ export function assignPatterns(lordIds: readonly string[]): Record<string, Sigil
   return out;
 }
 
-/** ids must be unique per INSTANCE — the same lord renders in many places. */
+/** ids must be unique per INSTANCE: the same lord renders in many places. */
 let shieldSerial = 0;
 
 export function sigilShield(lordId: string, size = 34): HTMLElement {

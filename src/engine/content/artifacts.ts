@@ -170,5 +170,5 @@ export const ARTIFACTS: Record<string, ArtifactDef> = {
 };
 
 export const ARTIFACT_IDS = Object.keys(ARTIFACTS);
-/** Quest reward pool (shards excluded — the Saga hands those out itself). */
+/** Quest reward pool (shards excluded: the Saga hands those out itself). */
 export const QUEST_ARTIFACTS = ARTIFACT_IDS.filter((id) => !ARTIFACTS[id].shard);

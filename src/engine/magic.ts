@@ -1,6 +1,6 @@
 /**
  * Emberlight in practice: Rites (learning), realm spells (cast from the war
- * table), and battle spells (auto-woven wherever a side fields casters —
+ * table), and battle spells (auto-woven wherever a side fields casters;
  * always shown in the odds preview, never a surprise).
  */
 import { RITE_LEARNABLE, SPELLS, spellCostFor as rawCost } from './content/spells';
@@ -182,7 +182,7 @@ export function castRealmSpell(
         : garrisons.map((a) => `${a.units.length} ${a.units.length === 1 ? 'company' : 'companies'} under ${a.owner < 0 ? 'no banner' : lordName(state, a.owner)}`).join('; ');
       scribe(state, {
         kind: 'magic', about: pid, privateTo: pid,
-        text: `The smoke over ${p.name} showed true: ${report}. Order stands near ${Math.round(p.order)}, and the land yields ${p.prosperity >= 1.02 ? 'better than' : p.prosperity <= 0.98 ? 'poorer than' : 'about'} the old norm — near ${Math.round(p.prosperity * 100)} coins where a hundred once grew.`,
+        text: `The smoke over ${p.name} showed true: ${report}. Order stands near ${Math.round(p.order)}, and the land yields ${p.prosperity >= 1.02 ? 'better than' : p.prosperity <= 0.98 ? 'poorer than' : 'about'} the old norm, near ${Math.round(p.prosperity * 100)} coins where a hundred once grew.`,
       });
       break;
     }
@@ -193,7 +193,7 @@ export function castRealmSpell(
     }
     case 'sowDiscord': {
       p!.mods.push({ label: `Discord sown by ${lordName(state, pid)}`, order: -6, turnsLeft: 3, spellId: 'sowDiscord', by: pid });
-      scribe(state, { kind: 'magic', about: pid, text: `Ugly rumours took root in ${p!.name} — the kind with gardeners. ${lordName(state, p!.owner)} will find the district harder to please for a while.` });
+      scribe(state, { kind: 'magic', about: pid, text: `Ugly rumours took root in ${p!.name}, the kind with gardeners. ${lordName(state, p!.owner)} will find the district harder to please for a while.` });
       break;
     }
     case 'wardOfEmbers': {

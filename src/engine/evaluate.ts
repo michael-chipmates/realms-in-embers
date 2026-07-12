@@ -1,5 +1,5 @@
 /**
- * UX-030 — the one window onto legality. evaluateAction answers "may I,
+ * UX-030: the one window onto legality. evaluateAction answers "may I,
  * what will it cost, and why not" by dry-running the real applyAction on a
  * disposable copy of the state: this engine has exactly one validator, and
  * evaluation reads its verdict instead of re-deriving it, so the two can
@@ -8,7 +8,7 @@
  *
  * Evaluation never mutates the given state and never consumes its RNG
  * stream (tests enforce both). It judges the action for the player whose
- * season it is — the same seat applyAction would charge.
+ * season it is: the same seat applyAction would charge.
  */
 import { applyAction } from './actions';
 import { FERVOR_COST } from './combat';
@@ -37,7 +37,7 @@ export interface ActionEvaluation {
   reasons: string[];
   /** What the action debits the moment it is taken. Proposals that spend
    * only on acceptance (a join-war inducement, a peace sweetener) carry no
-   * line here — the treasury check still gates them at dispatch. */
+   * line here; the treasury check still gates them at dispatch. */
   costs: ActionCost[];
   /** The Codex chapter that teaches the rule this action lives under. */
   codex: CodexRef | null;
@@ -113,7 +113,7 @@ function costsOf(state: GameState, action: Action): ActionCost[] {
       return [{ label: def.name, amount: spellCostFor(state, pid, action.spell), resource: 'emberlight' }];
     }
     case 'startRite': {
-      // The rite itself debits nothing — pledges do — but the full price is
+      // The rite itself debits nothing (pledges do), but the full price is
       // the number a player decides with, so it rides along informationally
       // in pledgeEmberlight's lines, not here.
       return [];

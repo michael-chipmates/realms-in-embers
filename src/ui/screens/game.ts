@@ -24,7 +24,7 @@ import { sigilShield } from '../heraldry';
 import { saveToSlot } from '../saves';
 import { breakdown, tip, hideTip } from '../tooltip';
 import { renderSelectionPanel } from '../panels/selection';
-import { chronicleCollapsed, renderChronicleFeed, setChronicleCollapsed } from '../panels/chronicleFeed';
+import { renderChronicleFeed } from '../panels/chronicleFeed';
 import { openCourtOverlay, openDiplomacyOverlay, openLedgerOverlay, openMagicOverlay, openQuestsOverlay, openMenuOverlay } from '../panels/overlays';
 import { openCodexOverlay } from '../panels/codex';
 import { openKeysOverlay, openNavigatorOverlay } from '../panels/navigator';
@@ -115,7 +115,7 @@ export class GameScreen {
     };
     session.client.onStatus = (s) => {
       if (this.disposed) return;
-      if (s !== 'open') this.showAiBanner('The relay is lost — reconnecting…');
+      if (s !== 'open') this.showAiBanner('The relay is lost, reconnecting…');
       else if (this.pendingSpell !== null) this.armSpellTargeting(this.pendingSpell);
       else if (!this.aiRunning) this.hideAiBanner();
     };
@@ -130,7 +130,7 @@ export class GameScreen {
 
   /** Apply every already-decrypted relay action, strictly in seq order.
    * PAUSES (without consuming) while the local AI wheel is between the
-   * relayed endTurn and the next human seat — every client walks the same
+   * relayed endTurn and the next human seat: every client walks the same
    * AI turns at its own pace, and acts must wait for it. Gaps in the
    * entry array (blobs still decrypting) also pause; the pump will call
    * us again. */
@@ -149,10 +149,10 @@ export class GameScreen {
       if (payload.seat !== this.state.current) { session.cursor++; continue; } // stale/dishonest
       // cid seat binding (v0.5): an act claiming a seat must come from the
       // cid the start entry pinned to it. Acts without a cid (older
-      // editions) stay accepted — binding is honest, not a signature.
+      // editions) stay accepted. Binding is honest, not a signature.
       const pinned = session.seatCids[payload.seat];
       if (payload.cid !== undefined && pinned && payload.cid !== pinned) { session.cursor++; continue; }
-      // replaying history (a join or rejoin mid-war): keep the room quiet —
+      // replaying history (a join or rejoin mid-war): keep the room quiet:
       // no battle-report stacks, no ceremony parade for old news
       this.catchingUp = session.client.entries.length - 1 - session.cursor > 2;
       session.cursor++;
@@ -211,7 +211,7 @@ export class GameScreen {
     if (check.seat === session.mySeat || this.desynced) return;
     const mine = this.checkpointHashes.get(check.afterSeq);
     if (!mine || mine.hash === check.hash) return;
-    // A real fork: same log position, different worlds. Freeze this table —
+    // A real fork: same log position, different worlds. Freeze this table:
     // applying more acts to a diverged state could only invent history. A
     // reload rebuilds from the sealed relay log, which is the shared truth.
     this.desynced = true;
@@ -220,7 +220,7 @@ export class GameScreen {
         h('h2', { class: 'small-caps' }, 'The chronicle diverged'),
         h('p', { class: 'small' },
           `At season ${check.turn}, this table and ${lordDisplay(this.state, check.seat).name}'s table tell different stories. ` +
-          'No further orders will apply here — that would only deepen the fork.'),
+          'No further orders will apply here: that would only deepen the fork.'),
         h('p', { class: 'small muted' },
           'Rebuilding replays the sealed war log from the start entry; every honest table rebuilds to the same realm.'),
         h('div', { style: { display: 'flex', gap: '0.5rem', justifyContent: 'center', marginTop: '0.5rem' } },
@@ -257,7 +257,7 @@ export class GameScreen {
       if (cur.kind !== 'human') return;
       this.clockBanks[cur.id] = Math.max(0, (this.clockBanks[cur.id] ?? 0) - 1);
       this.renderClock();
-      // only ever enforce on OURSELVES — the blind relay trusts the table.
+      // only ever enforce on OURSELVES: the blind relay trusts the table.
       // Send once and wait for the echo; no spamming while it travels.
       if (cur.id === session.mySeat && this.clockBanks[cur.id] <= 0 && !this.clockExpiredSent) {
         this.clockExpiredSent = true;
@@ -312,22 +312,6 @@ export class GameScreen {
           h('button', { class: 'btn btn-quiet map-zoom-btn', 'aria-label': 'Fit the whole realm', onclick: () => { this.renderer.fit(); this.redrawMap(); } }, '⊡'),
         ),
       ),
-      // phones only (CSS-gated): the four surfaces, one thumb away.
-      // Composition, not compression — each button opens what exists.
-      h('nav', { class: 'mode-bar', 'aria-label': 'The table, one thumb away' },
-        h('button', {
-          class: 'mode-bar-btn',
-          onclick: () => { closeAllModals(); setChronicleCollapsed(true); this.renderChronicle(); },
-        }, h('span', { html: iconSvg('flag', 16) }), 'Map'),
-        h('button', { class: 'mode-bar-btn', onclick: () => openLedgerOverlay(this) },
-          h('span', { html: iconSvg('book', 16) }), 'Realm'),
-        h('button', { class: 'mode-bar-btn', onclick: () => openDiplomacyOverlay(this) },
-          h('span', { html: iconSvg('handshake', 16) }), 'Lords'),
-        h('button', {
-          class: 'mode-bar-btn',
-          onclick: () => { closeAllModals(); setChronicleCollapsed(!chronicleCollapsed()); this.renderChronicle(); },
-        }, h('span', { html: iconSvg('quill', 16) }), 'Chronicle'),
-      ),
     );
     mount(root, this.el);
     // dev hook for driving tests; harmless in production
@@ -377,7 +361,7 @@ export class GameScreen {
 
   /** The player whose eyes we render through (fog, private chronicle). */
   viewerId(): number {
-    // online, you are always yourself — even during a rival's turn.
+    // online, you are always yourself, even during a rival's turn.
     // Spectators watch through the first living human's eyes.
     if (this.online) {
       if (this.online.mySeat >= 0) return this.online.mySeat;
@@ -426,7 +410,7 @@ export class GameScreen {
     const selArmy = this.sel.armyId !== null ? this.state.armies[this.sel.armyId] : null;
     this.renderer.render({
       // the log length moves with every action, so the political layer
-      // re-paints exactly when the realm changed — hover costs composition
+      // re-paints exactly when the realm changed: hover costs composition
       cacheKey: `${this.state.log.length}`,
       selected: this.sel.provinceId,
       hovered: this.hovered,
@@ -450,7 +434,7 @@ export class GameScreen {
   private rippleLoop = false;
 
   /** Spell Theater cast fx: same self-cleaning pattern as the ripples.
-   * One cast per province at a time — a re-cast replaces, never stacks. */
+   * One cast per province at a time: a re-cast replaces, never stacks. */
   private spellFx: { province: number; t: number; family: SpellFxFamily }[] = [];
   private spellFxLoop = false;
 
@@ -760,7 +744,7 @@ export class GameScreen {
       latestPreview = preview;
       const pct = Math.round(preview.winChance * 100);
       // 240 trials cannot promise certainty: a clean sweep reads "at least
-      // 99%", a washout "at most 1%" — the honest edges of a sampled forecast
+      // 99%", a washout "at most 1%": the honest edges of a sampled forecast
       const pctLabel = pct >= 100 ? '≥99%' : pct <= 0 ? '≤1%' : `${pct}%`;
       mount(content,
         h('div', { class: 'odds-meter-row' },
@@ -769,11 +753,11 @@ export class GameScreen {
             h('div', { class: 'odds-fill', style: { width: `${Math.max(1, Math.min(99, pct))}%` } }),
           ),
           h('div', { class: 'small muted' },
-            `Expected losses — yours: ${Math.round(preview.aExpectedLoss * 100)}%, theirs: ${Math.round(preview.dExpectedLoss * 100)}% · 240 trials on forked fate`),
+            `Expected losses · yours: ${Math.round(preview.aExpectedLoss * 100)}%, theirs: ${Math.round(preview.dExpectedLoss * 100)}% · 240 trials on forked fate`),
         ),
         eligibleSupport.length > 0
           ? h('div', { class: 'odds-support' },
-              h('div', { class: 'odds-side-title' }, 'Sound the horns — banners in reach'),
+              h('div', { class: 'odds-side-title' }, 'Sound the horns: banners in reach'),
               ...eligibleSupport.map((s) => {
                 const label = `${s.units.length} ${s.units.length === 1 ? 'company' : 'companies'} in ${this.state.provinces[s.province].name}`;
                 const cb = h('input', {
@@ -800,7 +784,7 @@ export class GameScreen {
                 }) as HTMLInputElement;
                 cb.checked = fervor;
                 return h('label', { class: 'odds-support-row', for: 'fervor-box' }, cb,
-                  h('span', {}, `Burn ${FERVOR_COST} Emberlight for fervor — your host fights +12% stronger, this battle only.`));
+                  h('span', {}, `Burn ${FERVOR_COST} Emberlight for fervor: your host fights +12% stronger, this battle only.`));
               })(),
             )
           : null,
@@ -835,7 +819,7 @@ export class GameScreen {
               audio.clash();
               this.select(target.to, null);
             },
-          }, h('span', { html: iconSvg('swords', 16) }), chosen.size > 0 ? 'Give battle — together' : 'Give battle'),
+          }, h('span', { html: iconSvg('swords', 16) }), chosen.size > 0 ? 'Give battle, together' : 'Give battle'),
           h('button', { class: 'btn', onclick: () => modal.close() }, 'Hold'),
         ),
       );
@@ -848,12 +832,12 @@ export class GameScreen {
 
   dispatch(action: Action): boolean {
     // online: your actions travel to the relay and apply when they echo
-    // back — one total order for every table, reconnection for free.
+    // back: one total order for every table, reconnection for free.
     // NOTHING applies locally out of turn: not hotkeys, not armed spells,
     // not spectators. The relay log is the only pen.
     if (this.online) {
       if (this.desynced) {
-        this.toast('This table has diverged from the log — rebuild before giving orders.', 'danger');
+        this.toast('This table has diverged from the log. Rebuild before giving orders.', 'danger');
         return false;
       }
       if (this.online.mySeat < 0) {
@@ -907,7 +891,7 @@ export class GameScreen {
       this.showEndOnce();
       return;
     }
-    // autosave at the start of every human turn — local chronicles only;
+    // autosave at the start of every human turn: local chronicles only;
     // an online war lives in the relay log, not the local shelf
     if (!this.online) saveToSlot(this.state, 'auto');
     if (!this.online && this.humanCount() > 1) {
@@ -947,7 +931,7 @@ export class GameScreen {
   // ------------------------------------------------------------ effects
 
   /** Hand the theater the odds the player accepted for exactly this battle
-   * — same province, same season, viewer attacking — or nothing. */
+   * (same province, same season, viewer attacking) or nothing. */
   takeStakesPreview(report: BattleReport): { winChance: number; aExpectedLoss: number; dExpectedLoss: number } | null {
     const held = this.stakesPreview;
     if (!held) return null;
@@ -972,7 +956,7 @@ export class GameScreen {
             const def = lordDisplay(this.state, effect.report.defender.player);
             const report = effect.report;
             this.toast(
-              `Battle at ${report.provinceName}: ${atk.name} against ${def.name} — ${report.winner === 'attacker' ? atk.name : def.name} holds the field.`,
+              `Battle at ${report.provinceName}: ${atk.name} against ${def.name}: ${report.winner === 'attacker' ? atk.name : def.name} holds the field.`,
               'war',
               () => openBattleReport(this, report),
             );
@@ -1000,7 +984,7 @@ export class GameScreen {
           const family = lord.signature.fxFamily;
           if (effect.by === viewer) audio.spell(family);
           // the theater: realm-wide signatures wash over the caster's land,
-          // targeted ones land on their mark — visible ground only
+          // targeted ones land on their mark, visible ground only
           const visible = (p: number): boolean =>
             !this.state.settings.fogOfWar || seenBy(this.state, viewer).has(p);
           const stages: number[] = effect.province !== null
@@ -1010,7 +994,7 @@ export class GameScreen {
             window.setTimeout(() => { if (!this.disposed) this.addSpellFx(p, family); }, i * 70);
           });
           if (effect.by !== viewer) {
-            const where = effect.province !== null ? ` — ${this.state.provinces[effect.province].name}` : '';
+            const where = effect.province !== null ? ` at ${this.state.provinces[effect.province].name}` : '';
             const target = effect.province;
             this.toast(`${lord.name}: ${lord.signature.name}${where}!`, 'war',
               target !== null ? () => this.panTo(target) : undefined);
@@ -1021,7 +1005,7 @@ export class GameScreen {
           if (this.catchingUp) break;
           const def = SPELLS[effect.spell];
           if (effect.by === viewer) audio.spell(def.fxFamily);
-          // the cast moment on the map — only on ground the viewer can see,
+          // the cast moment on the map, only on ground the viewer can see,
           // and never anything the chronicle hasn't already told them
           if (effect.province !== null) {
             const visible = !this.state.settings.fogOfWar || seenBy(this.state, viewer).has(effect.province);
@@ -1070,7 +1054,7 @@ export class GameScreen {
   armSpellTargeting(spell: SpellId): void {
     this.pendingSpell = spell;
     const def = SPELLS[spell];
-    this.showAiBanner(`Choose a province for ${def.name} — Esc, or a tap on open water, lets the light fade.`);
+    this.showAiBanner(`Choose a province for ${def.name}. Esc, or a tap on open water, lets the light fade.`);
   }
 
   private clearSpellTargeting(): void {
@@ -1114,7 +1098,7 @@ export class GameScreen {
           modal.close();
           this.dispatch({ t: 'signature' });
         },
-      }, `${sig.name} — now`));
+      }, `${sig.name} · now`));
     } else if (sig.target === 'rival') {
       body.appendChild(h('p', { class: 'small muted', style: { marginTop: '0.5rem' } }, 'Against whom?'));
       for (const rival of state.players.filter((p) => p.alive && p.id !== viewer.id)) {
@@ -1133,9 +1117,9 @@ export class GameScreen {
         onclick: () => {
           modal.close();
           this.pendingSignature = true;
-          this.showAiBanner(`Choose a rival province bordering your realm for ${sig.name} — Esc lets it rest.`);
+          this.showAiBanner(`Choose a rival province bordering your realm for ${sig.name}. Esc lets it rest.`);
         },
-      }, `${sig.name} — choose the province`));
+      }, `${sig.name}: choose the province`));
     }
   }
 
@@ -1180,7 +1164,7 @@ export class GameScreen {
         h('b', {}),
         h('span', { class: 'small muted' }),
       );
-      tip(this.seasonEl, () => `The Chronicle closes after season ${this.state.victory.maxTurns} — the realm is then judged as it stands.`);
+      tip(this.seasonEl, () => `The Chronicle closes after season ${this.state.victory.maxTurns}. The realm is then judged as it stands.`);
     }
     const seasonEl = this.seasonEl;
 
@@ -1197,7 +1181,7 @@ export class GameScreen {
       ),
       h('div', { class: 'topbar-stats' }, goldEl, emberEl, seasonEl),
       h('div', { class: 'topbar-actions' },
-        this.iconAction('scale', 'The Council Brief — the season at a glance',
+        this.iconAction('scale', 'The Council Brief: the season at a glance',
           () => openBriefOverlay(this),
           seasonOmissions(this).length > 0 ? String(seasonOmissions(this).length) : undefined),
         this.iconAction('hero', 'Court & heroes', () => openCourtOverlay(this), heroesReady > 0 ? String(heroesReady) : undefined),
@@ -1205,24 +1189,38 @@ export class GameScreen {
         this.iconAction('quest', 'Quests & the Saga', () => openQuestsOverlay(this)),
         this.iconAction('handshake', 'The other lords', () => openDiplomacyOverlay(this)),
         this.iconAction('book', 'Ledger & victory', () => openLedgerOverlay(this)),
-        this.iconAction('eye', 'The Province Navigator — the map as rows', () => openNavigatorOverlay(this)),
-        this.iconAction('codex', 'The Codex — every rule of the realm', () => openCodexOverlay(this)),
+        this.iconAction('eye', 'The Province Navigator: the map as rows', () => openNavigatorOverlay(this)),
+        this.iconAction('codex', 'The Codex: every rule of the realm', () => openCodexOverlay(this)),
         (() => {
           const cd = viewer.signatureCooldownLeft ?? 0;
           const btn = h('button', {
             class: `btn btn-quiet topbar-icon signature-btn ${cd === 0 ? 'signature-ready' : ''}`,
-            'aria-label': `${lord.signature.name} — your signature`,
+            'aria-label': `${lord.signature.name}, your signature`,
             onclick: () => this.openSignatureModal(),
           }, sigilShield(viewer.lordId, 20));
           if (cd > 0) btn.appendChild(h('span', { class: 'badge badge-quiet' }, String(cd)));
           tip(btn, () => h('div', { class: 'tip-plain' },
-            h('b', {}, `${lord.signature.name} — your signature`),
+            h('b', {}, `${lord.signature.name} · your signature`),
             h('p', { class: 'small' }, lord.signature.desc),
             h('p', { class: 'small muted' }, cd === 0 ? 'Ready.' : `Returns in ${cd} ${cd === 1 ? 'season' : 'seasons'}.`),
           ));
           return btn;
         })(),
       ),
+      // phones only (CSS-gated): the icon row above hides and this one
+      // button holds every drawer, labeled, at thumb size. One bar total:
+      // the map keeps the room (Michel, 2026-07-12).
+      (() => {
+        const alertCount = seasonOmissions(this).length + heroesReady;
+        const btn = h('button', {
+          class: 'btn btn-quiet topbar-drawers',
+          'aria-label': 'All the drawers: brief, court, magic, quests, lords, ledger, navigator, codex',
+          onclick: () => this.openDrawers(),
+          html: iconSvg('book', 20),
+        });
+        if (alertCount > 0) btn.appendChild(h('span', { class: 'badge' }, String(alertCount)));
+        return btn;
+      })(),
       this.online && this.online.clock.perTurn > 0
         ? (this.clockEl = h('div', { class: 'stat turn-clock', 'aria-label': 'Season clock' }))
         : null,
@@ -1237,7 +1235,7 @@ export class GameScreen {
           : this.online && this.state.current !== this.online.mySeat && this.state.phase === 'playing'
             ? `${LORD_BY_ID[this.current().lordId].name.split(' ')[0]} moves…`
             : 'End the Season');
-        // the restrained checklist: only true omissions, only as a whisper —
+        // the restrained checklist: only true omissions, only as a whisper:
         // the button never blocks, the tooltip names what the season leaves
         tip(btn, () => {
           const left = seasonOmissions(this);
@@ -1253,10 +1251,12 @@ export class GameScreen {
     // Update the live region's text only now that it is back in the DOM, and
     // only when the season actually changed: mutations inside an attached
     // aria-live region are what make screen readers announce the transition.
-    const seasonLabel = `Season ${state.turn}`;
     const seasonB = seasonEl.querySelector('b') as HTMLElement;
-    if (seasonB.textContent !== seasonLabel) {
-      seasonB.textContent = seasonLabel;
+    if (seasonB.dataset.turn !== String(state.turn)) {
+      seasonB.dataset.turn = String(state.turn);
+      // the word collapses on phones (CSS .season-word); the number stays.
+      // Screen readers hear the full "Season N" either way (aria-live text).
+      seasonB.replaceChildren(h('span', { class: 'season-word' }, 'Season '), String(state.turn));
       (seasonEl.querySelector('span.small') as HTMLElement).textContent = seasonName(state.turn);
     }
     this.renderClock();
@@ -1267,6 +1267,34 @@ export class GameScreen {
     if (badge) btn.appendChild(h('span', { class: 'badge' }, badge));
     tip(btn, label);
     return btn;
+  }
+
+  /** The drawers, for phones: every overlay as a labeled row at thumb size.
+   * The same surfaces the desktop icon row opens; they exist once each. */
+  openDrawers(): void {
+    const viewer = this.state.players[this.viewerId()];
+    const lord = LORD_BY_ID[viewer.lordId];
+    const omissions = seasonOmissions(this).length;
+    const counsel = heroesOf(this.state, viewer.id).filter((hh) => hh.status === 'ready' && hh.levelChoices.length > 0).length;
+    const cd = viewer.signatureCooldownLeft ?? 0;
+    const row = (icon: string, label: string, note: string | null, open: () => void): HTMLElement =>
+      h('button', { class: 'drawer-row', onclick: () => { modal.close(); open(); } },
+        h('span', { class: 'drawer-row-icon', html: iconSvg(icon, 18) }),
+        h('span', { class: 'drawer-row-label' }, label),
+        note ? h('span', { class: 'small drawer-row-note' }, note) : null,
+      );
+    const modal = openModal('The war table', h('div', { class: 'drawers-body' },
+      row('scale', 'The Council Brief', omissions > 0 ? `${omissions} open` : null, () => openBriefOverlay(this)),
+      row('hero', 'Court & heroes', counsel > 0 ? `${counsel} await counsel` : null, () => openCourtOverlay(this)),
+      row('ember', 'Magic & rites', null, () => openMagicOverlay(this)),
+      row('quest', 'Quests & the Saga', null, () => openQuestsOverlay(this)),
+      row('handshake', 'The other lords', null, () => openDiplomacyOverlay(this)),
+      row('book', 'Ledger & victory', null, () => openLedgerOverlay(this)),
+      row('eye', 'The Province Navigator', null, () => openNavigatorOverlay(this)),
+      row('codex', 'The Codex', null, () => openCodexOverlay(this)),
+      row('crownSmall', lord.signature.name, cd === 0 ? 'ready' : `returns in ${cd}`, () => this.openSignatureModal()),
+      row('gear', 'Menu: saves & settings', null, () => openMenuOverlay(this)),
+    ));
   }
 
   private renderPanels(): void {

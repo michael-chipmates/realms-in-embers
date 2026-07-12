@@ -1,5 +1,5 @@
 /**
- * Gold, Emberlight, order, prosperity — always itemized.
+ * Gold, Emberlight, order, prosperity, always itemized.
  * Every function that produces a number can also produce the labeled lines
  * behind it; the UI shows those lines verbatim. If a number can't explain
  * itself here, it doesn't ship.
@@ -13,9 +13,9 @@ import { SIGNATURE_TUNING } from './signature';
 import type { GameState, IncomeReport, Player, PlayerId, Province, TaxLevel } from './types';
 
 export const TAX_FX: Record<TaxLevel, { mult: number; order: number; label: string }> = {
-  light: { mult: 0.75, order: 2, label: 'Light tithes — three parts in four collected; the villages bless your name.' },
-  fair: { mult: 1.0, order: 0, label: 'Fair tithes — the customary due, grumbled at customarily.' },
-  harsh: { mult: 1.35, order: -3, label: 'Harsh tithes — coin now, resentment on an installment plan.' },
+  light: { mult: 0.75, order: 2, label: 'Light tithes: three parts in four collected; the villages bless your name.' },
+  fair: { mult: 1.0, order: 0, label: 'Fair tithes: the customary due, grumbled at customarily.' },
+  harsh: { mult: 1.35, order: -3, label: 'Harsh tithes: coin now, resentment on an installment plan.' },
 };
 
 /** The explain pattern this engine lives by (C§11.7 names it
@@ -50,8 +50,8 @@ export function provinceIncome(state: GameState, p: Province): Itemized {
     base += fx.incomeTerrainAdd;
   }
   if (fx.walledIncomeAdd && p.buildings.some((b) => b.startsWith('walls'))) {
-    // Halvard (v12): a held gate taxes the road — walls finally EARN
-    lines.push({ label: `${lord.perk.label} — gate tolls`, amount: fx.walledIncomeAdd });
+    // Halvard (v12): a held gate taxes the road; walls finally EARN
+    lines.push({ label: `${lord.perk.label}: gate tolls`, amount: fx.walledIncomeAdd });
     base += fx.walledIncomeAdd;
   }
   for (const b of p.buildings) {
@@ -145,7 +145,7 @@ export function incomeReport(state: GameState, pid: PlayerId): IncomeReport {
   if (player.embargo && player.embargo.turnsLeft > 0) {
     const cut = SIGNATURE_TUNING.branwen.incomeCutPct / 100;
     const delta = -Math.round(gross * cut);
-    lines.push({ label: `The Embargo — ${lordName(state, player.embargo.by)} closed the salt roads (−${SIGNATURE_TUNING.branwen.incomeCutPct}%)`, amount: delta });
+    lines.push({ label: `The Embargo: ${lordName(state, player.embargo.by)} closed the salt roads (−${SIGNATURE_TUNING.branwen.incomeCutPct}%)`, amount: delta });
     gross += delta;
   }
   const upkeep = upkeepOf(state, pid);
@@ -239,7 +239,7 @@ export function orderDrift(state: GameState, p: Province): Itemized {
     lines.push({ label: 'Wayshrine pilgrims', amount: 1 });
   }
 
-  // heroes standing here radiate calm — or dread
+  // heroes standing here radiate calm, or dread
   for (const hero of heroesOf(state, p.owner)) {
     if (hero.status !== 'ready' || heroProvince(state, hero) !== p.id) continue;
     const d = heroDerived(state, hero);

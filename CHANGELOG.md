@@ -4,7 +4,7 @@ All notable changes to Realms in Embers. The game's rules carry their own
 version (`RULES_VERSION` in `src/engine/state.ts`, currently v15) — bumped
 whenever engine semantics change, with a frozen replay fixture as the canary.
 
-## [0.5.0] — the legible war (2026-07-12)
+## [0.5.0] — the open book (2026-07-12)
 
 The experience wave and the second trust wave, in one release: battles stage
 themselves, a stranger's first game teaches by doing, the map has a semantic

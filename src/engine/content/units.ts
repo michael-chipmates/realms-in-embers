@@ -1,5 +1,5 @@
 /**
- * The unit roster. Numbers are the balance surface — the sim harness
+ * The unit roster. Numbers are the balance surface: the sim harness
  * exercises them; tune here, nowhere else.
  */
 import type { BuildingId, Creed, Terrain, UnitTypeId } from '../types';
@@ -21,11 +21,11 @@ export type UnitTrait =
   | 'ragged';     // rabble: -10% defense (rebels, marauders)
 
 /** The mechanical truth of every player-facing trait, for tooltips and the
- * Codex. MUST match the combat code — these lines are the player's contract.
+ * Codex. MUST match the combat code: these lines are the player's contract.
  * ('ragged' is internal to neutral rabble; nothing a player raises has it.) */
 export const TRAIT_INFO: Partial<Record<UnitTrait, string>> = {
   ranged: 'Strikes in the volley prelude, before the lines meet.',
-  charge: '+20% attack in the first clash on open ground (Meadowlands or hills) — cancelled if the enemy braces.',
+  charge: '+20% attack in the first clash on open ground (Meadowlands or hills), cancelled if the enemy braces.',
   brace: '+10% strength when defending, and cancels enemy charges.',
   armored: 'Takes 15% fewer hits.',
   siege: 'Ignores the defenders’ wall bonus when attacking.',
@@ -37,7 +37,7 @@ export const TRAIT_INFO: Partial<Record<UnitTrait, string>> = {
   terror: 'The enemy fights at −8% unless they also field terror, the unyielding, or an immune lord.',
   unyielding: 'Immune to terror, and holds when every other company would break.',
   ambush: '+25% attack in the first clash when attacking.',
-  ragged: 'Rabble in stolen boots — fights at −10%.',
+  ragged: 'Rabble in stolen boots: fights at −10%.',
 };
 
 export interface UnitDef {
@@ -51,7 +51,7 @@ export interface UnitDef {
   cost: number;
   upkeep: number;
   traits: UnitTrait[];
-  /** Recruitment gates — all listed must hold. Neutral-only units have recruit: null.
+  /** Recruitment gates: all listed must hold. Neutral-only units have recruit: null.
    * (Revenants carry extra gates in code: Morrikan's perk, and a barrow site.) */
   recruit: {
     building?: BuildingId;
@@ -188,13 +188,13 @@ export const UNITS: Record<UnitTypeId, UnitDef> = {
   revenants: {
     id: 'revenants', name: 'Barrow Revenants', namePlural: 'Barrow Revenants', tier: 2,
     // v15 balance: the dead march free of wages, but they swing like the
-    // dead (5/5→4/4) and the RAISING has a price — a conclusive 41% mirror
+    // dead (5/5→4/4) and the RAISING has a price: a conclusive 41% mirror
     // winrate said a free elite standing army was two dials too generous.
     // Still tireless; still terror; still unyielding.
     atk: 4, def: 4, hits: 5, cost: 90, upkeep: 0, traits: ['terror', 'unyielding'],
     recruit: {}, // gated in code: Morrikan's perk + a barrow site
     icon: 'skull',
-    desc: 'The unquiet dead of the old wars. Terrifying, tireless, and very poor conversation — though the rites that wake them are not free.',
+    desc: 'The unquiet dead of the old wars. Terrifying, tireless, and very poor conversation, though the rites that wake them are not free.',
     flavor: 'The Sundering woke things that had been politely pretending to sleep.',
   },
 };

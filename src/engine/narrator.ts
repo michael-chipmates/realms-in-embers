@@ -1,11 +1,11 @@
 /**
- * Osperan the Unresting — last chronicler of the Ember Throne, dead these
+ * Osperan the Unresting, last chronicler of the Ember Throne, dead these
  * forty years and still on deadline. He writes the war as history while it
  * happens: past tense, dry, and more attached to these fools than he admits.
  *
  * Line engine: each bank holds variants; selection avoids recently-used lines
  * (state.narratorUsed) so he rarely repeats himself. All randomness comes
- * from the game Rng — the chronicle is part of the deterministic record.
+ * from the game Rng: the chronicle is part of the deterministic record.
  */
 import type { Rng } from './rng';
 import type { ChronicleEntry, ChronicleKind, GameState, PlayerId } from './types';
@@ -30,7 +30,7 @@ const BANKS = {
     [
       (c) => `Forty years since the Sundering, and the realm still glows where it broke. This season, ${c.count} banners rose to claim the ashes: ${c.lords}. I took up my pen again. Somebody has to bury them properly.`,
       (c) => `The Ember Throne has been cold for a generation, which is apparently long enough for everyone to forget how it got that way. ${c.count} claimants now: ${c.lords}. I began a fresh page and, out of old habit, ruled a margin for the dead.`,
-      (c) => `They say a chronicle should open with the weather. Very well: ash on the wind, frost on the passes, and ${c.count} lords — ${c.lords} — each quite certain the realm is theirs. The weather, in short, was war.`,
+      (c) => `They say a chronicle should open with the weather. Very well: ash on the wind, frost on the passes, and ${c.count} lords (${c.lords}), each quite certain the realm is theirs. The weather, in short, was war.`,
     ],
     true,
   ),
@@ -40,7 +40,7 @@ const BANKS = {
       (c) => `${c.lord} marched into ${c.province}, whose people had governed themselves passably for forty years and were not consulted on the change.`,
       (c) => `${c.province} fell to ${c.lord} with little ceremony. The locals took down one banner, hung another, and hid the good silver as their grandparents taught them.`,
       (c) => `${c.lord} added ${c.province} to the realm-in-progress. The province's records list the year's chief exports as wool, barley, and independence.`,
-      (c) => `The free province of ${c.province} was liberated by ${c.lord} — from its freedom, chiefly.`,
+      (c) => `The free province of ${c.province} was liberated by ${c.lord}. From its freedom, chiefly.`,
       (c) => `${c.lord}'s banner now flies over ${c.province}. The elders signed the submission with the same pen that signed the last three, kept sharpened for the purpose.`,
       (c) => `${c.province} joined ${c.lord}'s realm the way sheep join a larger flock: with noise, with dust, and with no vote recorded.`,
     ],
@@ -59,10 +59,10 @@ const BANKS = {
   captureSeat: defineBank<{ lord: string; loser: string; province: string }>(
     'ceremony',
     [
-      (c) => `The seat of ${c.loser} fell. ${c.lord} walked the halls of ${c.province} as its master, and the servants — who have survived three dynasties by counting spoons and saying nothing — began counting spoons.`,
+      (c) => `The seat of ${c.loser} fell. ${c.lord} walked the halls of ${c.province} as its master, and the servants, who have survived three dynasties by counting spoons and saying nothing, began counting spoons.`,
       (c) => `${c.province}, high seat of ${c.loser}, opened its gates to ${c.lord}. A realm can lose a thousand fields and shrug; it loses a throne-hall and something in it breaks aloud.`,
       (c) => `${c.lord} took ${c.loser}'s own seat of ${c.province}. In the great hall the old fire was relit by the victors, who did not know it had been kept banked, faithfully, all these years.`,
-      (c) => `The gates of ${c.province} — ${c.loser}'s own — stand open for ${c.lord}. Somewhere below, a steward is walling up the good vintage, faithful to a dynasty of thirsts.`,
+      (c) => `The gates of ${c.province}, ${c.loser}'s own, stand open for ${c.lord}. Somewhere below, a steward is walling up the good vintage, faithful to a dynasty of thirsts.`,
       (c) => `${c.lord} sits tonight in ${c.loser}'s hall at ${c.province}. The dogs, I am told, changed loyalties before the soup cooled. Dogs are honest that way.`,
     ],
     true,
@@ -70,11 +70,11 @@ const BANKS = {
   fieldBattle: defineBank<{ winner: string; loser: string; province: string; scale: string }>(
     'war',
     [
-      (c) => `${c.winner} met ${c.loser} in ${c.province} and held the field — ${c.scale}. The crows, as ever, declared for the winner.`,
+      (c) => `${c.winner} met ${c.loser} in ${c.province} and held the field: ${c.scale}. The crows, as ever, declared for the winner.`,
       (c) => `Battle in ${c.province}: ${c.winner} over ${c.loser}, ${c.scale}. Both sides prayed beforehand. The gods, spread thin these days, attended neither.`,
       (c) => `${c.loser} gave battle to ${c.winner} in ${c.province} and wished, presently, that they hadn't. ${c.scale}.`,
       (c) => `The matter of ${c.province} was argued by some thousands of armed scholars. ${c.winner} carried the debate; ${c.scale}.`,
-      (c) => `In ${c.province}, ${c.winner} and ${c.loser} spent an afternoon disagreeing at spear-length. ${c.winner} had the better afternoon — ${c.scale}.`,
+      (c) => `In ${c.province}, ${c.winner} and ${c.loser} spent an afternoon disagreeing at spear-length. ${c.winner} had the better afternoon: ${c.scale}.`,
       (c) => `The field at ${c.province} went to ${c.winner}, ${c.scale}. ${c.loser} withdrew in good order, which is what withdrawing lords instruct me to write.`,
       (c) => `Arms were tried in ${c.province}; ${c.winner} prevailed over ${c.loser}, ${c.scale}. The village nearest the field has renamed its tavern The Spectator and is doing famous business.`,
     ],
@@ -84,7 +84,7 @@ const BANKS = {
     [
       (c) => `${c.province} rose against ${c.lord} behind one ${c.leader}. Rebellions are itemized grievances with pitchforks attached, and this one's list was long and, frankly, well-drafted.`,
       (c) => `Word reached ${c.lord} that ${c.province} had stopped paying taxes and started sharpening them. The rising follows ${c.leader}, who promises much, which is traditional.`,
-      (c) => `${c.province} declared itself done with ${c.lord}. The rebel ${c.leader} flies a straw crown for a banner — mockery now, ambition by autumn, if unattended.`,
+      (c) => `${c.province} declared itself done with ${c.lord}. The rebel ${c.leader} flies a straw crown for a banner: mockery now, ambition by autumn, if unattended.`,
       (c) => `The straw crown is out in ${c.province} again, worn by ${c.leader} and aimed at ${c.lord}. Straw burns fast; grievance is the slower fuel underneath.`,
       (c) => `${c.province} has stopped calling ${c.lord} 'lord' and started calling ${c.leader} 'captain'. Titles are the first casualties. Collectors of taxes are traditionally the second.`,
     ],
@@ -92,16 +92,16 @@ const BANKS = {
   heroDied: defineBank<{ hero: string; epithet: string; cause: string; lord: string }>(
     'ceremony',
     [
-      (c) => `Here the chronicle slows, as it must. ${c.hero}, called ${c.epithet}, fell — ${c.cause}. I have written ten thousand names in this book. Some of them insist on mattering.`,
-      (c) => `${c.hero} ${c.epithet} is dead — ${c.cause}. ${c.lord} has lost a sword, a counselor, and the particular silence that follows a name no one is ready to say in the past tense. I say it for them. That is my office.`,
-      (c) => `Let the record state plainly: ${c.hero}, ${c.epithet}, fell — ${c.cause}. The margin of this page is wide. I rule them wide on purpose, for names like this one.`,
+      (c) => `Here the chronicle slows, as it must. ${c.hero}, called ${c.epithet}, fell: ${c.cause}. I have written ten thousand names in this book. Some of them insist on mattering.`,
+      (c) => `${c.hero} ${c.epithet} is dead: ${c.cause}. ${c.lord} has lost a sword, a counselor, and the particular silence that follows a name no one is ready to say in the past tense. I say it for them. That is my office.`,
+      (c) => `Let the record state plainly: ${c.hero}, ${c.epithet}, fell: ${c.cause}. The margin of this page is wide. I rule them wide on purpose, for names like this one.`,
     ],
     true,
   ),
   heroHired: defineBank<{ hero: string; epithet: string; lord: string; cls: string }>(
     'hero',
     [
-      (c) => `A ${c.cls} calling themselves ${c.hero} — ${c.epithet}, no less — took ${c.lord}'s coin. Epithets are free; we shall see about the rest.`,
+      (c) => `A ${c.cls} calling themselves ${c.hero} (${c.epithet}, no less) took ${c.lord}'s coin. Epithets are free; we shall see about the rest.`,
       (c) => `${c.lord} welcomed ${c.hero} to court. The epithet "${c.epithet}" came with the luggage. Most do.`,
       (c) => `${c.hero} entered ${c.lord}'s service. I have opened a fresh line in the margin; heroes either fill a page or a grave, and usually both.`,
     ],
@@ -110,7 +110,7 @@ const BANKS = {
     'ceremony',
     [
       (c) => `And so ${c.lord} passes out of the war and into my footnotes, the last banner struck by ${c.conqueror}. Realms end loudly; lords end in inventory.`,
-      (c) => `${c.lord} is finished — unseated, unhoused, unfollowed, undone by ${c.conqueror}. The chronicle keeps a page for every claimant. This one I now sand, blot, and close.`,
+      (c) => `${c.lord} is finished: unseated, unhoused, unfollowed, undone by ${c.conqueror}. The chronicle keeps a page for every claimant. This one I now sand, blot, and close.`,
       (c) => `Strike the tents, fold the banner: ${c.lord} holds nothing now but a place in this book, courtesy of ${c.conqueror}. It is more than most get.`,
     ],
     true,
@@ -118,32 +118,32 @@ const BANKS = {
   victory: defineBank<{ lord: string; how: string }>(
     'ceremony',
     [
-      (c) => `It is done. ${c.lord} has won the realm — ${c.how}. The Chronicle of the Sundered Age ends here, and I... I find my pen is out of ink, and my debt out of years. Whoever reads this: the fire is yours. Mind it.`,
-      (c) => `${c.lord} stands where the Ember Throne stood, victorious — ${c.how}. Forty years I have waited to write a final sentence. Here it is. It was worth the wait; whether it was worth the war I leave to your judgment.`,
+      (c) => `It is done. ${c.lord} has won the realm: ${c.how}. The Chronicle of the Sundered Age ends here, and I... I find my pen is out of ink, and my debt out of years. Whoever reads this: the fire is yours. Mind it.`,
+      (c) => `${c.lord} stands where the Ember Throne stood, victorious: ${c.how}. Forty years I have waited to write a final sentence. Here it is. It was worth the wait; whether it was worth the war I leave to your judgment.`,
     ],
     true,
   ),
   chronicleClose: defineBank<{ lord: string; turns: number }>(
     'ceremony',
     [
-      (c) => `${c.turns} seasons of war, and no throne relit — so the Chronicle itself must judge. By every measure that survives an age — lands held, hearths warm, oaths kept — the greatest claim belongs to ${c.lord}. Let the realm rest there. Even wars have bedtimes.`,
-      (c) => `The page ran out before the war did, as I always feared it might. Weighing all — provinces, prosperity, the quiet of kept order — the Chronicle names ${c.lord} first among the claimants, and closes.`,
+      (c) => `${c.turns} seasons of war, and no throne relit, so the Chronicle itself must judge. By every measure that survives an age (lands held, hearths warm, oaths kept), the greatest claim belongs to ${c.lord}. Let the realm rest there. Even wars have bedtimes.`,
+      (c) => `The page ran out before the war did, as I always feared it might. Weighing all (provinces, prosperity, the quiet of kept order), the Chronicle names ${c.lord} first among the claimants, and closes.`,
     ],
     true,
   ),
   riteComplete: defineBank<{ lord: string; spell: string; kind: string }>(
     'magic',
     [
-      (c) => `${c.lord}'s court completed the Rite of ${c.spell} — ${c.kind}, paid for in Emberlight and singed sleeves. The realm's candle-flames leaned toward the spire for a night.`,
+      (c) => `${c.lord}'s court completed the Rite of ${c.spell}: ${c.kind}, paid for in Emberlight and singed sleeves. The realm's candle-flames leaned toward the spire for a night.`,
       (c) => `After long seasons of pledged light, ${c.lord} commands ${c.spell}. The adepts celebrated in the traditional manner: quietly, with burn salve.`,
-      (c) => `Let the record show ${c.lord} has mastered ${c.spell}. Magic returns to the realm the way water returns to a cracked cistern — slowly, and finding every fault.`,
+      (c) => `Let the record show ${c.lord} has mastered ${c.spell}. Magic returns to the realm the way water returns to a cracked cistern: slowly, and finding every fault.`,
     ],
   ),
   artifactFound: defineBank<{ lord: string; artifact: string; how: string }>(
     'hero',
     [
       (c) => `${c.artifact} has come to ${c.lord}'s keeping, ${c.how}. Objects like this one have their own biographies; I merely add the current chapter.`,
-      (c) => `${c.lord} now holds ${c.artifact} — ${c.how}. The old things are waking up and choosing hands. I note which ones.`,
+      (c) => `${c.lord} now holds ${c.artifact}, ${c.how}. The old things are waking up and choosing hands. I note which ones.`,
       (c) => `Recovered: ${c.artifact}, ${c.how}. The vault-keeper of ${c.lord} has begun sleeping badly, which is the correct response.`,
     ],
   ),
@@ -151,14 +151,14 @@ const BANKS = {
     'ceremony',
     [
       (c) => `The Saga turns a page: ${c.hero}, in ${c.lord}'s name, has completed ${c.chapterName}. That is ${c.chapter} of the five workings of the Rekindling. The other claimants have begun to read over my shoulder.`,
-      (c) => `Mark this entry well — ${c.chapterName} is done, by ${c.hero}. The road to a rekindled throne runs five chapters; ${c.lord} stands at ${c.chapter}. Prophecy is just history impatient for its turn.`,
+      (c) => `Mark this entry well: ${c.chapterName} is done, by ${c.hero}. The road to a rekindled throne runs five chapters; ${c.lord} stands at ${c.chapter}. Prophecy is just history impatient for its turn.`,
     ],
     true,
   ),
   sagaRitual: defineBank<{ lord: string; hero: string; seat: string }>(
     'ceremony',
     [
-      (c) => `THE THIRD FIRE IS LIT. From every watchtower in the realm the glow over ${c.seat} can be seen: ${c.hero} has begun the Rekindling in ${c.lord}'s hall. Three nights. Every sword in the realm now knows where it is needed — one way or the other.`,
+      (c) => `THE THIRD FIRE IS LIT. From every watchtower in the realm the glow over ${c.seat} can be seen: ${c.hero} has begun the Rekindling in ${c.lord}'s hall. Three nights. Every sword in the realm now knows where it is needed, one way or the other.`,
       (c) => `${c.lord} has begun the Rekindling at ${c.seat}, ${c.hero} keeping the fire. Three nights to a new age. I have waited forty years to write this paragraph; I find my hand is steady and the realm's is not.`,
     ],
     true,
@@ -173,7 +173,7 @@ const BANKS = {
         ? `Let it be recorded plainly: ${c.aggressor} swore peace to ${c.target}, and lied. I keep a separate page for oathbreakers. It is among my fullest.`
         : `War, then, between ${c.aggressor} and ${c.target}. Neither asked my opinion. Chroniclers are only consulted afterwards, like gravediggers.`,
       (c) => c.oathbroken
-        ? `${c.aggressor} broke faith with ${c.target} — the seal snapped, the banners moved. Every lord in the realm quietly re-read their own treaties.`
+        ? `${c.aggressor} broke faith with ${c.target}: the seal snapped, the banners moved. Every lord in the realm quietly re-read their own treaties.`
         : `${c.aggressor} sent ${c.target} a declaration written in the high style. Beneath the flourishes it said: what is yours will do nicely.`,
       (c) => c.oathbroken
         ? `The pact between ${c.aggressor} and ${c.target} is ash, and ${c.aggressor} lit it personally. I have amended their page. Amendments of this kind do not wash out.`
@@ -187,7 +187,7 @@ const BANKS = {
     'diplomacy',
     [
       (c) => `${c.a} and ${c.b} made peace. The scribes wrote it fair, the lords sealed it warm, and everyone kept their boots by the door.`,
-      (c) => `Peace between ${c.a} and ${c.b} — signed, sanded, witnessed. Such peace ends a war the way a fever ends: not cured, just tired.`,
+      (c) => `Peace between ${c.a} and ${c.b}: signed, sanded, witnessed. Such peace ends a war the way a fever ends: not cured, just tired.`,
       (c) => `${c.a} and ${c.b} laid down the war and picked up a peace. The border villages celebrated with the special joy of people who expect to do this again.`,
       (c) => `A peace, of a kind, between ${c.a} and ${c.b}. The treaty runs four clauses. The mistrust runs longer, but it travels unwritten.`,
       (c) => `${c.a} and ${c.b} have unsheathed the pens and signed a peace. The accounting begins, which is war continued at a discount.`,
@@ -197,16 +197,16 @@ const BANKS = {
     'realm',
     [
       (c) => `Mark this: ${c.lord}'s treasury groans and the realm under them hums with order. ${c.rounds} more such ${c.rounds === 1 ? 'season' : 'seasons'} and the war ends not with a sword but with a signature.`,
-      (c) => `${c.lord} governs like a merchant prince — coffers full, hearths quiet. Give them ${c.rounds} more ${c.rounds === 1 ? 'season' : 'seasons'} of it and the crown is bought, not won.`,
+      (c) => `${c.lord} governs like a merchant prince: coffers full, hearths quiet. Give them ${c.rounds} more ${c.rounds === 1 ? 'season' : 'seasons'} of it and the crown is bought, not won.`,
       (c) => `Coin answers to ${c.lord} now the way soldiers answer to trumpets. ${c.rounds} more ${c.rounds === 1 ? 'season' : 'seasons'} of this quiet arithmetic and the war ends without a single glorious idiocy left for me to record.`,
       (c) => `Order in ${c.lord}'s lands is now so complete the bailiffs have taken up gardening. ${c.rounds} ${c.rounds === 1 ? 'season' : 'seasons'} more and the realm signs itself over.`,
-      (c) => `Mark the ledger: ${c.lord} is winning with granaries. Swords may yet interrupt — they have ${c.rounds} ${c.rounds === 1 ? 'season' : 'seasons'} to make the argument.`,
+      (c) => `Mark the ledger: ${c.lord} is winning with granaries. Swords may yet interrupt. They have ${c.rounds} ${c.rounds === 1 ? 'season' : 'seasons'} to make the argument.`,
     ],
   ),
   dominionWarning: defineBank<{ lord: string; rounds: number }>(
     'realm',
     [
-      (c) => `${c.lord} now holds the greater part of the realm. ${c.rounds} more ${c.rounds === 1 ? 'season' : 'seasons'} unbroken and the matter is settled — the rest of you may wish to discuss that. Urgently. Together.`,
+      (c) => `${c.lord} now holds the greater part of the realm. ${c.rounds} more ${c.rounds === 1 ? 'season' : 'seasons'} unbroken and the matter is settled. The rest of you may wish to discuss that. Urgently. Together.`,
       (c) => `The map is turning one color, and it is ${c.lord}'s. ${c.rounds} ${c.rounds === 1 ? 'season' : 'seasons'} remain before the realm simply... belongs to them.`,
       (c) => `Couriers now cross ${c.lord}'s lands for days without changing maps. ${c.rounds} more ${c.rounds === 1 ? 'season' : 'seasons'} and the map is the realm.`,
       (c) => `The realm is becoming a single household with ${c.lord} at the head of its table. ${c.rounds} ${c.rounds === 1 ? 'season' : 'seasons'} remain in which to object; after that, objection is called treason.`,
@@ -216,7 +216,7 @@ const BANKS = {
   roundOmen: defineBank<{ turn: number; leader: string }>(
     'turn',
     [
-      () => `Rain on the passes this season. Armies hate rain; chroniclers love it — it keeps the casualty lists short and the ink long.`,
+      () => `Rain on the passes this season. Armies hate rain; chroniclers love it: it keeps the casualty lists short and the ink long.`,
       () => `A comet stood over the realm for three nights. Half the wise called it an omen of ruin, half of triumph. Comets, in my experience, portend chiefly comets.`,
       () => `The granary mice are fat this year. Old campaigners will tell you what that means; they will be wrong, but affectingly certain.`,
       () => `Peddlers now sell "shards of the Ember Throne" at every crossroads fair. By my arithmetic the throne has been sold eleven times over. Business is grief with a stall.`,
@@ -232,14 +232,14 @@ const BANKS = {
       (c) => `Wheat is dear, rumor is cheap, and by season ${c.turn} every tavern strategist in the realm has won the war twice over the same tankard.`,
       () => `The moon stood red over the barrows at solstice. The wise say the dead are restless. Speaking as the dead: we are merely disappointed.`,
       () => `An almanac-maker asked me to predict the coming season. I predicted war. He complained this was no prediction. It is the only one that has never failed me.`,
-      () => `The realm's children play at claimants now — wooden swords, straw crowns. Their game ends, I am told, when somebody cries. So will ours.`,
+      () => `The realm's children play at claimants now: wooden swords, straw crowns. Their game ends, I am told, when somebody cries. So will ours.`,
       () => `Ash fell on the eastern shires again: the old scars of the Sundering smoking in their sleep. The realm remembers what broke it, even when its lords do not.`,
     ],
   ),
   coalition: defineBank<{ lord: string; share: number }>(
     'ceremony',
     [
-      (c) => `Mark this season well: ${c.lord} holds ${c.share} lands in the hundred, and the other claimants have stopped quarreling about precedence. Couriers ride between courts that were not speaking last winter. The realm has learned the old arithmetic — the mighty are a common cause.`,
+      (c) => `Mark this season well: ${c.lord} holds ${c.share} lands in the hundred, and the other claimants have stopped quarreling about precedence. Couriers ride between courts that were not speaking last winter. The realm has learned the old arithmetic: the mighty are a common cause.`,
       (c) => `A league is forming. No treaty names it and every court denies it, but ${c.lord}'s ${c.share} parts of the realm have accomplished what forty years of sermons could not: the rest of them are talking. I have seen this before. It ends loudly.`,
     ],
     true,
@@ -255,7 +255,7 @@ const BANKS = {
         : `The season's remainder, in sum: ${tally(c.wars, 'clash', 'clashes')} for the map-makers and ${tally(c.ledgers, 'entry', 'entries')} for the counting-houses. The maps get the ballads. The counting-houses get the last word.`,
       (c) => c.quiet
         ? `A quiet season otherwise, and I have learned to prize those: the levies stayed home, the granaries argued with no one, and my margin for the dead went unused. Long may it disappoint me.`
-        : `So closes season ${c.turn}'s ordinary business — ${tally(c.wars, 'field contested', 'fields contested')}, ${tally(c.ledgers, 'purse turned out', 'purses turned out')}. History will want the ceremonies. The realm, I note in passing, runs on the rest.`,
+        : `So closes season ${c.turn}'s ordinary business: ${tally(c.wars, 'field contested', 'fields contested')}, ${tally(c.ledgers, 'purse turned out', 'purses turned out')}. History will want the ceremonies. The realm, I note in passing, runs on the rest.`,
       (c) => c.quiet
         ? `Season ${c.turn} closed without further incident worth the ink, so I give it one line and my compliments. Uneventful seasons are the mortar of a realm. Nobody thanks mortar.`
         : `For the rest of season ${c.turn}, the usual weather: ${tally(c.wars, 'quarrel settled at spear-length', 'quarrels settled at spear-length')}, ${tally(c.ledgers, 'quarrel settled in coin', 'quarrels settled in coin')}. Of the two currencies, coin at least gets counted honestly.`,
@@ -263,7 +263,7 @@ const BANKS = {
         ? `What else the season held, it kept to itself: sowing, shearing, small honest weather. I have checked twice for anything worth a lord's attention and am pleased to certify there was none.`
         : `The remainder of the season I compress without apology: ${tally(c.wars, 'passage of arms', 'passages of arms')}, ${tally(c.ledgers, 'grievance filed in ink', 'grievances filed in ink')}, and everywhere else the slow, unchronicled work of staying fed.`,
       (c) => c.quiet
-        ? `The balance of the season was peace of the working kind — not the signed sort, the sort with hay in it. I note it here because nobody else will, and it deserves a witness.`
+        ? `The balance of the season was peace of the working kind: not the signed sort, the sort with hay in it. I note it here because nobody else will, and it deserves a witness.`
         : `Item, for the season's back pages: ${tally(c.wars, 'affray', 'affrays')}, ${tally(c.ledgers, 'ledger dispute', 'ledger disputes')}, no prodigies. The realm calls this an ordinary season. So do I, and gratefully.`,
     ],
   ),
@@ -271,7 +271,7 @@ const BANKS = {
     'diplomacy',
     [
       (c) => `${c.lord} said it for the record, and the record obliges: "${c.quote}"`,
-      (c) => `In ${c.lord}'s own words — I copy them exactly; summary would flatter no one: "${c.quote}"`,
+      (c) => `In ${c.lord}'s own words (I copy them exactly; summary would flatter no one): "${c.quote}"`,
       (c) => `${c.lord}'s words, as delivered: "${c.quote}"`,
       (c) => `For the margin, from ${c.lord}'s own mouth: "${c.quote}"`,
     ],
@@ -332,23 +332,23 @@ export function pickFresh(state: GameState, rng: Rng, key: string, count: number
 }
 
 /**
- * Digest-mode chronicle filter — pure, so the UI and the tests share it.
+ * Digest-mode chronicle filter. Pure, so the UI and the tests share it.
  *
  * NEVER digested (always visible, digest on or off):
  *   - ceremony entries (kind 'ceremony' / entry.ceremony: openings, fallen
  *     seats, hero deaths, eliminations, saga chapters, coalitions, victory)
- *   - 'war'        — battles and captures
- *   - 'diplomacy'  — declarations, peaces, lords' speeches
- *   - 'hero'       — hirings, quest returns, artifacts
- *   - 'magic'      — completed rites
- *   - 'event'      — event cards
- *   - 'teaching'   — Osperan's marginalia/teachings
+ *   - 'war':        battles and captures
+ *   - 'diplomacy':  declarations, peaces, lords' speeches
+ *   - 'hero':       hirings, quest returns, artifacts
+ *   - 'magic':      completed rites
+ *   - 'event':      event cards
+ *   - 'teaching':   Osperan's marginalia/teachings
  *   - 'realm' lines WITHOUT the minor flag (rebellions, province losses,
  *     victory warnings, signature orders)
  *
  * Digested (hidden when digestOn, replaced by the season's digest entry):
  *   - 'turn' omens (non-digest) and minor-flagged 'realm' bookkeeping.
- * With digestOn false the digest entries themselves are hidden instead —
+ * With digestOn false the digest entries themselves are hidden instead:
  * the feed reads exactly as it did before the Season Digest existed.
  */
 export function filterChronicle(entries: ChronicleEntry[], digestOn: boolean): ChronicleEntry[] {
@@ -364,8 +364,8 @@ export function filterChronicle(entries: ChronicleEntry[], digestOn: boolean): C
 /**
  * The default Digest reading view, pure for the tests: older seasons sit
  * collapsed and contribute only their digest line and their ceremonies
- * (ceremonies are never hidden, collapsed or not); the current season —
- * plus any the reader explicitly opened — shows everything filterChronicle
+ * (ceremonies are never hidden, collapsed or not); the current season
+ * (plus any the reader explicitly opened) shows everything filterChronicle
  * keeps. This is why a sixty-season war still reads in a couple of screens.
  */
 export function digestView(
@@ -378,7 +378,7 @@ export function digestView(
   );
 }
 
-/** Direct authored entry (events, teachings) — still deduped by caller. */
+/** Direct authored entry (events, teachings), still deduped by caller. */
 export function scribe(
   state: GameState,
   entry: Omit<ChronicleEntry, 'turn'>,
