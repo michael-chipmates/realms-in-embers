@@ -86,6 +86,28 @@ the statistics to convict — then convicted, twice, and was obeyed.
   carry the full honest ledger including the AI-art disclosure.
 - **/lords/** — the twelve claimants as one crawlable page, rendered from
   the engine's own content; joined the sitemap beside the Codex export.
+- **The plain-speech round** (rules v16) — every em and en dash left every
+  player-facing surface: the chronicle's fiction, the rules voice, the whole
+  UI, README, landing, press, legal, and the lords page (716 of them),
+  replaced by periods, commas, colons, and parentheses that read aloud.
+- **splitArmy** (rules v16) — a banner may raise a second banner in place:
+  mark the companies that march out, confirm, done. The new banner inherits
+  the season already spent (a split never buys a free march) and heroes stay
+  with the old banner. The Codex's Companies chapter states the rule.
+- **One bar on phones** — the day-old bottom mode bar is gone; the topbar
+  holds one non-wrapping row (sigil, coin, ember, season, drawers, End) and
+  a labeled drawers sheet reaches every surface at thumb size. The map got
+  the room back.
+- **The First Ember plays under fog** — a newcomer's first page is a seat
+  and its neighbors, not twelve banners; the guide teaches fog in the March
+  step.
+- **The intention reports back** — set a season's aim in the Brief and the
+  next Brief scores it against what actually happened, from the same
+  selectors the Ledger reads.
+- The lobby says "Connected to the open table." instead of naming relay
+  hostnames (a self-hosted override still shows its address on purpose),
+  and the legal page tells the Wayhouse public-by-design truth and is
+  linked from Settings.
 
 The enforced balance gates, over ≥300 mirrored games: every lord's bootstrap
 CI must touch expectation ±5pp (the ROPE gate — a CI wholly outside fails
