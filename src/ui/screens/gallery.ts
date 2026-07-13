@@ -97,12 +97,19 @@ export function openLordGallery(opts: GalleryOptions): void {
     const creed = CREEDS[lord.creed];
     const isTaken = (opts.taken ?? []).includes(lord.id);
 
-    const bars = PERSONALITY_LABELS.map(([key, label]) =>
-      h('div', { class: 'gallery-bar' },
+    // temperament as inked pips: seven rotated squares, filled to measure;
+    // the Emberlight row burns in ember (redesign 1e)
+    const bars = PERSONALITY_LABELS.map(([key, label]) => {
+      const v = Math.round(lord.personality[key] * 7);
+      const ember = key === 'mysticism';
+      return h('div', { class: 'gallery-bar' },
         h('span', { class: 'small muted gallery-bar-label' }, label),
-        h('span', { class: 'gallery-bar-track' },
-          h('span', { class: 'gallery-bar-ink', style: { width: `${Math.round(lord.personality[key] * 100)}%` } })),
-      ));
+        h('span', { class: 'pip-row', role: 'img', 'aria-label': `${label}: ${v} of 7` },
+          ...Array.from({ length: 7 }, (_, i) =>
+            h('span', { class: `pip-d ${i < v ? (ember ? 'pip-d-ember' : '') : 'pip-d-empty'}` })),
+        ),
+      );
+    });
 
     mount(card,
       h('div', { class: 'gallery-head' },
@@ -118,9 +125,13 @@ export function openLordGallery(opts: GalleryOptions): void {
       h('div', { class: 'gallery-stage' },
         h('button', { class: 'btn btn-quiet gallery-arrow', 'aria-label': 'Previous lord', onclick: () => step(-1), html: '‹' }),
         h('div', { class: 'gallery-lord' },
-          artSlot(`lord-${lord.id}`, sigilShield(lord.id, 72), { className: 'art-portrait-xl', alt: lord.name }),
-          h('h2', { class: 'gallery-name' }, lord.name),
-          h('p', { class: 'small muted' }, `${lord.epithet} · ${creed.name}`),
+          h('div', { class: 'gilt-frame' },
+            h('div', { class: 'gilt-liner' },
+              artSlot(`lord-${lord.id}`, sigilShield(lord.id, 72), { className: 'art-portrait-xl', alt: lord.name }),
+            ),
+          ),
+          h('h2', { class: 'gallery-name brass-nameplate' }, lord.name),
+          h('p', { class: 'small muted', style: { marginTop: '0.35rem' } }, `${lord.epithet} · ${creed.name}`),
           h('p', { class: 'small italic', style: { color: 'var(--gold)' } }, creed.tagline),
           h('div', { class: 'gallery-archetype-row' },
             h('span', { class: 'chip' },

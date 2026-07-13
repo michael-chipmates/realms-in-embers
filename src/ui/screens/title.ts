@@ -142,45 +142,72 @@ export function renderTitle(app: App): void {
   // a stranger's first visit leads with the guided door; veterans keep theirs
   const firstVisit = !canContinue && localStorage.getItem(FIRST_EMBER_DONE_KEY) === null;
 
+  // Three doors, not seven (redesign 1a/2a). The wax plaque leads with the
+  // guided game for a stranger; once the First Ember has been played (or a
+  // chronicle sits on the shelf), New Chronicle takes the plaque and the
+  // ember shrinks to ink (Michel, 2026-07-13). A running campaign rides
+  // beside it as a brass door; every other way in is demoted to ink.
+  const waxPlaque = (title: string, sub: string, onclick: (e: Event) => void): HTMLElement =>
+    h('button', { class: 'door-plaque', onclick },
+      h('span', { class: 'door-wax', 'aria-hidden': 'true' },
+        h('span', { class: 'door-wax-ring' }, h('span', { class: 'door-wax-diamond' }))),
+      h('span', { class: 'door-plaque-text' },
+        h('span', { class: 'door-plaque-title' }, title),
+        h('span', { class: 'door-plaque-sub' }, sub),
+      ),
+    );
+
+  const plaque = firstVisit
+    ? waxPlaque('The First Ember', 'your first war, guided by the ghost · skippable', () => startFirstEmber(app))
+    : waxPlaque('New Chronicle', 'a realm of your choosing, set up your way', () => app.toSetup());
+
+  const continueBtn = newest
+    ? h('button', {
+        class: 'btn title-btn',
+        onclick: (e: Event) => {
+          const state = loadSlot(newest.key);
+          if (state) { app.continueGame(state); return; }
+          // a dead button teaches nothing: say what happened (round-2 audit)
+          (e.currentTarget as HTMLButtonElement).textContent =
+            'That save could not be read. Try Load a Chronicle below.';
+        },
+      }, `Continue · ${newest.lords.split(',')[0]?.trim() ?? 'the war'}, season ${newest.turn}`)
+    : null;
+
+  const weekSeed = (): void => {
+    // The Week's Seed: one realm the whole table shares for seven days.
+    // ISO week from UTC, so every player worldwide forges the same land
+    // (weekly, not daily: a campaign is an evening, not a Wordle).
+    const d = new Date();
+    const utc = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
+    utc.setUTCDate(utc.getUTCDate() + 4 - (utc.getUTCDay() || 7));
+    const yearStart = new Date(Date.UTC(utc.getUTCFullYear(), 0, 1));
+    const week = Math.ceil(((utc.getTime() - yearStart.getTime()) / 86400000 + 1) / 7);
+    app.toSetup(`embermark-${utc.getUTCFullYear()}-w${String(week).padStart(2, '0')}`);
+  };
+
+  const dot = (): HTMLElement => h('span', { class: 'title-link-dot', 'aria-hidden': 'true' }, '·');
+  const links: HTMLElement[] = [];
+  const addLink = (label: string, onclick: () => void): void => {
+    if (links.length > 0) links.push(dot());
+    links.push(h('button', { class: 'btn-link', onclick }, label));
+  };
+  if (!firstVisit) addLink('The First Ember', () => startFirstEmber(app));
+  addLink('A Quick Chronicle', () => openQuickWar(app));
+  addLink('The Week’s Seed', weekSeed);
+  addLink('Load a Chronicle', () => openLoadModal(app));
+  addLink('Settings', () => openSettingsPanel(app));
+
   const menu = h(
     'div',
-    { class: 'title-menu' },
-    h('button', {
-      class: `btn title-btn${firstVisit ? ' btn-seal' : ''}`,
-      onclick: () => startFirstEmber(app),
-    }, 'The First Ember', h('span', { class: 'small muted title-btn-note' }, 'a guided first game')),
-    h('button', { class: `btn title-btn${firstVisit ? '' : ' btn-seal'}`, onclick: () => openQuickWar(app) }, 'A Quick Chronicle'),
-    h('button', { class: 'btn title-btn', onclick: () => app.toSetup() }, 'New Chronicle'),
-    newest
-      ? h('button', {
-          class: 'btn title-btn',
-          onclick: (e: Event) => {
-            const state = loadSlot(newest.key);
-            if (state) { app.continueGame(state); return; }
-            // a dead button teaches nothing: say what happened (round-2 audit)
-            (e.target as HTMLButtonElement).textContent =
-              'That save could not be read. Try Load a Chronicle for an older one.';
-          },
-        }, `Continue · ${newest.lords.split(',')[0]?.trim() ?? 'the war'}, season ${newest.turn}`)
-      : null,
-    h('button', { class: 'btn title-btn', onclick: () => void openOnlineLobby(app) }, 'Play with Friends'),
-    h('button', {
-      class: 'btn title-btn',
-      onclick: () => {
-        // The Week's Seed: one realm the whole table shares for seven days.
-        // ISO week from UTC, so every player worldwide forges the same land
-        // (weekly, not daily: a campaign is an evening, not a Wordle).
-        const d = new Date();
-        const utc = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
-        utc.setUTCDate(utc.getUTCDate() + 4 - (utc.getUTCDay() || 7));
-        const yearStart = new Date(Date.UTC(utc.getUTCFullYear(), 0, 1));
-        const week = Math.ceil(((utc.getTime() - yearStart.getTime()) / 86400000 + 1) / 7);
-        const seed = `embermark-${utc.getUTCFullYear()}-w${String(week).padStart(2, '0')}`;
-        app.toSetup(seed);
-      },
-    }, 'The Week’s Seed'),
-    h('button', { class: 'btn title-btn', onclick: () => openLoadModal(app) }, 'Load a Chronicle'),
-    h('button', { class: 'btn title-btn', onclick: () => openSettingsPanel(app) }, 'Settings'),
+    { class: 'title-menu title-doors' },
+    plaque,
+    h('div', { class: 'title-brass-row' },
+      firstVisit ? h('button', { class: 'btn title-btn', onclick: () => app.toSetup() }, 'New Chronicle') : null,
+      continueBtn,
+      h('button', { class: 'btn title-btn', onclick: () => void openOnlineLobby(app) }, 'Play with Friends'),
+    ),
+    h('div', { class: 'title-links' }, ...links),
   );
 
   const screen = h(

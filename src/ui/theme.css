@@ -1,7 +1,29 @@
 /* ================================================================== *
  *  REALMS IN EMBERS · war table at midnight
- *  One room: dark wood, candlelight, an aged vellum map, wax and brass.
+ *  One room: dark oak, candlelight, a vellum map, paper, wax and brass.
+ *  Every surface is an object on or around the table: the map is a
+ *  document, the chronicle is a book, commitment is a red wax seal,
+ *  chrome is engraved brass. Web furniture stays outside the room.
  * ================================================================== */
+
+/* IM Fell English (SIL OFL, self-hosted, latin subset): two voices only,
+   map labels and Osperan's chronicle body. Never below 14px, never for
+   controls. The UI must survive its absence (serif fallback below). */
+@font-face {
+  font-family: 'IM Fell English';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/im-fell-english.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'IM Fell English';
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/im-fell-english-italic.woff2') format('woff2');
+}
 
 :root {
   /* the room */
@@ -14,15 +36,37 @@
   --vellum: #d9c9a1;
   --vellum-dark: #c7b489;
   --vellum-deep: #b3a077;
+  /* the paper family (book pages, the augurs' note, ledgers) */
+  --paper-hi: #eee1bf;
+  --paper: #e0d1a8;
+  --vellum-deep-2: #c3ad7f;
+  --hairline-paper: #b3a077;
   /* inks */
   --ink: #392e1e;
   --ink-soft: #5c4c34;
   --ink-faint: #7d6b4e;
+  --map-ink: #4a3a22;
+  --map-ink-soft: #5c4a2c;
+  /* the map's washes (ownership; never color-only, tokens and banners
+     carry it too) */
+  --wash-player: #b6bc8e;
+  --wash-hostile-1: #cf9d7f;
+  --wash-hostile-2: #c0a3a9;
+  --wash-hostile-3: #c9ab92;
+  --wash-neutral-1: #dac99f;
+  --wash-neutral-2: #d0be92;
+  --wash-neutral-3: #c7b287;
+  --wash-neutral-4: #e0d2ab;
+  --road: #6b5738;
+  --token: #57534a;
+  --token-player: #4a5a35;
+  --token-hostile: #8a2f26;
   /* metals & wax */
   --gold: #c9a227;
   --gold-bright: #e6c14a;
   --gold-dim: #8a7020;
   --wax-red: #8a2f26;
+  --stamp-peace: #5c6b3f;
   --ember: #e07830;
   --ember-bright: #ffb35c;
   /* feedback */
@@ -32,6 +76,7 @@
 
   --serif: 'Iowan Old Style', 'Palatino Linotype', Palatino, 'Book Antiqua', Georgia, serif;
   --small-caps: var(--serif);
+  --fell: 'IM Fell English', 'Iowan Old Style', 'Palatino Linotype', Palatino, Georgia, serif;
 
   --text-scale: 1;
   font-size: calc(16px * var(--text-scale));
@@ -92,9 +137,9 @@ select {
   position: relative;
   height: 100%;
   background:
-    radial-gradient(ellipse 120% 90% at 50% -10%, rgba(224, 120, 48, 0.13), transparent 55%),
-    radial-gradient(ellipse 90% 70% at 50% 105%, rgba(224, 120, 48, 0.07), transparent 60%),
-    linear-gradient(175deg, var(--wood-900), var(--wood-950) 70%);
+    radial-gradient(ellipse 120% 90% at 50% -10%, rgba(224, 120, 48, 0.12), transparent 55%),
+    radial-gradient(ellipse 90% 70% at 50% 105%, rgba(224, 120, 48, 0.06), transparent 60%),
+    linear-gradient(175deg, #241a10, #140d07 75%);
   overflow: hidden;
 }
 
@@ -107,16 +152,15 @@ select {
   background: radial-gradient(ellipse 75% 70% at 50% 42%, transparent 55%, rgba(5, 3, 1, 0.55) 100%);
 }
 
-/* wood grain suggestion */
+/* oak grain: wide boards, a dark seam between them */
 .room::before {
   content: '';
   position: absolute;
   inset: 0;
   pointer-events: none;
-  opacity: 0.14;
+  opacity: 0.35;
   background:
-    repeating-linear-gradient(88deg, transparent 0 26px, rgba(0, 0, 0, 0.5) 26px 27px, transparent 27px 61px),
-    repeating-linear-gradient(92deg, transparent 0 43px, rgba(255, 220, 160, 0.05) 43px 44px, transparent 44px 97px);
+    repeating-linear-gradient(88deg, transparent 0 46px, rgba(0, 0, 0, 0.35) 46px 48px, transparent 48px 101px);
 }
 
 /* ------------------------------------------------------------- headings */
@@ -150,6 +194,17 @@ select {
   background: linear-gradient(90deg, var(--gold-dim), transparent);
 }
 
+/* the ember diamond: the one glyph the room reuses (title rule, seals) */
+.ember-diamond {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  background: linear-gradient(135deg, #ffb35c, #e07830);
+  transform: rotate(45deg);
+  box-shadow: 0 0 10px rgba(224, 120, 48, 0.7);
+  flex: none;
+}
+
 /* --------------------------------------------------------------- panels */
 
 .panel {
@@ -166,6 +221,98 @@ select {
   color: var(--gold);
   padding: 0.55rem 0.9rem 0.35rem;
   border-bottom: 1px solid rgba(201, 162, 39, 0.2);
+}
+
+/* ---------------------------------------------------- the paper surface
+   A sheet of the augurs' paper: battle odds, the diplomacy ledger.
+   Everything inside speaks ink, not gold-on-wood. */
+
+.paper-sheet {
+  background: radial-gradient(ellipse 100% 90% at 40% 20%, var(--paper-hi), var(--paper) 60%, #cdbb90);
+  color: var(--ink);
+  border: none;
+  border-radius: 3px;
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.75), inset 0 0 70px rgba(120, 90, 40, 0.22);
+}
+
+.paper-sheet .panel-title {
+  color: var(--wax-red);
+  letter-spacing: 0.26em;
+  border-bottom: none;
+}
+
+.paper-sheet .muted { color: var(--ink-faint); }
+.paper-sheet .settings-head { color: var(--gold-dim); }
+.paper-sheet .pos { color: var(--stamp-peace); }
+.paper-sheet .neg { color: var(--wax-red); }
+
+.paper-sheet .btn:not(.btn-seal):not(.btn-quiet) {
+  border: 1.5px solid var(--ink);
+  background: transparent;
+  color: var(--ink);
+  border-radius: 2px;
+}
+
+.paper-sheet .btn:not(.btn-seal):not(.btn-quiet):hover {
+  background: rgba(69, 53, 32, 0.08);
+  border-color: var(--ink);
+  box-shadow: none;
+}
+
+.paper-sheet .btn-ink-danger,
+.paper-sheet .btn.btn-ink-danger {
+  border-color: var(--wax-red);
+  color: var(--wax-red);
+}
+
+.paper-sheet .btn-ink-danger:hover { background: rgba(138, 47, 38, 0.1); }
+
+.paper-sheet .btn-quiet { color: var(--ink-faint); }
+.paper-sheet .btn-quiet:hover { color: var(--ink); border-color: transparent; }
+
+/* a hand-ruled checkbox: ink frame, a wax-drop when checked */
+.paper-sheet input[type='checkbox'] {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 22px;
+  height: 22px;
+  flex: none;
+  border: 2px solid #453520;
+  border-radius: 1px;
+  background: transparent;
+  cursor: pointer;
+  display: inline-grid;
+  place-items: center;
+  margin: 0;
+}
+
+.paper-sheet input[type='checkbox']::after {
+  content: '';
+  width: 11px;
+  height: 11px;
+  transform: rotate(45deg) scale(0);
+  background: radial-gradient(circle at 35% 30%, #a84234, var(--wax-red) 70%);
+  transition: transform 120ms ease-out;
+}
+
+.paper-sheet input[type='checkbox']:checked::after {
+  transform: rotate(45deg) scale(1);
+}
+
+.paper-sheet .input,
+.paper-sheet select.input {
+  background: rgba(255, 250, 235, 0.5);
+  border: 1.5px solid var(--ink);
+  color: var(--ink);
+}
+
+/* dotted ledger rules on paper */
+.ledger-line {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.8rem;
+  border-bottom: 1px dotted var(--hairline-paper);
+  padding: 0.3rem 0;
 }
 
 /* --------------------------------------------------------------- inputs */
@@ -209,17 +356,17 @@ select.input {
   gap: 0.5em;
   min-height: 44px;
   padding: 0.5rem 1.2rem;
-  border-radius: 5px;
-  border: 1px solid rgba(201, 162, 39, 0.45);
-  background: linear-gradient(180deg, var(--wood-600), var(--wood-700));
+  border-radius: 4px;
+  border: 1px solid rgba(201, 162, 39, 0.55);
+  background: rgba(16, 10, 5, 0.55);
   color: var(--parchment-text);
   letter-spacing: 0.06em;
-  transition: border-color 120ms, box-shadow 120ms, transform 60ms;
+  transition: border-color 120ms ease-out, box-shadow 120ms ease-out, transform 60ms;
 }
 
 .btn:hover {
   border-color: var(--gold-bright);
-  box-shadow: 0 0 14px rgba(201, 162, 39, 0.22);
+  box-shadow: 0 0 14px rgba(201, 162, 39, 0.25);
 }
 
 .btn:active {
@@ -232,6 +379,8 @@ select.input {
   box-shadow: none;
 }
 
+/* the wax seal: the one primary act on any surface. Ember-diamond glyph,
+   bold label, ember glow on hover, a short press into the wax on tap. */
 .btn-seal {
   background: radial-gradient(circle at 35% 30%, #a84234, var(--wax-red) 60%, #5f1e18);
   border: 1px solid #d9856f55;
@@ -239,11 +388,29 @@ select.input {
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
   font-weight: 700;
   letter-spacing: 0.1em;
+  box-shadow: 0 4px 14px rgba(60, 20, 10, 0.4), inset 0 2px 6px rgba(255, 180, 140, 0.18);
+}
+
+.btn-seal::before {
+  content: '';
+  width: 0.55em;
+  height: 0.55em;
+  flex: none;
+  background: linear-gradient(135deg, #ffcf8a, #e07830);
+  transform: rotate(45deg);
 }
 
 .btn-seal:hover {
-  box-shadow: 0 0 18px rgba(224, 120, 48, 0.4);
+  box-shadow: 0 0 26px rgba(224, 120, 48, 0.5);
   border-color: #ffb35c88;
+}
+
+.btn-seal:active {
+  transform: scale(0.96);
+}
+
+.btn-seal:disabled {
+  filter: saturate(0.45);
 }
 
 .btn-quiet {
@@ -256,6 +423,176 @@ select.input {
   border-color: rgba(201, 162, 39, 0.4);
   box-shadow: none;
 }
+
+/* demoted doors: underlined small-caps text links (title screen, footers) */
+.btn-link {
+  border: none;
+  background: transparent;
+  color: var(--gold);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  font-size: 0.78rem;
+  padding: 0.4rem 0.5rem;
+  min-height: 44px;
+  text-decoration: underline;
+  text-decoration-color: rgba(201, 162, 39, 0.35);
+  text-underline-offset: 0.25em;
+}
+
+.btn-link:hover {
+  color: var(--gold-bright);
+  border-color: transparent;
+  box-shadow: none;
+  text-decoration-color: var(--gold-bright);
+}
+
+/* ------------------------------------------------------ the inked gauge
+   Replaces every progress bar in the room: a hand-ruled frame, hatched
+   track, hatched fill, tick marks overshooting the frame. The hatch never
+   animates; the fill width may (240ms ease-out). */
+
+.gauge {
+  position: relative;
+  height: 26px;
+  border: 2px solid #453520;
+  background: repeating-linear-gradient(115deg, #d8c79c 0 8px, #d0be92 8px 16px);
+}
+
+.gauge-fill {
+  position: absolute;
+  left: 2px;
+  top: 2px;
+  bottom: 2px;
+  background: repeating-linear-gradient(115deg, #6f8f4f 0 8px, #64834a 8px 16px);
+  transition: width 240ms ease-out;
+}
+
+.gauge-tick {
+  position: absolute;
+  top: -7px;
+  bottom: -7px;
+  width: 1.5px;
+  background: #453520;
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+.gauge-tick-mid {
+  top: -9px;
+  bottom: -9px;
+  width: 2px;
+  opacity: 0.7;
+}
+
+/* the same gauge on dark wood (battle theater, report): brass frame */
+.gauge-dark {
+  border-color: rgba(201, 162, 39, 0.55);
+  background: repeating-linear-gradient(115deg, #4a2320 0 8px, #3d1d1a 8px 16px);
+}
+
+.gauge-dark .gauge-fill {
+  background: repeating-linear-gradient(115deg, #6f8f4f 0 8px, #5d7a42 8px 16px);
+}
+
+.gauge-dark .gauge-tick { background: rgba(201, 162, 39, 0.7); }
+
+/* ---------------------------------------------------------- the pip scale
+   Temperament and every meter outside battle: seven rotated squares. */
+
+.pip-row {
+  display: flex;
+  gap: 11px;
+  align-items: center;
+  padding: 0 4px;
+}
+
+.pip-d {
+  width: 12px;
+  height: 12px;
+  flex: none;
+  transform: rotate(45deg);
+  background: var(--gold);
+  border: 1px solid var(--gold-dim);
+}
+
+.pip-d-empty {
+  background: transparent;
+  border-color: rgba(201, 162, 39, 0.35);
+}
+
+.pip-d-ember {
+  background: linear-gradient(135deg, #ffb35c, #e07830);
+  border-color: #e07830;
+}
+
+@media (max-width: 720px) {
+  .pip-row { gap: 6px; }
+  .pip-d { width: 9px; height: 9px; }
+}
+
+/* ----------------------------------------------------------- wax stamps
+   Read-only stance seals: pressed wax, slightly crooked, never a pill. */
+
+.stamp {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 36% 30%, #7a8a5a, var(--stamp-peace) 60%, #3d4a28);
+  box-shadow: inset 0 1px 3px rgba(255, 255, 255, 0.25), 0 2px 6px rgba(60, 40, 10, 0.45);
+  color: #eef0dd;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-align: center;
+  line-height: 1.1;
+}
+
+.stamp-sm { width: 30px; height: 30px; font-size: 8.5px; letter-spacing: 0.04em; }
+
+.stamp-war {
+  background: radial-gradient(circle at 36% 30%, #a84234, var(--wax-red) 60%, #5f1e18);
+  color: #ffe0d2;
+}
+
+.stamp-alliance {
+  background: radial-gradient(circle at 36% 30%, #c9a227, #8a7020 60%, #5c4a12);
+  color: #fff3d6;
+}
+
+.stamp-pact {
+  background: radial-gradient(circle at 36% 30%, #8a9a6a, #6b7a4c 60%, #47522f);
+  color: #eef0dd;
+}
+
+/* ------------------------------------------------------ the wax roundel
+   The floating End-the-Season seal on phones: 74px, under the thumb. */
+
+.wax-roundel {
+  width: 74px;
+  height: 74px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #a84234, var(--wax-red) 60%, #5f1e18);
+  border: 1px solid rgba(217, 133, 111, 0.5);
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.6), inset 0 2px 6px rgba(255, 180, 140, 0.25);
+  color: #ffe9d8;
+  font-size: 12.5px;
+  line-height: 1.25;
+  letter-spacing: 0.06em;
+  font-weight: 700;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 0;
+}
+
+.wax-roundel:active { transform: scale(0.96); }
+.wax-roundel:disabled { filter: saturate(0.45); opacity: 0.55; }
 
 /* The confirm card (ui/confirm.ts): what the act does, its price from the
    engine's evaluation, then the seal or a step back. One pattern for every
@@ -310,6 +647,11 @@ select.input {
 
 .italic {
   font-style: italic;
+}
+
+/* the chronicle's voice, wherever Osperan writes at length */
+.fell {
+  font-family: var(--fell);
 }
 
 /* reduced motion: kill all nonessential animation */

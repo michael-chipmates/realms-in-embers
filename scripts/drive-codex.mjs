@@ -48,11 +48,13 @@ async function boot(page) {
   await page.screenshot({ path: `${outdir}/codex-3-ledger-link.png` });
   await page.keyboard.press('Escape');
   await page.keyboard.press('Escape');
-  // topbar button opens it too
+  // the Book cluster opens it too (redesign: three brass clusters)
+  await page.getByRole('button', { name: 'The Book', exact: true }).click();
+  await page.waitForTimeout(300);
   await page.getByRole('button', { name: 'The Codex: every rule of the realm' }).click();
   await page.waitForTimeout(400);
   if (!(await page.getByRole('dialog', { name: 'The Codex' }).isVisible())) {
-    throw new Error('Codex did not open from the topbar');
+    throw new Error('Codex did not open from the Book cluster');
   }
   await page.close();
 }

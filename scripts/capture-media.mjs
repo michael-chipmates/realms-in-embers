@@ -71,6 +71,7 @@ const hostile = await page.evaluate(() => {
   const g = window.__game;
   const t = g.targets.find((t2) => t2.hostile);
   if (!t) return false;
+  g.panTo(t.to); // floating panels may cover the map's edges
   const p = g.state.provinces[t.to];
   const [x, y] = g.renderer.worldToScreen(p.cx + 0.5, p.cy + 0.5);
   const rect = g.renderer.canvas.getBoundingClientRect();
@@ -126,11 +127,17 @@ const ff = (args) => {
 // the press-kit mp4: crisp, small, plays everywhere (a 10 MB gif is not a tour)
 ff(['-ss', '0.6', '-i', `${MEDIA}/playthrough.webm`, '-c:v', 'libx264', '-crf', '26',
   '-preset', 'slow', '-vf', 'scale=960:-2', '-pix_fmt', 'yuv420p', '-an', `${MEDIA}/playthrough.mp4`]);
-// the README gif: tighter palette, 720px, 9fps — aim well under 3 MB
-ff(['-ss', '0.6', '-i', `${MEDIA}/playthrough.webm`, '-vf', 'fps=9,scale=720:-1:flags=lanczos,palettegen=max_colors=160', `${TMP}/pal.png`]);
+// the README gif: tighter palette, 640px, 7fps — aim well under 3 MB
+// (the vellum map's paper grain dithers expensively; fewer colors and a
+// coarser bayer keep the sheet calm instead of shimmering)
+ff(['-ss', '0.6', '-i', `${MEDIA}/playthrough.webm`, '-vf', 'fps=7,scale=640:-1:flags=lanczos,palettegen=max_colors=112', `${TMP}/pal.png`]);
 ff(['-ss', '0.6', '-i', `${MEDIA}/playthrough.webm`, '-i', `${TMP}/pal.png`,
-  '-lavfi', 'fps=9,scale=720:-1:flags=lanczos[x];[x][1:v]paletteuse=dither=bayer:bayer_scale=5',
+  '-lavfi', 'fps=7,scale=640:-1:flags=lanczos[x];[x][1:v]paletteuse=dither=bayer:bayer_scale=5:diff_mode=rectangle',
   `${MEDIA}/playthrough.gif`]);
+// a lossy gifsicle pass roughly halves the vellum grain's cost; skipped
+// honestly when gifsicle is not installed (brew install gifsicle)
+const gs = spawnSync('gifsicle', ['-O3', '--lossy=80', `${MEDIA}/playthrough.gif`, '-o', `${MEDIA}/playthrough.gif`], { stdio: 'pipe' });
+if (gs.status !== 0) console.warn('gifsicle not available: the gif ships unoptimized (~2 MB heavier)');
 rmSync(TMP, { recursive: true, force: true });
 rmSync(`${MEDIA}/playthrough.webm`, { force: true });
 console.log('media written to docs/media/');

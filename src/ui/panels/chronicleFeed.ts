@@ -74,6 +74,7 @@ const FILTERS: { key: 'all' | ChronicleEntry['kind']; label: string; icon: strin
 export function renderChronicleFeed(screen: GameScreen, root: HTMLElement): void {
   const state = screen.state;
   const viewer = screen.viewerId();
+  const phone = window.innerWidth < 900;
   const visible = filterChronicle(
     state.chronicle
       .filter((e) => e.privateTo === undefined || e.privateTo === viewer)
@@ -100,68 +101,147 @@ export function renderChronicleFeed(screen: GameScreen, root: HTMLElement): void
 
   clear(root);
   root.classList.toggle('chronicle-collapsed', collapsed);
+  root.classList.toggle('chronicle-open', !collapsed);
 
-  const toggle = h('button', {
-    class: 'chronicle-toggle btn btn-quiet',
-    'aria-expanded': String(!collapsed),
-    'aria-label': collapsed
-      ? `Open the chronicle${unread > 0 ? `, ${unread} unread` : ''}`
-      : 'Close the chronicle',
-    onclick: () => {
-      collapsed = !collapsed;
-      renderChronicleFeed(screen, root);
-    },
-  },
-    h('span', { html: iconSvg('quill', 16) }),
-    collapsed ? ' The Chronicle' : '',
-    collapsed && unread > 0 ? h('span', { class: 'badge' }, String(unread)) : null,
-  );
+  // phones: the closed book is a bottom-sheet peek (redesign 2b): handle,
+  // the byline, the latest lines clamped, and a pull-up hint. Desktop keeps
+  // the quiet spine toggle.
+  if (collapsed) {
+    if (phone) {
+      const latest = visible[visible.length - 1];
+      const peek = h('button', {
+        class: 'book-peek',
+        'aria-expanded': 'false',
+        'aria-label': `Open the chronicle${unread > 0 ? `, ${unread} unread` : ''}`,
+        onclick: () => {
+          collapsed = false;
+          renderChronicleFeed(screen, root);
+        },
+      },
+        h('span', { class: 'book-handle-bar', 'aria-hidden': 'true' }),
+        h('span', { class: 'book-peek-byline' },
+          h('span', { class: 'small-caps book-peek-title' }, `Season ${state.turn} · the chronicle`),
+          unread > 0 ? h('span', { class: 'badge book-peek-badge' }, String(unread)) : null,
+        ),
+        h('span', { class: 'book-peek-text fell' }, latest?.text ?? 'The page waits for its first entry.'),
+        h('span', { class: 'small italic book-peek-hint' }, 'pull up for the full chronicle'),
+      );
+      bindSheetDrag(peek, () => {
+        collapsed = false;
+        renderChronicleFeed(screen, root);
+      }, null);
+      root.appendChild(peek);
+    } else {
+      root.appendChild(h('button', {
+        class: 'chronicle-toggle btn btn-quiet',
+        'aria-expanded': 'false',
+        'aria-label': `Open the chronicle${unread > 0 ? `, ${unread} unread` : ''}`,
+        onclick: () => {
+          collapsed = false;
+          renderChronicleFeed(screen, root);
+        },
+      },
+        h('span', { html: iconSvg('quill', 16) }),
+        ' The Chronicle',
+        unread > 0 ? h('span', { class: 'badge' }, String(unread)) : null,
+      ));
+    }
+    return;
+  }
 
-  root.appendChild(toggle);
-  if (collapsed) return;
   // what arrived since the last full reading gets a quiet ember dot;
   // reading to the bottom marks everything read for next time
   const unreadSet = new Set(visible.slice(readMark));
   if (wasAtBottom) readMark = visible.length;
 
-  const feed = h('div', { class: 'chronicle-feed' },
+  const closeBook = (): void => {
+    collapsed = true;
+    renderChronicleFeed(screen, root);
+  };
+
+  // the spine: thumb-tabs on desktop, a chip row on phones (same buttons)
+  const tabs = h('div', { class: 'book-tabs', role: 'group', 'aria-label': 'Chronicle filters' },
+    ...FILTERS.map((f) =>
+      h('button', {
+        class: `book-tab ${filter === f.key ? 'active' : ''}`,
+        'aria-pressed': String(filter === f.key),
+        title: f.label,
+        onclick: () => {
+          filter = f.key;
+          renderChronicleFeed(screen, root);
+        },
+      }, f.label),
+    ),
+    h('button', {
+      class: `book-tab book-tab-digest ${digestOn ? 'active' : ''}`,
+      'aria-pressed': String(digestOn),
+      'aria-label': 'Digest mode',
+      title: "Digest: fold each season's routine lines into Osperan's one-line summary",
+      onclick: () => {
+        digestOn = !digestOn;
+        localStorage.setItem(DIGEST_KEY, digestOn ? 'on' : 'off');
+        renderChronicleFeed(screen, root);
+      },
+    }, 'Digest'),
+  );
+
+  const feed = h('div', { class: 'chronicle-feed book-page' },
+    phone
+      ? h('button', {
+          class: 'book-handle',
+          'aria-expanded': 'true',
+          'aria-label': 'Close the chronicle',
+          onclick: closeBook,
+        }, h('span', { class: 'book-handle-bar', 'aria-hidden': 'true' }))
+      : null,
     h('div', { class: 'chronicle-heading' },
       artSlot('osperan', h('span', { class: 'osperan-emblem', html: iconSvg('quill', 22) }), { className: 'art-osperan', alt: 'Osperan the Unresting at his ledger' }),
       h('div', { class: 'small-caps' }, 'The Chronicle of the Sundered Age'),
       h('div', { class: 'small chronicle-byline italic' }, 'as set down by Osperan the Unresting'),
     ),
-    h('div', { class: 'chronicle-filters', role: 'group', 'aria-label': 'Chronicle filters' },
-      ...FILTERS.map((f) =>
-        h('button', {
-          class: `chronicle-filter ${filter === f.key ? 'active' : ''}`,
-          'aria-pressed': String(filter === f.key),
-          'aria-label': f.label,
-          title: f.label,
-          onclick: () => {
-            filter = f.key;
-            renderChronicleFeed(screen, root);
-          },
-        }, h('span', { html: iconSvg(f.icon, 13) }), f.label),
-      ),
-      h('button', {
-        class: `chronicle-filter chronicle-digest-chip ${digestOn ? 'active' : ''}`,
-        'aria-pressed': String(digestOn),
-        'aria-label': 'Digest mode',
-        title: "Digest: fold each season's routine lines into Osperan's one-line summary",
-        onclick: () => {
-          digestOn = !digestOn;
-          localStorage.setItem(DIGEST_KEY, digestOn ? 'on' : 'off');
-          renderChronicleFeed(screen, root);
-        },
-      }, h('span', { html: iconSvg('info', 13) }), 'Digest'),
-    ),
     ...(digestOn
       ? renderSeasons(screen, root, entries, state.turn, viewer, unreadSet)
       : entries.map((entry) => renderEntry(entry, viewer, unreadSet))),
   );
-  root.appendChild(feed);
+  if (phone) bindSheetDrag(feed.querySelector('.book-handle') as HTMLElement, null, closeBook);
+  else {
+    // desktop keeps the quiet spine toggle above the open book
+    root.appendChild(h('button', {
+      class: 'chronicle-toggle btn btn-quiet',
+      'aria-expanded': 'true',
+      'aria-label': 'Close the chronicle',
+      onclick: closeBook,
+    }, h('span', { html: iconSvg('quill', 16) }), ' Close the book'));
+  }
+
+  const book = h('div', { class: 'book' }, tabs, feed);
+  root.appendChild(book);
   requestAnimationFrame(() => {
     feed.scrollTop = wasAtBottom ? feed.scrollHeight : prevScroll;
+  });
+}
+
+/** A light drag on the sheet: pull up opens, pull down closes. Taps keep
+ * working through the normal click handlers. */
+function bindSheetDrag(el: HTMLElement | null, onUp: (() => void) | null, onDown: (() => void) | null): void {
+  if (!el) return;
+  let startY: number | null = null;
+  el.addEventListener('touchstart', (e) => {
+    startY = e.touches[0]?.clientY ?? null;
+  }, { passive: true });
+  el.addEventListener('touchmove', (e) => {
+    if (startY === null) return;
+    const dy = (e.touches[0]?.clientY ?? startY) - startY;
+    if (dy < -32 && onUp) {
+      startY = null;
+      onUp();
+    } else if (dy > 32 && onDown) {
+      startY = null;
+      onDown();
+    }
+  }, { passive: true });
+  el.addEventListener('touchend', () => {
+    startY = null;
   });
 }
 
@@ -221,8 +301,11 @@ function renderSeasons(
 
 function renderEntry(entry: ChronicleEntry, viewer: number, unreadSet: Set<ChronicleEntry>): HTMLElement {
   const tier = tierOf(entry, viewer);
+  // ceremonies (season openings, crownings, the great moments) carry the
+  // dropcap; teachings read as marginalia
+  const opener = entry.ceremony ? 'chronicle-opener' : '';
   return h('div', {
-    class: `chronicle-entry chronicle-tier-${tier} ${entry.ceremony ? 'chronicle-ceremony' : ''} ${entry.digest ? 'chronicle-digest-entry' : ''} chronicle-${entry.kind}`,
+    class: `chronicle-entry chronicle-tier-${tier} ${opener} ${entry.ceremony ? 'chronicle-ceremony' : ''} ${entry.digest ? 'chronicle-digest-entry' : ''} chronicle-${entry.kind}`,
   },
     h('div', { class: 'chronicle-meta small muted' },
       h('span', { html: iconSvg(KIND_ICON[entry.kind] ?? 'quill', 12) }),

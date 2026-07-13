@@ -28,6 +28,15 @@ under the same license. No closed-source paid forks.
 - All other visual material (map rendering, heraldry, iconography, UI) is
   procedural or hand-authored code, covered by the code license.
 
+## Type
+
+- **IM Fell English** (regular + italic) by Igino Marini, a digitisation of the
+  types cut for Dr. John Fell in the 1600s, under the
+  [SIL Open Font License 1.1](https://openfontlicense.org/). Self-hosted as a
+  latin-subset woff2 pair in `public/fonts/`; used for map labels and the
+  chronicle's voice.
+- All other text renders in the reader's own system serif stack.
+
 ## Everything else
 
 The fiction (the Embermark, the Sundering, the creeds of Flame, Ash, and Umbra,

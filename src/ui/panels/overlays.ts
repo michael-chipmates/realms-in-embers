@@ -307,7 +307,10 @@ function renderMagic(screen: GameScreen, body: HTMLElement): void {
               h('div', { class: 'small muted' }, `${rite.paid} of ${rite.cost} Emberlight pledged`),
             ),
           ),
-          h('div', { class: 'odds-meter', style: { margin: '0 0.8rem' } }, h('div', { class: 'odds-fill', style: { width: `${pct}%` } })),
+          h('div', { class: 'gauge gauge-dark', style: { margin: '0 0.8rem', height: '18px' }, role: 'img', 'aria-label': `${rite.paid} of ${rite.cost} Emberlight pledged` },
+            h('div', { class: 'gauge-fill', style: { width: `calc(${Math.max(1, Math.min(99, pct))}% - 4px)` } }),
+            h('span', { class: 'gauge-tick gauge-tick-mid', style: { left: '50%' } }),
+          ),
           h('div', { style: { padding: '0.6rem 0.8rem', display: 'flex', gap: '0.4rem' } },
             h('button', {
               class: 'btn compact', disabled: !canAct || player.emberlight < 5,
@@ -521,8 +524,27 @@ function renderQuests(screen: GameScreen, body: HTMLElement): void {
 
 export function openDiplomacyOverlay(screen: GameScreen, focusPlayer?: PlayerId): void {
   const body = h('div', { class: 'overlay-body' });
-  openModal('The Other Lords', body, { wide: true });
+  // the other lords live in Osperan's ledger: an open paper spread,
+  // stances stamped in wax, every regard an itemized entry (redesign 1d)
+  openModal('The Other Lords', body, { wide: true, className: 'paper-sheet ledger-book' });
   renderDiplomacy(screen, body, focusPlayer);
+}
+
+/** A read-only stance seal, pressed slightly crooked. Shape and label
+ * carry the meaning; the color only agrees. */
+function stanceStamp(stance: string, seed: number, small = false): HTMLElement {
+  const aria = stance === 'war' ? 'At war with you'
+    : stance === 'pact' ? 'Bound by pact'
+    : stance === 'alliance' ? 'Sworn allies'
+    : 'At peace with you';
+  const label = small && stance === 'peace' ? 'pax' : stance === 'alliance' ? 'ally' : stance;
+  const rot = ((seed * 47) % 15) - 7;
+  return h('span', {
+    class: `stamp ${small ? 'stamp-sm' : ''} stamp-${stance}`,
+    role: 'img',
+    'aria-label': aria,
+    style: { transform: `rotate(${rot}deg)` },
+  }, label);
 }
 
 function renderDiplomacy(screen: GameScreen, body: HTMLElement, focusPlayer?: PlayerId): void {
@@ -571,8 +593,7 @@ function renderDiplomacy(screen: GameScreen, body: HTMLElement, focusPlayer?: Pl
     }, `${attitude.total > 0 ? '+' : ''}${attitude.total}`);
     tip(attEl, () => breakdown(`How ${lord.name} regards you`, attitude.lines, `${attitude.total > 0 ? 'Warm' : attitude.total < -20 ? 'Hostile' : 'Wary'} (${attitude.total})`));
 
-    const stanceChip = h('span', { class: `chip stance-${stance}` },
-      stance === 'war' ? 'AT WAR' : stance === 'pact' ? 'Pact' : stance === 'alliance' ? 'Alliance' : 'Peace');
+    const stanceChip = stanceStamp(stance, other.id + 3);
 
     const actions: HTMLElement[] = [];
     if (canAct && other.alive) {
@@ -597,7 +618,7 @@ function renderDiplomacy(screen: GameScreen, body: HTMLElement, focusPlayer?: Pl
         }) }, 'Offer peace'));
       } else {
         actions.push(h('button', {
-          class: 'btn compact',
+          class: 'btn compact btn-ink-danger',
           onclick: () => {
             if (screen.dispatch({ t: 'diplomacy', kind: 'declareWar', target: other.id })) refresh();
           },
@@ -659,9 +680,9 @@ function renderDiplomacy(screen: GameScreen, body: HTMLElement, focusPlayer?: Pl
       ),
       h('p', { class: 'small italic muted', style: { padding: '0 0.8rem' } }, lord.blurb),
       h('p', { class: 'small', style: { padding: '0 0.8rem', margin: '0.15rem 0' } },
-        h('b', { style: { color: 'var(--gold)' } }, `${lord.perk.label}. `), lord.perk.desc),
+        h('b', { class: 'ability-legacy' }, `${lord.perk.label}. `), lord.perk.desc),
       h('p', { class: 'small', style: { padding: '0 0.8rem', margin: '0.15rem 0' } },
-        h('b', { style: { color: 'var(--ember-bright)' } }, `${lord.signature.name}. `), lord.signature.desc,
+        h('b', { class: 'ability-signature' }, `${lord.signature.name}. `), lord.signature.desc,
         other.alive && (other.signatureCooldownLeft ?? 0) > 0
           ? h('span', { class: 'muted' }, ` (returns in ${other.signatureCooldownLeft})`)
           : null),
@@ -691,7 +712,7 @@ function renderDiplomacy(screen: GameScreen, body: HTMLElement, focusPlayer?: Pl
       onkeydown: (e: KeyboardEvent) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); renderDiplomacy(screen, body, other.id); } },
     },
       h('td', {}, h('span', { class: 'lord-swatch', style: { background: lord.color, marginRight: '0.35em' } }), lord.name.split(' ').slice(-1)[0]),
-      h('td', {}, h('span', { class: `chip stance-${stance}` }, stance === 'war' ? 'WAR' : stance === 'pact' ? 'Pact' : stance === 'alliance' ? 'Allied' : 'Peace')),
+      h('td', {}, stanceStamp(stance, other.id + 3, true)),
       h('td', { class: att.total > 15 ? 'pos' : att.total < -15 ? 'neg' : '' }, `${att.total > 0 ? '+' : ''}${att.total}`),
       h('td', {}, String(provincesOf(state, other.id).length)),
       h('td', {}, `${other.sagaChapter}/5`),
@@ -788,8 +809,8 @@ function renderLedger(screen: GameScreen, body: HTMLElement): void {
     return h('tr', { class: p.id === pid ? 'ledger-you' : '' },
       h('td', {}, h('span', { class: 'lord-swatch', style: { background: lord.color, marginRight: '0.4em' } }), lord.name),
       h('td', {}, `${provincesOf(state, p.id).length} (${Math.round(share * 100)}%)`),
-      h('td', {}, domStreak > 0 ? `${domStreak}/${DOMINION_ROUNDS} ⚠` : '·'),
-      h('td', {}, goldStreak > 0 ? `${goldStreak}/${GOLDEN_ROUNDS} ⚠` : '·'),
+      h('td', { class: domStreak > 0 ? 'neg' : '' }, domStreak > 0 ? `${domStreak}/${DOMINION_ROUNDS}` : '·'),
+      h('td', { class: goldStreak > 0 ? 'neg' : '' }, goldStreak > 0 ? `${goldStreak}/${GOLDEN_ROUNDS}` : '·'),
       h('td', {}, `${p.sagaChapter}/5`),
       scoreEl,
     );

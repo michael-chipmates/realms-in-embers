@@ -60,7 +60,7 @@ export function openBattleReport(screen: GameScreen, report: BattleReport): void
       ),
       h('div', { class: 'small battle-round-losses' },
         h('span', { class: r.aLoss > 0 ? 'neg' : 'muted' }, `−${r.aLoss}`),
-        h('span', { class: 'muted' }, `${r.aPower} ⚖ ${r.dPower}`),
+        h('span', { class: 'muted' }, `${r.aPower} against ${r.dPower}`),
         h('span', { class: r.dLoss > 0 ? 'neg' : 'muted' }, `−${r.dLoss}`),
       ),
       ...r.notes.map((n) => h('div', { class: 'small italic muted battle-note' }, n)),

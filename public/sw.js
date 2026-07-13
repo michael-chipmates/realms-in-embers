@@ -21,7 +21,11 @@ const MEDIA_CACHE = 'rie-media';
 // and an uncontrolled first visit could strand offline boots with HTML but
 // no executable bundle (review R3).
 const PRECACHE = /* __PRECACHE__ */ [];
-const SHELL = ['.', 'manifest.webmanifest', 'favicon.svg'].concat(PRECACHE);
+const SHELL = [
+  '.', 'manifest.webmanifest', 'favicon.svg',
+  // the chronicle's letterform (IM Fell English) boots offline with the shell
+  'fonts/im-fell-english.woff2', 'fonts/im-fell-english-italic.woff2',
+].concat(PRECACHE);
 // Media files only — the .json manifests living beside them (audio/manifest,
 // music/playlist) can change across deploys and stay stale-while-revalidate.
 const MEDIA_PATH = /\/(art|music|audio)\/.+\.(m4a|mp3|ogg|wav|flac|webp|png|jpe?g|gif|svg|avif)$/i;

@@ -33,12 +33,12 @@ Pick a lord in the painted gallery (twelve, in three creeds, each with a real te
 
 <table>
 <tr>
-<td width="50%"><img src="docs/media/gallery.png" alt="The lord gallery: a painted portrait, creed, temperament bars, and both abilities on one set-piece screen"></td>
-<td width="50%"><img src="docs/media/war-table.png" alt="The war table: a painted map of provinces, the chronicle feed on the right"></td>
+<td width="50%"><img src="docs/media/gallery.png" alt="The lord gallery: a painted portrait in a gilt frame with a brass nameplate, creed, temperament in inked pips, and both abilities on one set-piece screen"></td>
+<td width="50%"><img src="docs/media/war-table.png" alt="The war table: a hand-inked vellum map of provinces on dark oak, with Osperan's chronicle open as a book on the right"></td>
 </tr>
 <tr>
-<td><img src="docs/media/odds.png" alt="A battle preview: win chance, expected losses, and every modifier for both sides in plain language"></td>
-<td><img src="docs/media/diplomacy.png" alt="The other lords: painted portraits, their words, and exactly why they feel the way they do"></td>
+<td><img src="docs/media/odds.png" alt="The augurs' note: a paper sheet with an inked gauge for the win chance, expected losses, and every modifier for both sides in plain language"></td>
+<td><img src="docs/media/diplomacy.png" alt="The other lords in Osperan's ledger: painted portraits, wax stance stamps, and exactly why they feel the way they do"></td>
 </tr>
 </table>
 

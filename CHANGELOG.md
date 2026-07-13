@@ -4,6 +4,67 @@ All notable changes to Realms in Embers. The game's rules carry their own
 version (`RULES_VERSION` in `src/engine/state.ts`, currently v16), bumped
 whenever engine semantics change, with a frozen replay fixture as the canary.
 
+## [0.6.0]: the table at midnight (2026-07-13)
+
+The visual redesign, carried all the way: every surface is now an object on
+or around the war table. The map is a document, the chronicle is a book,
+commitment is red wax, chrome is engraved brass, and web furniture stays
+outside the room. No rules change: the engine stands at v16 and the replay
+fixture is untouched.
+
+### Changed
+
+- **The map is vellum and ink.** The sea-blue viewport is gone: the whole
+  canvas is one aged sheet, with a heavy ink coast, hand-inked province
+  borders, ownership as close-toned washes (your realm in sage, rivals in
+  rust), dashed courier roads, sparse wave strokes on open water, a compass
+  rose, and the seed name written in the corner in the chronicler's hand.
+  Army markers are pewter tokens: yours ringed in gold, a hero under a
+  small pennon. Selection is a wax-red ring. Ownership is never color
+  alone: tokens, rings, banners, and the colorblind ink patterns carry it.
+- **The chronicle is Osperan's physical book.** A paper page with stacked
+  page edges, thumb-tabs on the spine, a gold season rule, a wax dropcap on
+  the great moments, and teachings set as marginalia. On phones the book is
+  a bottom sheet: a peek with the latest lines, pulled up to a full page,
+  and ending the season is a wax roundel under the thumb.
+- **Battle odds arrive as the augurs' note**: a paper sheet, slightly
+  crooked, with the chance to carry the field written large, an inked gauge
+  with tick marks instead of a progress bar, one ledger column per host,
+  and the wax seal to commit. On phones it slides up as a sheet with the
+  seal nearest the thumb.
+- **Diplomacy is an open ledger**: the table at a glance with small-caps
+  headers over a heavy ink rule, stances stamped in wax (slightly crooked,
+  labeled, never color alone), and dossiers with ink-bordered actions.
+- **The gallery is a portrait hall**: the painting in a gilt frame with a
+  near-black liner and a brass nameplate, temperament as seven inked pips
+  per line (Emberlight burns in ember).
+- **The title is three doors, not seven.** One wax plaque leads: the First
+  Ember for a stranger, New Chronicle once the ember has been played. A
+  running campaign waits as a brass door; everything else is demoted to
+  small-caps ink. The painting breathes under a candlelit falloff.
+- **The top bar is brass and oak**: resource plaques (the value large, the
+  name engraved beneath), and the ten anonymous icons regrouped into three
+  labeled clusters: Council, Realm, and The Book. Every hotkey still opens
+  its surface directly. Notices land one at a time on a wood status ribbon
+  with a "show me" affordance.
+- Progress bars left the room: rites fill an inked gauge, battle balances
+  are hatched, temperament reads in pips. The emoji glyphs went with them.
+
+### Added
+
+- **IM Fell English** (regular + italic, SIL OFL, self-hosted latin woff2)
+  for exactly two voices: map labels and the chronicle's body. It precaches
+  with the shell for offline play and the UI survives its absence. The pair
+  weighs ~113 KB once, cached; the app bundle itself grew about 3 KB.
+- **A composed link-preview card** (`og-card.jpg`): the vellum map angled
+  on the candlelit table with the wordmark beside it, rendered from the
+  live game by `scripts/capture-og.mjs`, wired into every social meta tag.
+
+### Fixed
+
+- "Fit the whole realm" now keeps the land clear of the open book on
+  desktop, so no province starts its life under the page.
+
 ## [0.5.1]: the seal before the act (2026-07-12)
 
 A live playtest round and a third round of external audits, folded into one

@@ -10,7 +10,7 @@
  * hashed from stable ids so the map never flickers between frames.
  */
 import { hash32, Rng } from '../engine/rng';
-import type { Province, ProvinceMod, Terrain } from '../engine/types';
+import type { Province, ProvinceMod } from '../engine/types';
 import { SPELLS, type SpellFxFamily } from '../engine/content/spells';
 import { LORD_BY_ID } from '../engine/content/lords';
 
@@ -22,6 +22,8 @@ export interface MapView {
   /** Player id -> heraldic color; index by province.owner. */
   playerColors?: Record<number, string>;
   playerPatterns?: Record<number, string>;
+  /** Written in the sheet's corner in the chronicler's hand (seed name). */
+  sheetLabel?: string;
 }
 
 export interface RenderOptions {
@@ -44,8 +46,8 @@ export interface RenderOptions {
    * given, the political layer is cached until it changes; when absent,
    * every render paints the political layer fresh. */
   cacheKey?: string;
-  /** Army markers to draw (owner -1 = leaderless). */
-  armies?: { province: number; owner: number; strength: number; hasHero: boolean; kind?: string }[];
+  /** Army markers to draw (owner -1 = leaderless; mine = the viewer's). */
+  armies?: { province: number; owner: number; strength: number; hasHero: boolean; kind?: string; mine?: boolean }[];
   /** Transient animation layer (t runs 0→1). UI-only: never reads rng,
    * never writes state, and everything here is fog-gated on draw. */
   fx?: {
@@ -59,18 +61,25 @@ interface Loop {
   points: [number, number][];
 }
 
-const TERRAIN_WASH: Record<Terrain, string> = {
-  meadow: 'rgba(214, 186, 100, 0.62)',
-  forest: 'rgba(124, 156, 94, 0.68)',
-  hills: 'rgba(198, 158, 92, 0.66)',
-  mountain: 'rgba(148, 136, 130, 0.72)',
-  moor: 'rgba(138, 152, 128, 0.6)',
-};
-
-const INK = '#3a2e1c';
-const INK_SOFT = 'rgba(58, 46, 28, 0.65)';
-const SEA_DEEP = '#5e7178';
-const SEA_SHALLOW = '#8fa3a3';
+// The vellum sheet (redesign, 2026-07): the canvas is one document. Water
+// is blank vellum with sparse wave strokes, land is a slightly warmer tone,
+// ownership is a wash close in luminance by design; ownership is never
+// color-only (tokens, rings and banners carry it too).
+const INK = '#4a3a22';
+const INK_SOFT = 'rgba(92, 74, 44, 0.75)';
+const VELLUM_CENTER = '#e2d3ac';
+const VELLUM_MID = '#d9c9a1';
+const VELLUM_EDGE = '#c3ad7f';
+const LAND_BASE = '#dccb9f';
+const WASH_PLAYER = '#b6bc8e';
+const WASH_HOSTILE = ['#cf9d7f', '#c0a3a9', '#c9ab92', '#c9a08a', '#b8a89a'];
+const WASH_NEUTRAL = ['#dac99f', '#d0be92', '#c7b287', '#e0d2ab'];
+const ROAD = '#6b5738';
+const TOKEN_NEUTRAL = '#57534a';
+const TOKEN_PLAYER = '#4a5a35';
+const TOKEN_HOSTILE = ['#8a2f26', '#6d4a58', '#5c5347', '#7a4a30', '#4f4a5c'];
+const RIVER_INK = 'rgba(58, 76, 92, 0.8)';
+const FELL_STACK = '"IM Fell English", "Iowan Old Style", Palatino, Georgia, serif';
 
 /** Spell Theater palettes: warm gold for blessings, iron-gall murk for
  * curses, pale steel for wards, cold barrow-green for summons, thin pale
@@ -118,16 +127,26 @@ export class MapRenderer {
       this.loops.set(p.id, traceProvince(view, p.id));
     }
     this.riverPaths = traceRivers(view);
+    this.roads = traceRoads(view);
+    this.waves = traceWaves(view);
     this.parchment = makeParchment(view.mapW * 8, view.mapH * 8, hash32(view.provinces.map((p) => p.name).join('|')));
   }
 
-  /** Fit the whole map into the canvas with a margin. */
-  fit(): void {
+  /** Courier roads (decor): each province linked to its nearest neighbor. */
+  private roads: [number, number][] = [];
+  /** Sparse cartographer's wave strokes, world-anchored, outside the coast. */
+  private waves: [number, number][] = [];
+
+  /** Fit the whole map into the canvas with a margin. `insetRight` keeps
+   * the land clear of a dock on the right edge (the chronicle book on
+   * desktop), so no province starts its life under the page. */
+  fit(insetRight = 0): void {
     if (!this.view) return;
     const { width, height } = this.canvas.getBoundingClientRect();
     const margin = 24;
-    this.scale = Math.min((width - margin * 2) / this.view.mapW, (height - margin * 2) / this.view.mapH);
-    this.offX = (width - this.view.mapW * this.scale) / 2;
+    const usable = Math.max(120, width - insetRight);
+    this.scale = Math.min((usable - margin * 2) / this.view.mapW, (height - margin * 2) / this.view.mapH);
+    this.offX = (usable - this.view.mapW * this.scale) / 2;
     this.offY = (height - this.view.mapH * this.scale) / 2;
   }
 
@@ -215,54 +234,47 @@ export class MapRenderer {
     this.drawDynamic(ctx, opts, w, hgt);
   }
 
-  /** L0: everything that only moves with the camera or the fog. */
+  /** L0: everything that only moves with the camera or the fog. The whole
+   * canvas is one vellum sheet: no sea fill, no viewport blue. */
   private drawBaseLayer(ctx: CanvasRenderingContext2D, opts: RenderOptions, w: number, hgt: number): void {
-    const view = this.view!;
-    // --- the sea (table shows through a deep wash)
-    const seaGrad = ctx.createLinearGradient(0, 0, w, hgt);
-    seaGrad.addColorStop(0, SEA_SHALLOW);
-    seaGrad.addColorStop(1, SEA_DEEP);
-    ctx.fillStyle = seaGrad;
+    void opts;
+    // --- the sheet itself: mottled vellum, aged toward the corners
+    const sheet = ctx.createRadialGradient(w * 0.42, hgt * 0.38, 0, w * 0.42, hgt * 0.38, Math.max(w, hgt) * 0.75);
+    sheet.addColorStop(0, VELLUM_CENTER);
+    sheet.addColorStop(0.55, VELLUM_MID);
+    sheet.addColorStop(1, VELLUM_EDGE);
+    ctx.fillStyle = sheet;
     ctx.fillRect(0, 0, w, hgt);
     if (this.parchment) {
-      ctx.globalAlpha = 0.35;
+      ctx.globalAlpha = 0.5;
       ctx.drawImage(this.parchment, 0, 0, w, hgt);
       ctx.globalAlpha = 1;
     }
-    // cartographer's wave strokes, anchored to world space
+
+    // sparse wave strokes, world-anchored, only on open water
     ctx.save();
-    ctx.strokeStyle = 'rgba(233, 240, 235, 0.10)';
-    ctx.lineWidth = Math.max(1, this.scale * 0.05);
-    const waveStep = this.scale * 2.6;
-    const startX = ((this.offX % waveStep) + waveStep) % waveStep - waveStep;
-    const startY = ((this.offY % (waveStep * 0.9)) + waveStep * 0.9) % (waveStep * 0.9) - waveStep * 0.9;
-    for (let y = startY, row = 0; y < hgt + waveStep; y += waveStep * 0.9, row++) {
-      for (let x = startX + (row % 2) * waveStep * 0.5; x < w + waveStep; x += waveStep) {
-        ctx.beginPath();
-        ctx.arc(x, y, this.scale * 0.45, Math.PI * 0.15, Math.PI * 0.85);
-        ctx.stroke();
-      }
+    ctx.strokeStyle = 'rgba(155, 138, 99, 0.8)';
+    ctx.lineWidth = Math.max(1.2, this.scale * 0.08);
+    ctx.lineCap = 'round';
+    for (const [wx, wy] of this.waves) {
+      const [sx, sy] = this.worldToScreen(wx, wy);
+      if (sx < -40 || sy < -40 || sx > w + 40 || sy > hgt + 40) continue;
+      const u = this.scale * 0.55;
+      ctx.beginPath();
+      ctx.moveTo(sx - u, sy);
+      ctx.quadraticCurveTo(sx - u * 0.5, sy - u * 0.5, sx, sy);
+      ctx.quadraticCurveTo(sx + u * 0.5, sy + u * 0.5, sx + u, sy);
+      ctx.stroke();
     }
     ctx.restore();
 
-    // coastal shallows: a soft halo hugging the landmass
+    // --- the landmass: a shade warmer than the open sheet, coast shading
     ctx.save();
     this.pathLand(ctx);
-    ctx.strokeStyle = 'rgba(226, 231, 216, 0.28)';
-    ctx.lineWidth = this.scale * 0.9;
+    ctx.strokeStyle = 'rgba(74, 58, 34, 0.18)';
+    ctx.lineWidth = this.scale * 0.55;
     ctx.stroke();
-    ctx.strokeStyle = 'rgba(226, 231, 216, 0.16)';
-    ctx.lineWidth = this.scale * 1.8;
-    ctx.stroke();
-    ctx.restore();
-
-    // --- landmass shadow then vellum base
-    ctx.save();
-    this.pathLand(ctx);
-    ctx.shadowColor = 'rgba(20, 12, 4, 0.5)';
-    ctx.shadowBlur = this.scale * 0.9;
-    ctx.shadowOffsetY = this.scale * 0.18;
-    ctx.fillStyle = '#d9c9a1';
+    ctx.fillStyle = LAND_BASE;
     ctx.fill();
     ctx.restore();
 
@@ -270,29 +282,20 @@ export class MapRenderer {
       ctx.save();
       this.pathLand(ctx);
       ctx.clip();
-      ctx.globalAlpha = 0.5;
+      ctx.globalAlpha = 0.4;
       ctx.drawImage(this.parchment, 0, 0, w, hgt);
       ctx.globalAlpha = 1;
       ctx.restore();
     }
+  }
 
-    // --- province ground: terrain wash for the seen, plain vellum for fog
-    for (const p of view.provinces) {
-      const loops = this.loops.get(p.id);
-      if (!loops) continue;
-      const unseen = opts.unseen?.has(p.id) ?? false;
-      ctx.save();
-      this.pathLoops(ctx, loops);
-      ctx.clip();
-      if (!unseen) {
-        ctx.fillStyle = TERRAIN_WASH[p.terrain];
-        ctx.fillRect(0, 0, w, hgt);
-      } else {
-        ctx.fillStyle = 'rgba(217, 201, 161, 0.25)';
-        ctx.fillRect(0, 0, w, hgt);
-      }
-      ctx.restore();
-    }
+  /** The wash a province takes on the sheet: sage for the viewer's realm,
+   * rust tones for rivals (rotated by seat), pale neutrals for the
+   * unclaimed (rotated by province so neighbours differ). */
+  private provinceWash(p: Province, viewer: number | undefined): string {
+    if (p.owner < 0) return WASH_NEUTRAL[p.id % WASH_NEUTRAL.length];
+    if (viewer !== undefined && p.owner === viewer) return WASH_PLAYER;
+    return WASH_HOSTILE[p.owner % WASH_HOSTILE.length];
   }
 
   /** L1: everything that moves when the STATE moves. */
@@ -301,73 +304,79 @@ export class MapRenderer {
     for (const p of view.provinces) {
       const loops = this.loops.get(p.id);
       if (!loops) continue;
-      if (opts.unseen?.has(p.id)) continue;
+      if (opts.unseen?.has(p.id)) continue; // fog: blank vellum, nothing more
       ctx.save();
       this.pathLoops(ctx, loops);
       ctx.clip();
-      // owner tint: the viewer's own realm reads clearly stronger
-      if (p.owner >= 0 && view.playerColors) {
-        const mine = opts.viewer !== undefined && p.owner === opts.viewer;
-        ctx.globalAlpha = mine ? 0.52 : 0.38;
-        ctx.fillStyle = view.playerColors[p.owner];
-        ctx.fillRect(0, 0, w, hgt);
+      ctx.globalAlpha = 0.85;
+      ctx.fillStyle = this.provinceWash(p, opts.viewer);
+      ctx.fillRect(0, 0, w, hgt);
+      ctx.globalAlpha = 1;
+      if (p.owner >= 0 && opts.colorblind && view.playerPatterns) {
+        // pattern in ink, so heraldry stays the differentiator on paper
+        drawPattern(ctx, view.playerPatterns[p.owner], 'rgba(74, 58, 34, 0.8)', w, hgt, this.scale);
+      }
+      // the vellum mottle shows through the wash
+      if (this.parchment) {
+        ctx.globalAlpha = 0.3;
+        ctx.drawImage(this.parchment, 0, 0, w, hgt);
         ctx.globalAlpha = 1;
-        if (opts.colorblind && view.playerPatterns) {
-          drawPattern(ctx, view.playerPatterns[p.owner], view.playerColors[p.owner], w, hgt, this.scale);
-        }
-      } else if (p.owner < 0) {
-        // free provinces sit back: a faint parchment-grey veil
-        ctx.fillStyle = 'rgba(216, 206, 180, 0.25)';
-        ctx.fillRect(0, 0, w, hgt);
       }
       this.drawTerrainGlyphs(ctx, p);
       ctx.restore();
     }
 
-    // --- rivers (under borders)
+    // --- rivers: iron-gall ink under the borders
     ctx.save();
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
     for (const path of this.riverPaths) {
-      ctx.strokeStyle = 'rgba(52, 88, 108, 0.95)';
-      ctx.lineWidth = Math.max(2, this.scale * 0.22);
-      this.strokePath(ctx, path);
-      ctx.strokeStyle = 'rgba(150, 196, 210, 0.7)';
-      ctx.lineWidth = Math.max(1, this.scale * 0.08);
+      ctx.strokeStyle = RIVER_INK;
+      ctx.lineWidth = Math.max(1.8, this.scale * 0.16);
       this.strokePath(ctx, path);
     }
     ctx.restore();
 
-    // --- province borders: soft wide stroke + crisp ink line
+    // --- courier roads: dashed, round caps, drawn over the washes
+    ctx.save();
+    ctx.strokeStyle = ROAD;
+    ctx.lineWidth = Math.max(1.6, this.scale * 0.14);
+    ctx.lineCap = 'round';
+    ctx.setLineDash([1, Math.max(6, this.scale * 0.55)]);
+    ctx.globalAlpha = 0.85;
+    for (const [a, b] of this.roads) {
+      if (opts.unseen?.has(a) || opts.unseen?.has(b)) continue;
+      const pa = view.provinces[a];
+      const pb = view.provinces[b];
+      const [ax, ay] = this.worldToScreen(pa.cx + 0.5, pa.cy + 0.5);
+      const [bx, by] = this.worldToScreen(pb.cx + 0.5, pb.cy + 0.5);
+      const mx = (ax + bx) / 2 + (by - ay) * 0.15;
+      const my = (ay + by) / 2 - (bx - ax) * 0.15;
+      ctx.beginPath();
+      ctx.moveTo(ax, ay);
+      ctx.quadraticCurveTo(mx, my, bx, by);
+      ctx.stroke();
+    }
+    ctx.restore();
+
+    // --- province borders: one crisp hand-inked line
     for (const p of view.provinces) {
       const loops = this.loops.get(p.id);
       if (!loops) continue;
-      const mine = opts.viewer !== undefined && p.owner === opts.viewer;
       ctx.save();
       this.pathLoops(ctx, loops);
-      if (p.owner >= 0 && view.playerColors && !(opts.unseen?.has(p.id) ?? false)) {
-        ctx.strokeStyle = view.playerColors[p.owner];
-        ctx.lineWidth = Math.max(mine ? 3.5 : 2.5, this.scale * (mine ? 0.32 : 0.22));
-        ctx.globalAlpha = mine ? 0.95 : 0.75;
-        ctx.stroke();
-        ctx.globalAlpha = 1;
-        if (mine) {
-          ctx.strokeStyle = 'rgba(255, 240, 200, 0.5)';
-          ctx.lineWidth = Math.max(1.2, this.scale * 0.08);
-          ctx.stroke();
-        }
-      }
-      ctx.strokeStyle = INK_SOFT;
-      ctx.lineWidth = Math.max(1, this.scale * 0.07);
+      ctx.strokeStyle = opts.unseen?.has(p.id) ? 'rgba(92, 74, 44, 0.35)' : INK_SOFT;
+      ctx.lineWidth = Math.max(1.4, this.scale * 0.13);
       ctx.stroke();
       ctx.restore();
     }
 
-    // --- coastline ink
+    // --- coastline ink: the heaviest line on the sheet
     ctx.save();
     this.pathLand(ctx);
     ctx.strokeStyle = INK;
-    ctx.lineWidth = Math.max(1.4, this.scale * 0.1);
+    ctx.lineWidth = Math.max(2.2, this.scale * 0.28);
+    ctx.lineJoin = 'round';
     ctx.stroke();
     ctx.restore();
 
@@ -430,39 +439,48 @@ export class MapRenderer {
       this.pathLoops(ctx, loops);
       ctx.clip();
       if (isTarget) {
-        ctx.globalAlpha = 0.22;
-        ctx.fillStyle = '#e6c14a';
+        ctx.globalAlpha = 0.2;
+        ctx.fillStyle = '#c9a227';
         ctx.fillRect(0, 0, w, hgt);
       }
       if (isHover) {
-        ctx.globalAlpha = 0.12;
-        ctx.fillStyle = '#fff2cc';
+        // hover darkens the ground a touch, like a finger on the sheet
+        ctx.globalAlpha = 0.08;
+        ctx.fillStyle = '#4a3a22';
         ctx.fillRect(0, 0, w, hgt);
       }
       ctx.globalAlpha = 1;
       ctx.restore();
-    }
-
-    // --- selection outline on top
-    if (opts.selected !== null && opts.selected !== undefined) {
-      const loops = this.loops.get(opts.selected);
-      if (loops) {
+      if (isHover) {
         ctx.save();
         this.pathLoops(ctx, loops);
-        ctx.strokeStyle = '#ffe9a8';
-        ctx.lineWidth = Math.max(2.5, this.scale * 0.2);
-        ctx.shadowColor = 'rgba(255, 220, 130, 0.8)';
-        ctx.shadowBlur = 10;
+        ctx.strokeStyle = INK;
+        ctx.lineWidth = Math.max(2.2, this.scale * 0.2);
         ctx.stroke();
         ctx.restore();
       }
     }
 
-    // --- sea-lane hints for the selected harbor army
+    // --- selection: a wax-red ring pressed around the province
+    if (opts.selected !== null && opts.selected !== undefined) {
+      const loops = this.loops.get(opts.selected);
+      if (loops) {
+        ctx.save();
+        this.pathLoops(ctx, loops);
+        ctx.strokeStyle = '#8a2f26';
+        ctx.lineWidth = Math.max(2.5, this.scale * 0.2);
+        ctx.shadowColor = 'rgba(138, 47, 38, 0.7)';
+        ctx.shadowBlur = 9;
+        ctx.stroke();
+        ctx.restore();
+      }
+    }
+
+    // --- sea-lane hints for the selected harbor army: dashed ink
     if (opts.seaLanes && opts.seaLanes.length > 0) {
       ctx.save();
       ctx.setLineDash([Math.max(4, this.scale * 0.4), Math.max(4, this.scale * 0.35)]);
-      ctx.strokeStyle = 'rgba(240, 244, 235, 0.65)';
+      ctx.strokeStyle = 'rgba(74, 58, 34, 0.6)';
       ctx.lineWidth = Math.max(1.5, this.scale * 0.1);
       for (const lane of opts.seaLanes) {
         const a = view.provinces[lane.from];
@@ -521,6 +539,78 @@ export class MapRenderer {
         this.drawSpellCast(ctx, cx, cy, cast.family, Math.min(1, Math.max(0, cast.t)), cast.province);
       }
     }
+
+    this.drawSheetDressing(ctx, w, hgt);
+  }
+
+  /** The sheet's own furniture, in screen space over everything: aged-edge
+   * falloff, a double inset border, the compass rose, and the seed name in
+   * the chronicler's hand. Pure decor; it never covers a control. */
+  private drawSheetDressing(ctx: CanvasRenderingContext2D, w: number, hgt: number): void {
+    // corners age first
+    const edge = ctx.createRadialGradient(w * 0.45, hgt * 0.4, Math.min(w, hgt) * 0.35, w * 0.45, hgt * 0.4, Math.max(w, hgt) * 0.72);
+    edge.addColorStop(0, 'rgba(90, 65, 25, 0)');
+    edge.addColorStop(1, 'rgba(90, 65, 25, 0.26)');
+    ctx.fillStyle = edge;
+    ctx.fillRect(0, 0, w, hgt);
+    // double inset border
+    ctx.strokeStyle = 'rgba(138, 112, 32, 0.45)';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(11.5, 11.5, w - 23, hgt - 23);
+    ctx.strokeStyle = 'rgba(138, 112, 32, 0.25)';
+    ctx.strokeRect(16.5, 16.5, w - 33, hgt - 33);
+    // compass rose, top-left, under the inset border
+    this.drawCompass(ctx, 64, 66, Math.min(34, Math.max(24, w * 0.024)));
+    // the sheet's name, in the chronicler's hand
+    const label = this.view?.sheetLabel;
+    if (label && w > 520) {
+      ctx.save();
+      ctx.font = `italic 15px ${FELL_STACK}`;
+      ctx.fillStyle = 'rgba(92, 76, 52, 0.9)';
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'top';
+      ctx.fillText(label, 104, 30);
+      ctx.restore();
+    }
+  }
+
+  /** A simple ink compass rose: north in wax, the rest in soft ink. */
+  private drawCompass(ctx: CanvasRenderingContext2D, x: number, y: number, r: number): void {
+    ctx.save();
+    ctx.globalAlpha = 0.7;
+    ctx.strokeStyle = '#5c4a2c';
+    ctx.fillStyle = '#5c4a2c';
+    ctx.lineWidth = 1.6;
+    ctx.beginPath();
+    ctx.arc(x, y, r * 0.78, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(x, y, r * 0.09, 0, Math.PI * 2);
+    ctx.fill();
+    const point = (ang: number, len: number, fill: string): void => {
+      const dx = Math.cos(ang);
+      const dy = Math.sin(ang);
+      const px = -dy;
+      const py = dx;
+      ctx.beginPath();
+      ctx.moveTo(x + dx * len, y + dy * len);
+      ctx.lineTo(x + dx * len * 0.32 + px * r * 0.14, y + dy * len * 0.32 + py * r * 0.14);
+      ctx.lineTo(x + dx * len * 0.45, y + dy * len * 0.45);
+      ctx.lineTo(x + dx * len * 0.32 - px * r * 0.14, y + dy * len * 0.32 - py * r * 0.14);
+      ctx.closePath();
+      ctx.fillStyle = fill;
+      ctx.fill();
+    };
+    point(-Math.PI / 2, r, '#8a2f26'); // north, in wax
+    point(Math.PI / 2, r, '#5c4a2c');
+    point(0, r, '#5c4a2c');
+    point(Math.PI, r, '#5c4a2c');
+    ctx.font = `13px ${FELL_STACK}`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'bottom';
+    ctx.fillStyle = '#453520';
+    ctx.fillText('N', x, y - r - 3);
+    ctx.restore();
   }
 
   /** The cast moment, by family: gold bloom, ink blot, inscribed ward
@@ -709,29 +799,52 @@ export class MapRenderer {
     ctx.restore();
   }
 
+  /** Pewter army tokens: neutral metal for the wild, deep sage ringed in
+   * gold for the viewer, dark wax tones rotated by seat for rivals. The
+   * viewer id must come with the marker (set in armyMarkers upstream). */
   private drawArmyMarker(
     ctx: CanvasRenderingContext2D,
     x: number,
     y: number,
-    marker: { owner: number; strength: number; hasHero: boolean; kind?: string },
+    marker: { owner: number; strength: number; hasHero: boolean; kind?: string; mine?: boolean },
   ): void {
-    const view = this.view!;
-    const r = Math.max(7, this.scale * 0.52);
-    const color = marker.owner >= 0
-      ? view.playerColors?.[marker.owner] ?? '#888'
-      : marker.kind === 'rebels' ? '#7a5a20' : marker.kind === 'revenants' ? '#4a4a55' : '#5b4632';
+    const r = Math.max(8, this.scale * 0.55);
+    const color = marker.owner < 0
+      ? (marker.kind === 'rebels' ? '#7a5a20' : marker.kind === 'revenants' ? '#4a4a55' : TOKEN_NEUTRAL)
+      : marker.mine
+        ? TOKEN_PLAYER
+        : TOKEN_HOSTILE[marker.owner % TOKEN_HOSTILE.length];
     ctx.save();
-    // shield disc
+    // the token casts a small shadow on the sheet
+    ctx.beginPath();
+    ctx.arc(x, y + r * 0.12, r, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(40, 28, 12, 0.28)';
+    ctx.fill();
     ctx.beginPath();
     ctx.arc(x, y, r, 0, Math.PI * 2);
     ctx.fillStyle = color;
     ctx.fill();
-    ctx.lineWidth = marker.hasHero ? 2.5 : 1.5;
-    ctx.strokeStyle = marker.hasHero ? '#e6c14a' : 'rgba(20, 12, 4, 0.75)';
+    ctx.lineWidth = Math.max(2, r * 0.18);
+    ctx.strokeStyle = marker.mine ? '#e6c14a' : '#2e2a24';
     ctx.stroke();
+    // a hero rides under a small gold pennon above the token
+    if (marker.hasHero) {
+      const k = r * 0.32;
+      ctx.beginPath();
+      ctx.moveTo(x, y - r - k * 1.9);
+      ctx.lineTo(x + k, y - r - k);
+      ctx.lineTo(x, y - r - k * 0.1);
+      ctx.lineTo(x - k, y - r - k);
+      ctx.closePath();
+      ctx.fillStyle = '#e6c14a';
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(30, 22, 12, 0.8)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+    }
     // company count
-    ctx.fillStyle = '#f4ead2';
-    ctx.font = `700 ${Math.max(9, r)}px "Iowan Old Style", Palatino, Georgia, serif`;
+    ctx.fillStyle = '#f2e8d0';
+    ctx.font = `700 ${Math.max(10, r)}px "Iowan Old Style", Palatino, Georgia, serif`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.shadowColor = 'rgba(0,0,0,0.6)';
@@ -783,9 +896,9 @@ export class MapRenderer {
     const cells: number[] = [];
     for (let i = 0; i < view.cells.length; i++) if (view.cells[i] === p.id) cells.push(i);
     const density = p.terrain === 'meadow' ? 0.06 : 0.16;
-    ctx.strokeStyle = 'rgba(58, 46, 28, 0.5)';
-    ctx.fillStyle = 'rgba(58, 46, 28, 0.35)';
-    ctx.lineWidth = Math.max(0.8, this.scale * 0.06);
+    ctx.strokeStyle = 'rgba(92, 74, 44, 0.55)';
+    ctx.fillStyle = 'rgba(92, 74, 44, 0.4)';
+    ctx.lineWidth = Math.max(0.8, this.scale * 0.07);
     ctx.lineCap = 'round';
     for (const c of cells) {
       if (!rng.chance(density)) continue;
@@ -810,12 +923,17 @@ export class MapRenderer {
           break;
         }
         case 'forest': {
-          ctx.moveTo(sx, sy + s * 0.2);
-          ctx.lineTo(sx, sy);
-          ctx.stroke();
-          ctx.beginPath();
-          ctx.arc(sx, sy - s * 0.12, s * 0.16, 0, Math.PI * 2);
+          // filled pine, a glyph rather than a texture (redesign §5)
+          ctx.moveTo(sx, sy - s * 0.24);
+          ctx.lineTo(sx - s * 0.17, sy + s * 0.14);
+          ctx.lineTo(sx + s * 0.17, sy + s * 0.14);
+          ctx.closePath();
+          ctx.fillStyle = 'rgba(122, 122, 78, 0.85)';
           ctx.fill();
+          ctx.strokeStyle = 'rgba(74, 74, 44, 0.7)';
+          ctx.stroke();
+          ctx.strokeStyle = 'rgba(92, 74, 44, 0.55)';
+          ctx.fillStyle = 'rgba(92, 74, 44, 0.4)';
           break;
         }
         case 'moor': {
@@ -935,12 +1053,12 @@ export class MapRenderer {
       const focused = opts.selected === p.id || opts.hovered === p.id;
       if (fade <= 0 && !focused) continue;
       const [sx, sy] = this.worldToScreen(p.cx + 0.5, p.cy + 0.5);
-      const size = Math.max(9, Math.min(15, this.scale * 0.62));
-      ctx.font = `600 ${size}px "Iowan Old Style", Palatino, Georgia, serif`;
+      const size = Math.max(10, Math.min(16, this.scale * 0.66));
+      ctx.font = `italic ${size}px ${FELL_STACK}`;
       const yy = sy - this.scale * 0.35;
-      ctx.globalAlpha = focused ? 1 : fade;
+      ctx.globalAlpha = (focused ? 1 : fade) * 0.9;
       ctx.lineWidth = 3;
-      ctx.strokeStyle = 'rgba(226, 210, 170, 0.75)';
+      ctx.strokeStyle = 'rgba(226, 210, 170, 0.7)';
       ctx.strokeText(p.name, sx, yy);
       ctx.fillStyle = INK;
       ctx.fillText(p.name, sx, yy);
@@ -1093,6 +1211,56 @@ function traceRivers(view: MapView): [number, number][][] {
     }
   }
   return paths;
+}
+
+/** Courier roads: every province linked to its nearest neighbor by center
+ * distance (deduped), so the network stays sparse and readable. Decor only:
+ * marching legality never reads from this. */
+function traceRoads(view: MapView): [number, number][] {
+  const seen = new Set<string>();
+  const out: [number, number][] = [];
+  for (const p of view.provinces) {
+    let best: number | null = null;
+    let bestD = Infinity;
+    for (const q of p.neighbors) {
+      const other = view.provinces[q];
+      if (!other) continue;
+      const d = (p.cx - other.cx) ** 2 + (p.cy - other.cy) ** 2;
+      if (d < bestD) {
+        bestD = d;
+        best = q;
+      }
+    }
+    if (best === null) continue;
+    const key = p.id < best ? `${p.id}:${best}` : `${best}:${p.id}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push([p.id, best]);
+  }
+  return out;
+}
+
+/** Sparse wave strokes on open water, world-anchored and deterministic:
+ * candidates are sampled from the map's own hash and kept only where a
+ * whole cell-neighborhood is sea. */
+function traceWaves(view: MapView): [number, number][] {
+  const { mapW: w, mapH: h, cells } = view;
+  const isSea = (x: number, y: number): boolean => {
+    if (x < 0 || y < 0 || x >= w || y >= h) return true;
+    return cells[Math.floor(y) * w + Math.floor(x)] < 0;
+  };
+  const rng = new Rng([hash32(view.provinces.map((p) => p.name).join('~')) | 1, 0x51ed270b, 0x9e3779b9, 0xdeadbeef]);
+  const waves: [number, number][] = [];
+  const want = Math.min(30, Math.max(14, Math.floor((w * h) / 60)));
+  let guard = 0;
+  while (waves.length < want && guard < 600) {
+    guard++;
+    const x = rng.range(-3, w + 3);
+    const y = rng.range(-3, h + 3);
+    if (!isSea(x, y) || !isSea(x - 1.6, y) || !isSea(x + 1.6, y) || !isSea(x, y - 1.2) || !isSea(x, y + 1.2)) continue;
+    waves.push([x, y]);
+  }
+  return waves;
 }
 
 function chaikinOpen(pts: [number, number][], iterations: number): [number, number][] {

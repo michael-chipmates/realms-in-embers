@@ -17,17 +17,65 @@
   padding: 1rem;
 }
 
-.title-over { letter-spacing: 0.2em; text-transform: uppercase; font-size: 0.75rem; }
-.title-main { font-size: clamp(2rem, 6vw, 3.6rem); margin: 0.4rem 0; }
-.title-sub { max-width: 42ch; margin: 0.4rem auto 0; }
-.title-menu { display: flex; flex-direction: column; gap: 0.7rem; margin: 2rem auto 0; width: min(300px, 80vw); }
-.title-btn { font-size: 1.02rem; }
-.title-epigraph { margin-top: 1.6rem; opacity: 0.8; min-height: 1.4em; }
+.title-over { letter-spacing: 0.32em; text-transform: uppercase; font-size: 0.75rem; }
+.title-main { font-size: clamp(2.1rem, 6.2vw, 5.6rem); letter-spacing: 0.16em; margin: 0.5rem 0; line-height: 1.1; }
+.title-sub { max-width: 42ch; margin: 0.5rem auto 0; font-size: 1.05rem; }
+/* three doors, not seven: one wax plaque, two brass buttons, the rest ink */
+.title-menu { display: flex; flex-direction: column; gap: 0.8rem; margin: 1.8rem auto 0; width: min(560px, 92vw); align-items: stretch; }
+.title-btn { font-size: 1.02rem; letter-spacing: 0.08em; }
+.door-plaque {
+  display: flex; align-items: center; gap: 1.1rem; text-align: left;
+  background: rgba(10, 6, 2, 0.6); border: 1px solid rgba(201, 162, 39, 0.45);
+  border-radius: 4px; padding: 0.9rem 1.4rem 0.9rem 1rem; cursor: pointer;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 230, 170, 0.08);
+  color: var(--parchment-text);
+  transition: border-color 120ms ease-out, box-shadow 120ms ease-out, transform 60ms;
+}
+.door-plaque:hover { border-color: var(--gold-bright); box-shadow: 0 0 30px rgba(224, 120, 48, 0.35); }
+.door-plaque:active { transform: scale(0.98); }
+.door-wax {
+  width: 68px; height: 68px; flex: none; border-radius: 50%;
+  background: radial-gradient(circle at 34% 28%, #b8483a, #8a2f26 58%, #571b15);
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.6), inset 0 2px 6px rgba(255, 180, 140, 0.25);
+  display: flex; align-items: center; justify-content: center;
+}
+.door-wax-ring {
+  width: 42px; height: 42px; border-radius: 50%;
+  border: 1.5px solid rgba(255, 220, 190, 0.35);
+  display: flex; align-items: center; justify-content: center;
+}
+.door-wax-diamond {
+  width: 12px; height: 12px;
+  background: linear-gradient(135deg, #ffcf8a, #e07830); transform: rotate(45deg);
+}
+.door-plaque-text { display: flex; flex-direction: column; gap: 0.15rem; min-width: 0; }
+.door-plaque-title { font-size: 1.35rem; letter-spacing: 0.07em; color: #ffe9d8; }
+.door-plaque-sub { font-size: 0.86rem; font-style: italic; color: #c7b998; }
+.title-brass-row { display: flex; gap: 0.7rem; }
+.title-brass-row .btn { flex: 1; min-height: 50px; }
+.title-links {
+  display: flex; flex-wrap: wrap; justify-content: center; align-items: center;
+  gap: 0 0.15rem; margin-top: 0.2rem;
+}
+.title-link-dot { color: #5c4c34; }
+@media (max-width: 540px) {
+  .title-brass-row { flex-direction: column; }
+  .door-wax { width: 56px; height: 56px; }
+  .door-wax-ring { width: 34px; height: 34px; }
+  .door-plaque-title { font-size: 1.15rem; }
+}
+.title-epigraph { margin-top: 1.4rem; opacity: 0.8; min-height: 1.4em; }
 .title-foot { margin-top: 0.8rem; opacity: 0.65; }
+/* the painting breathes: full presence under a candlelit falloff */
+.title-backdrop::after {
+  content: ''; position: absolute; inset: 0;
+  background: radial-gradient(ellipse 62% 78% at 50% 44%, rgba(8, 5, 2, 0.3) 0%, rgba(8, 5, 2, 0.58) 55%, rgba(6, 3, 1, 0.88) 100%);
+}
 
 /* the hall breathes: a slow drift on the backdrop, a candle-flicker on the
    wordmark. Both stand down under reduced motion. */
 .title-embers { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0; }
+.title-backdrop { position: absolute; inset: 0; overflow: hidden; }
 body:not(.reduced-motion) .title-backdrop .art-img {
   animation: title-drift 52s ease-in-out infinite alternate;
 }
@@ -115,9 +163,10 @@ body:not(.reduced-motion) .title-main {
 
 .topbar {
   display: flex; align-items: center; gap: 0.8rem;
-  padding: 0.4rem 0.8rem; position: relative; z-index: 5;
-  background: linear-gradient(180deg, rgba(22, 16, 10, 0.96), rgba(22, 16, 10, 0.88));
-  border-bottom: 1px solid rgba(201, 162, 39, 0.25);
+  padding: 0.35rem 0.8rem; position: relative; z-index: 5;
+  background: linear-gradient(180deg, #2a1e12, #1a120a);
+  border-bottom: 1px solid rgba(201, 162, 39, 0.4);
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.5);
   flex-wrap: wrap;
 }
 
@@ -130,17 +179,55 @@ body:not(.reduced-motion) .title-main {
   display: inline-block; width: 12px; height: 12px; border-radius: 3px;
   border: 1px solid rgba(0, 0, 0, 0.5); flex-shrink: 0;
 }
-.topbar-stats { display: flex; gap: 1.1rem; align-items: center; }
+.topbar-stats { display: flex; gap: 1.3rem; align-items: center; }
 .stat { display: flex; gap: 0.35rem; align-items: baseline; cursor: help; }
 .stat b { font-size: 1.05rem; }
+/* resource plaques: the value large, its name engraved in small caps below */
+.stat.plaque { flex-direction: column; gap: 0; align-items: center; }
+.plaque-row { display: flex; gap: 0.35rem; align-items: center; }
+.plaque-row b { font-size: 1.18rem; line-height: 1.15; }
+.plaque-label {
+  font-size: 0.6rem; letter-spacing: 0.26em; text-transform: uppercase;
+  color: var(--gold-dim); line-height: 1.2;
+}
+.coin-glyph {
+  display: inline-block; width: 13px; height: 13px; border-radius: 50%; flex: none;
+  background: radial-gradient(circle at 35% 30%, #ffe9a8, #c9a227 60%, #8a7020);
+}
+.plaque-row .ember-diamond { width: 11px; height: 11px; }
+/* the brass clusters: engraved glyph over a small-caps label */
 .topbar-actions { display: flex; gap: 0.1rem; margin-left: auto; }
+.topbar-clusters { gap: 1.4rem; align-items: stretch; padding: 0 0.5rem; }
+.cluster {
+  position: relative; display: flex; flex-direction: column; align-items: center;
+  justify-content: flex-end; gap: 2px; padding: 0.2rem 0.2rem 0.25rem;
+  color: var(--gold); background: none; border: none; cursor: pointer;
+  min-height: 44px; min-width: 52px;
+  transition: opacity 120ms ease-out;
+}
+.cluster:hover { opacity: 0.82; }
+.cluster-glyph { display: inline-flex; color: var(--gold); }
+.cluster-label {
+  font-size: 0.62rem; letter-spacing: 0.24em; text-transform: uppercase;
+  color: var(--gold-dim); white-space: nowrap;
+}
+.cluster-badge { top: -2px; right: 4px; }
 .topbar-icon { position: relative; padding: 0.45rem; }
 .badge {
   position: absolute; top: 2px; right: 2px;
-  background: var(--wax-red); color: #ffe9d8;
-  font-size: 0.62rem; border-radius: 999px; padding: 0 4px; font-weight: 700;
+  background: radial-gradient(circle at 35% 30%, #b8483a, var(--wax-red) 62%, #5f1e18);
+  color: #ffe9d8; border: 1px solid #d9856f66;
+  font-size: 0.62rem; border-radius: 999px; min-width: 17px; height: 17px;
+  display: inline-flex; align-items: center; justify-content: center;
+  padding: 0 4px; font-weight: 700;
 }
 .end-turn { min-width: 170px; }
+/* the floating wax seal on phones, docked above the book's peek */
+.end-roundel {
+  position: absolute; right: 16px; z-index: 6;
+  bottom: calc(150px + env(safe-area-inset-bottom, 0px));
+}
+.end-roundel-lines { pointer-events: none; }
 
 .pos { color: #9fbf77; }
 .neg { color: #d98b74; }
@@ -237,41 +324,100 @@ details.side-section:not([open]) > summary { border-bottom: none; }
 .option-name { font-size: 0.78rem; text-align: center; line-height: 1.15; }
 .option-cost { font-size: 0.75rem; color: var(--gold); display: flex; gap: 0.2rem; align-items: center; }
 
-/* ------------------------------------------------------------ chronicle */
+/* --------------------------------------------------- the chronicle book
+   Osperan's physical book: paper page, stacked page edges, thumb-tabs on
+   the spine, a dropcap on each season opener, marginalia set apart. On
+   phones it becomes the bottom sheet (further down, in the media query). */
 
 .chronicle-panel {
-  position: absolute; right: 0.8rem; top: 0.8rem; bottom: 4.6rem;
-  width: min(330px, 88vw); z-index: 4;
+  position: absolute; right: 0; top: 0.6rem; bottom: 0.6rem;
+  width: min(440px, 92vw); z-index: 4;
   display: flex; flex-direction: column; align-items: flex-end;
+  pointer-events: none;
 }
-.chronicle-toggle { align-self: flex-end; background: rgba(22, 16, 10, 0.85); border: 1px solid rgba(201, 162, 39, 0.3); }
-.chronicle-feed {
-  margin-top: 0.4rem; width: 100%; flex: 1; overflow-y: auto;
-  background: linear-gradient(175deg, rgba(217, 201, 161, 0.97), rgba(199, 180, 137, 0.97));
-  color: var(--ink); border-radius: 4px;
-  box-shadow: var(--shadow-deep);
-  padding: 0.8rem 0.9rem;
-  scrollbar-width: thin;
+.chronicle-panel > * { pointer-events: auto; }
+.chronicle-toggle {
+  align-self: flex-end; margin: 0 0.8rem 0.35rem 0;
+  background: rgba(22, 16, 10, 0.85); border: 1px solid rgba(201, 162, 39, 0.3);
 }
-.chronicle-heading { text-align: center; border-bottom: 1px solid rgba(58, 46, 28, 0.3); padding-bottom: 0.45rem; margin-bottom: 0.4rem; }
-.chronicle-filters { display: flex; flex-wrap: wrap; gap: 0.25rem; margin-bottom: 0.45rem; }
-.chronicle-filter {
-  display: inline-flex; align-items: center; gap: 0.25em;
-  font-size: 0.68rem; padding: 0.18rem 0.5rem; border-radius: 999px;
-  border: 1px solid rgba(58, 46, 28, 0.35); color: #4a3d28; background: transparent;
-  min-height: 36px;
+.book { flex: 1; min-height: 0; width: 100%; display: flex; align-items: stretch; }
+.book-tabs {
+  width: 36px; flex: none; display: flex; flex-direction: column; gap: 6px;
+  padding-top: 44px; align-items: flex-end;
 }
-.chronicle-filter.active { background: rgba(58, 46, 28, 0.82); color: #ead9b0; }
+.book-tab {
+  writing-mode: vertical-rl; background: #5c4c34; color: #ede2c8;
+  font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase;
+  padding: 10px 6px; border-radius: 4px 0 0 4px;
+  box-shadow: -3px 2px 8px rgba(0, 0, 0, 0.4);
+  border: none; cursor: pointer; opacity: 0.88; min-width: 27px;
+}
+.book-tab:hover { opacity: 1; }
+.book-tab.active { background: var(--wax-red); color: #ffe9d8; opacity: 1; }
+.book-page {
+  flex: 1; min-width: 0;
+  background:
+    repeating-linear-gradient(90deg, #b9a677 0 1px, #e4d6ae 1px 3px) right / 7px 100% no-repeat,
+    linear-gradient(100deg, #c9b88f, #e8dab4 12%, #eee1bf 55%, #dfcfa5);
+  color: var(--ink);
+  box-shadow: -14px 0 40px rgba(0, 0, 0, 0.6);
+  padding: 1.1rem 1.4rem 1rem 1.5rem;
+  overflow-y: auto; scrollbar-width: thin;
+  scrollbar-color: var(--gold-dim) transparent;
+  overscroll-behavior: contain;
+}
+.chronicle-heading { text-align: center; padding-bottom: 0.45rem; margin-bottom: 0.4rem; }
+.chronicle-heading .small-caps { color: var(--ink-soft); letter-spacing: 0.16em; }
+/* the book's sheet furniture (phones) */
+.book-handle {
+  display: flex; justify-content: center; align-items: center;
+  width: 100%; min-height: 30px; background: transparent; border: none; cursor: pointer;
+  margin: -0.4rem 0 0.1rem;
+}
+.book-handle-bar {
+  display: block; width: 44px; height: 5px; border-radius: 3px;
+  background: var(--hairline-paper);
+}
+.book-peek {
+  width: 100%; text-align: left;
+  background:
+    repeating-linear-gradient(90deg, #b9a677 0 1px, #e4d6ae 1px 3px) right / 7px 100% no-repeat,
+    linear-gradient(180deg, #eee1bf, #e0d1a8);
+  border: none; border-top: 2px solid var(--gold-dim);
+  box-shadow: 0 -12px 34px rgba(0, 0, 0, 0.55);
+  color: var(--ink); padding: 0.3rem 1.1rem 0.7rem;
+  display: flex; flex-direction: column; gap: 0.3rem; cursor: pointer;
+}
+.book-peek .book-handle-bar { margin: 0 auto; }
+.book-peek-byline {
+  display: flex; align-items: center; gap: 0.5rem;
+  color: var(--gold-dim); font-size: 0.7rem; letter-spacing: 0.22em;
+}
+.book-peek-badge { position: static; flex: none; }
+.book-peek-text {
+  font-size: 0.9rem; line-height: 1.5; color: #453520;
+  overflow: hidden; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical;
+}
+.book-peek-hint { color: #9b8a63; text-align: center; }
 .sigil-wrap { display: inline-flex; flex-shrink: 0; filter: drop-shadow(0 1px 2px rgba(0,0,0,0.5)); }
 .toast-click { cursor: pointer; text-align: left; }
 .toast-click:hover { border-color: var(--gold-bright); }
 .small-caps { letter-spacing: 0.14em; text-transform: uppercase; font-size: 0.72rem; font-weight: 700; }
-.chronicle-entry { padding: 0.35rem 0; border-bottom: 1px dotted rgba(58, 46, 28, 0.25); }
-.chronicle-meta { display: flex; gap: 0.35rem; align-items: center; color: #4a3d28; }
+.chronicle-entry { padding: 0.4rem 0; border-bottom: 1px dotted var(--hairline-paper); }
+.chronicle-meta { display: flex; gap: 0.35rem; align-items: center; color: #7d6b4e; }
 .chronicle-byline { color: #4a3d28; opacity: 0.9; } /* ink, not the dark-wood .muted (invisible on vellum) */
-.chronicle-text { font-size: 0.88rem; line-height: 1.4; margin-top: 0.1rem; }
-.chronicle-ceremony .chronicle-text { font-weight: 700; }
-.chronicle-ceremony { background: rgba(224, 120, 48, 0.08); margin: 0 -0.4rem; padding: 0.35rem 0.4rem; border-radius: 3px; }
+.chronicle-text { font-family: var(--fell); font-size: 0.95rem; line-height: 1.55; margin-top: 0.1rem; color: #453520; }
+/* the season opener carries the dropcap, in wax */
+.chronicle-opener { border-bottom: none; }
+.chronicle-opener .chronicle-text::first-letter {
+  float: left; font-size: 2.9em; line-height: 0.85;
+  padding: 0.04em 0.09em 0 0; color: var(--wax-red);
+}
+/* teachings read as marginalia: italic, behind a ruled line */
+.chronicle-teaching { border-left: 2px solid var(--hairline-paper); padding-left: 0.55rem; }
+.chronicle-teaching .chronicle-text { font-style: italic; color: #7d6b4e; font-size: 0.88rem; }
+.chronicle-ceremony .chronicle-text { font-size: 1.02rem; }
+.chronicle-ceremony { background: rgba(224, 120, 48, 0.07); margin: 0 -0.4rem; padding: 0.4rem 0.4rem 0.5rem; border-radius: 3px; }
 /* reading tiers: ceremonies command, decisions demanded a choice, alerts
    touched your banner, chronicle is the weather */
 .chronicle-tier-decision { border-left: 2px solid rgba(201, 162, 39, 0.55); padding-left: 0.45rem; }
@@ -285,15 +431,21 @@ details.side-section:not([open]) > summary { border-bottom: none; }
 /* season digest: headers fold a whole season; Osperan's summary line reads
    like a marginal note, set apart from ordinary entries */
 .chronicle-season {
-  display: flex; align-items: center; gap: 0.4rem; width: 100%;
-  background: transparent; border: 0; border-bottom: 1px solid rgba(58, 46, 28, 0.35);
-  color: #4a3d28; font-size: 0.7rem; letter-spacing: 0.12em; text-transform: uppercase;
-  font-weight: 700; padding: 0.45rem 0.1rem 0.25rem; margin-top: 0.3rem;
+  display: flex; align-items: center; gap: 0.5rem; width: 100%;
+  background: transparent; border: 0;
+  color: var(--gold-dim); font-size: 0.7rem; letter-spacing: 0.28em; text-transform: uppercase;
+  font-weight: 400; padding: 0.5rem 0.1rem 0.3rem; margin-top: 0.3rem;
   cursor: pointer; text-align: left; min-height: 36px;
 }
-.chronicle-season:hover { color: #2e2416; }
+/* the gold flourish rules either side of the season name */
+.chronicle-season::before, .chronicle-season::after {
+  content: ''; flex: 1; height: 1px;
+  background: linear-gradient(90deg, transparent, var(--gold-dim));
+}
+.chronicle-season::after { background: linear-gradient(90deg, var(--gold-dim), transparent); }
+.chronicle-season:hover { color: #5c4c34; }
 .chronicle-season-chevron { width: 0.9em; flex-shrink: 0; }
-.chronicle-season-count { margin-left: auto; opacity: 0.65; font-weight: 400; letter-spacing: 0; }
+.chronicle-season-count { opacity: 0.65; font-weight: 400; letter-spacing: 0; }
 .chronicle-digest-entry { background: rgba(58, 46, 28, 0.07); margin: 0 -0.4rem; padding: 0.35rem 0.4rem; border-radius: 3px; }
 .chronicle-digest-entry .chronicle-text { font-style: italic; }
 
@@ -304,13 +456,22 @@ details.side-section:not([open]) > summary { border-bottom: none; }
   display: flex; gap: 0.4rem; z-index: 4; flex-wrap: wrap; justify-content: center;
   max-width: 90%;
 }
-.alert-chip {
-  display: inline-flex; gap: 0.4rem; align-items: center;
-  background: rgba(22, 16, 10, 0.92); color: var(--parchment-text);
-  border: 1px solid rgba(201, 162, 39, 0.45); border-radius: 999px;
-  padding: 0.35rem 0.85rem; font-size: 0.84rem; min-height: 38px;
+/* the status ribbon: one notice, on a wood chip with a brass border */
+.status-ribbon {
+  display: inline-flex; gap: 0.6rem; align-items: center;
+  background: linear-gradient(180deg, #2a1e12, #1a120a); color: var(--parchment-text);
+  border: 1px solid rgba(201, 162, 39, 0.45); border-radius: 3px;
+  padding: 0.5rem 1.2rem; font-size: 0.9rem; min-height: 44px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.55);
 }
-.alert-chip:hover { border-color: var(--gold-bright); box-shadow: 0 0 10px rgba(201, 162, 39, 0.3); }
+.status-ribbon:hover { border-color: var(--gold-bright); box-shadow: 0 0 12px rgba(201, 162, 39, 0.3); }
+.status-ribbon-icon { color: var(--gold-bright); display: inline-flex; flex: none; }
+.status-ribbon-text { min-width: 0; }
+.status-ribbon-more { color: var(--gold-dim); margin-left: 0.3rem; white-space: nowrap; flex: none; }
+@media (max-width: 900px) {
+  .status-ribbon { flex-wrap: wrap; justify-content: center; padding: 0.4rem 0.8rem; font-size: 0.84rem; row-gap: 0.05rem; }
+  .status-ribbon-text { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+}
 
 /* --------------------------------------------------------------- toasts */
 
@@ -407,7 +568,23 @@ details.side-section:not([open]) > summary { border-bottom: none; }
 .gallery-lord { flex: 1; min-width: 0; text-align: center; display: flex; flex-direction: column; gap: 0.3rem; align-items: center; }
 .art-portrait-xl { display: flex; justify-content: center; }
 .art-portrait-xl img { width: min(240px, 52vw); height: auto; max-height: 34vh; object-fit: cover; object-position: center 12%; border-radius: 8px; box-shadow: var(--shadow-deep); }
-.gallery-name { margin: 0; font-size: 1.35rem; color: var(--gold-bright); font-weight: 400; letter-spacing: 0.03em; }
+.gallery-name { margin: 0; font-weight: 400; }
+/* the portrait hall: gilt frame, near-black liner, a brass nameplate
+   overlapping the bottom edge (redesign 1e/2e) */
+.gilt-frame {
+  display: inline-block; padding: 11px;
+  background: linear-gradient(150deg, #a8842c, #6d5518 40%, #c9a227 60%, #7a5f1c);
+  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.7);
+}
+.gilt-liner { padding: 3px; background: #2a1e10; }
+.gilt-liner .art-img { border-radius: 0 !important; border: none !important; box-shadow: none !important; display: block; }
+.brass-nameplate {
+  display: inline-block; position: relative; z-index: 1; margin-top: -16px;
+  background: linear-gradient(180deg, #c9a227, #8a7020); color: #241a08;
+  font-size: 0.78rem; letter-spacing: 0.2em; text-transform: uppercase;
+  padding: 7px 22px; border-radius: 2px;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.6);
+}
 .gallery-blurb { max-width: 46ch; }
 .gallery-abilities { display: flex; flex-direction: column; gap: 0.35rem; width: 100%; }
 .gallery-ability {
@@ -417,11 +594,9 @@ details.side-section:not([open]) > summary { border-bottom: none; }
 .gallery-ability b { color: var(--gold); }
 .gallery-signature { border-color: rgba(224, 120, 48, 0.45); background: rgba(224, 120, 48, 0.06); }
 .gallery-signature b { color: var(--ember-bright); }
-.gallery-bars { width: 100%; display: flex; flex-direction: column; gap: 2px; }
-.gallery-bar { display: flex; align-items: center; gap: 0.5rem; }
+.gallery-bars { width: 100%; display: flex; flex-direction: column; gap: 5px; align-items: center; }
+.gallery-bar { display: flex; align-items: center; gap: 0.7rem; }
 .gallery-bar-label { flex: none; width: 8.5em; text-align: right; }
-.gallery-bar-track { flex: 1; height: 7px; background: rgba(201, 162, 39, 0.12); border-radius: 4px; overflow: hidden; }
-.gallery-bar-ink { display: block; height: 100%; background: linear-gradient(90deg, var(--gold), var(--ember-bright)); border-radius: 4px; }
 .gallery-osperan { max-width: 46ch; }
 .gallery-actions { display: flex; justify-content: center; gap: 0.5rem; flex-wrap: wrap; }
 .gallery-actions .btn { min-height: 44px; }
@@ -542,6 +717,29 @@ details.side-section:not([open]) > summary { border-bottom: none; }
 .rival-row { cursor: pointer; }
 .rival-row:hover td, .rival-row:focus-visible td { background: rgba(201, 162, 39, 0.07); }
 
+/* ------------------------------------------- the ledger spread (paper)
+   Diplomacy on Osperan's open ledger: small-caps headers over a heavy ink
+   rule, dotted hairlines between the rows, wax stance stamps. */
+
+.ability-legacy { color: var(--gold); }
+.ability-signature { color: var(--ember-bright); }
+.paper-sheet .ability-legacy { color: var(--gold-dim); }
+.paper-sheet .ability-signature { color: #a0501e; }
+.paper-sheet .panel {
+  background: transparent; border: 1px solid var(--hairline-paper);
+  box-shadow: none; border-radius: 2px;
+}
+.paper-sheet .side-card-title { color: var(--ink); }
+.paper-sheet .lord-intro-quote { color: var(--ink-soft); font-family: var(--fell); font-style: italic; }
+.paper-sheet .chip { border-color: rgba(69, 53, 32, 0.4); background: rgba(69, 53, 32, 0.07); color: var(--ink-soft); border-radius: 3px; }
+.paper-sheet .rival-table th {
+  color: var(--gold-dim); border-bottom: 2px solid #453520;
+  font-variant: normal; font-size: 0.68rem; letter-spacing: 0.18em; text-transform: uppercase;
+}
+.paper-sheet .rival-table td { border-bottom: 1px dotted var(--hairline-paper); }
+.paper-sheet .rival-row:hover td, .paper-sheet .rival-row:focus-visible td { background: rgba(69, 53, 32, 0.06); }
+.paper-sheet .flavor-line { color: var(--ink-faint); border-top-color: var(--hairline-paper); }
+
 /* ------------------------------------------------------ the Council Brief */
 
 .brief-body { display: flex; flex-direction: column; gap: 0.5rem; max-width: min(620px, 92vw); }
@@ -633,24 +831,56 @@ details.side-section:not([open]) > summary { border-bottom: none; }
 .tip-total { border-top: 1px solid rgba(201, 162, 39, 0.3); margin-top: 0.35rem; padding-top: 0.3rem; font-weight: 700; }
 .tip-plain p { margin: 0.25rem 0 0; }
 
-/* ----------------------------------------------------------------- odds */
+/* --------------------------------------------------- the augurs' note
+   Battle odds on a sheet of paper: an inked gauge with tick marks, ledger
+   columns per host, a wax seal to commit (redesign 1c/2c). */
 
-.odds-body { padding: 0.3rem 0.5rem 0.6rem; min-width: min(620px, calc(100vw - 4.5rem)); }
-.odds-meter-row { text-align: center; margin-bottom: 0.7rem; }
-.odds-label { font-size: 1.15rem; font-weight: 700; color: var(--gold-bright); margin-bottom: 0.3rem; }
-.odds-meter {
-  height: 14px; border-radius: 999px; overflow: hidden;
-  background: rgba(138, 47, 38, 0.45); border: 1px solid rgba(0, 0, 0, 0.4);
+.odds-note { transform: rotate(-0.4deg); }
+.odds-body { padding: 0.1rem 0.9rem 0.8rem; min-width: min(640px, calc(100vw - 4.5rem)); }
+.odds-byline { margin: -0.2rem 0 0.8rem; color: var(--ink-faint); }
+.odds-meter-row { text-align: center; margin-bottom: 0.9rem; }
+.odds-big { font-size: clamp(2rem, 5.5vw, 3.2rem); color: #453520; line-height: 1.1; margin-bottom: 0.8rem; }
+.odds-big-sub { font-size: 0.45em; color: var(--ink-faint); }
+.odds-meter-row .gauge { margin: 0 0.2rem; }
+.odds-scale { display: flex; justify-content: space-between; gap: 0.6rem; margin-top: 0.7rem; color: var(--ink-faint); }
+.odds-scale b { color: #453520; }
+.odds-sides {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 0 1.6rem;
+  border-top: 2px solid #453520; padding-top: 0.6rem; margin-top: 0.4rem;
 }
-.odds-fill { height: 100%; background: linear-gradient(90deg, #6f8f4f, #9fbf77); }
-.odds-sides { display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem; }
-.odds-side { background: rgba(10, 7, 4, 0.35); border-radius: 5px; padding: 0.5rem 0.6rem; }
-.odds-side-title { font-weight: 700; margin-bottom: 0.1rem; }
-.odds-strength { font-size: 0.8rem; color: var(--gold); margin-bottom: 0.3rem; }
-.odds-mods { display: flex; flex-direction: column; gap: 0.15rem; }
-.odds-mod { display: flex; justify-content: space-between; gap: 0.8rem; font-size: 0.82rem; }
-.odds-notes { margin-top: 0.6rem; color: #d8b98a; }
-.odds-actions { display: flex; gap: 0.6rem; justify-content: center; margin-top: 0.8rem; }
+.odds-side { padding: 0.2rem 0 0.4rem; }
+.odds-side:first-child { border-right: 1px solid var(--hairline-paper); padding-right: 1.2rem; }
+.odds-side-title { color: var(--gold-dim); font-weight: 400; }
+.odds-strength { font-size: 1.1rem; margin: 0.25rem 0 0.35rem; }
+.odds-mods { display: flex; flex-direction: column; }
+.odds-mod { font-size: 0.88rem; }
+.odds-notes { margin-top: 0.7rem; color: var(--wax-red); }
+.odds-actions { display: flex; gap: 1.2rem; justify-content: flex-end; align-items: center; margin-top: 1rem; }
+.odds-hold { color: var(--ink-faint); font-size: 1rem; letter-spacing: 0.06em; padding: 0.5rem 0.6rem; min-height: 44px; }
+.odds-hold:hover { color: var(--ink); }
+.odds-support {
+  margin: 0.7rem 0 0; padding: 0.5rem 0.8rem;
+  border: 1.5px solid var(--gold-dim); background: rgba(224, 120, 48, 0.08);
+}
+.odds-support-row {
+  display: flex; align-items: center; gap: 0.5rem;
+  padding: 0.25rem 0; cursor: pointer; min-height: 32px;
+}
+/* phones: the note slides up as a sheet over the dimmed table (2c) */
+@media (max-width: 720px) {
+  .modal-backdrop:has(.paper-sheet) { place-items: end stretch; padding: 0; }
+  .modal-panel.paper-sheet {
+    max-width: 100%; width: 100%; margin: 0;
+    border-radius: 14px 14px 0 0; max-height: 92dvh;
+    transform: none;
+  }
+  .odds-body { min-width: 0; }
+  .odds-sides { grid-template-columns: 1fr; }
+  .odds-side:first-child { border-right: none; padding-right: 0; border-bottom: 1px solid var(--hairline-paper); }
+  .odds-actions { flex-direction: column-reverse; gap: 0.3rem; align-items: stretch; }
+  .odds-actions .btn-seal { min-height: 52px; }
+  .odds-hold { text-align: center; }
+}
 
 /* --------------------------------------------------------------- battle */
 
@@ -664,10 +894,15 @@ details.side-section:not([open]) > summary { border-bottom: none; }
 .battle-rounds { display: flex; flex-direction: column; gap: 0.4rem; }
 .battle-round-label { width: 100%; }
 .battle-balance {
-  height: 10px; border-radius: 999px; overflow: hidden;
-  background: rgba(138, 47, 38, 0.5);
+  height: 12px; overflow: hidden;
+  border: 1.5px solid rgba(201, 162, 39, 0.45);
+  background: repeating-linear-gradient(115deg, #4a2320 0 8px, #3d1d1a 8px 16px);
 }
-.battle-balance-a { height: 100%; background: rgba(159, 191, 119, 0.75); transition: width 460ms cubic-bezier(0.2, 0.9, 0.3, 1.1); }
+.battle-balance-a {
+  height: 100%;
+  background: repeating-linear-gradient(115deg, #6f8f4f 0 8px, #5d7a42 8px 16px);
+  transition: width 460ms cubic-bezier(0.2, 0.9, 0.3, 1.1);
+}
 .battle-round-live .battle-round-losses .neg { animation: casualty-pulse 520ms ease-out; }
 @keyframes casualty-pulse {
   0% { transform: scale(1.5); filter: brightness(1.8); }
@@ -706,8 +941,9 @@ body.reduced-motion .battle-round-live .battle-round-losses .neg { animation: no
 .theater-chit-count { color: var(--gold); }
 .theater-balance-wrap { display: flex; flex-direction: column; gap: 0.15rem; }
 .theater-balance {
-  height: 14px; border-radius: 999px; overflow: hidden;
-  background: rgba(138, 47, 38, 0.5); border: 1px solid rgba(201, 162, 39, 0.25);
+  height: 14px; overflow: hidden;
+  border: 1.5px solid rgba(201, 162, 39, 0.45);
+  background: repeating-linear-gradient(115deg, #4a2320 0 8px, #3d1d1a 8px 16px);
 }
 .theater-balance-a { height: 100%; transition: width 460ms cubic-bezier(0.2, 0.9, 0.3, 1.1); }
 .theater-balance-label { text-align: center; }
@@ -848,27 +1084,51 @@ body.reduced-motion .battle-round-live .battle-round-losses .neg { animation: no
     width: 44px; height: 4px; border-radius: 999px;
     background: rgba(201, 162, 39, 0.5);
   }
-  .chronicle-panel { top: 0.5rem; bottom: auto; max-height: 60vh; right: 0.5rem; }
-  .chronicle-feed { max-height: 52vh; }
+  /* the book is the bottom sheet (redesign 2b): a peek with the latest
+     lines, pulled up to a full page. The selection sheet takes its place
+     while something on the map is chosen. */
+  .chronicle-panel {
+    left: 0; right: 0; top: auto; bottom: 0; width: 100%;
+    z-index: 5; align-items: stretch;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  .chronicle-panel.chronicle-behind { display: none; }
+  .chronicle-open.chronicle-panel { top: 8dvh; }
+  .book { flex-direction: column; }
+  .book-tabs {
+    width: 100%; flex-direction: row; gap: 6px; padding: 0 0.8rem 0.35rem;
+    align-items: flex-end; overflow-x: auto; scrollbar-width: none;
+  }
+  .book-tab {
+    writing-mode: horizontal-tb; border-radius: 4px 4px 0 0; padding: 7px 14px;
+    box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.3); min-height: 44px; flex: none;
+  }
+  .book-page { box-shadow: 0 -14px 40px rgba(0, 0, 0, 0.6); padding-top: 0.5rem; }
+  /* the wax roundel docks above the PEEK; the open book or an open
+     selection sheet covers its ground */
+  .chronicle-panel.chronicle-open ~ .end-roundel { display: none; }
+  .side-panel:not(.side-panel-empty) ~ .end-roundel { display: none; }
   .alerts-row { bottom: auto; top: 3.4rem; }
-  /* ONE bar, ONE row (Michel, 2026-07-12): the icon row hides, the drawers
-     button carries every overlay, nothing wraps, the map keeps the room. */
+  /* ONE bar, ONE row (Michel, 2026-07-12): the cluster row hides, the
+     drawers button carries every overlay, nothing wraps, the map keeps the
+     room. Ending the season lives on the floating wax roundel. */
   .topbar { gap: 0.4rem; flex-wrap: nowrap; padding: 0.3rem 0.5rem; }
   .topbar-actions { display: none; }
-  .topbar > .btn-quiet[aria-label='Menu'] { display: none; } /* lives in the drawers on phones */
-  .topbar-drawers { display: inline-flex; }
+  .topbar-drawers { display: inline-flex; margin-left: auto; }
   .topbar-lord { padding-left: 0.4rem; gap: 0.35rem; }
   .topbar-lord > div { display: none; }   /* sigil only; the name lives in the sheet and gallery */
   .topbar-stats { gap: 0.55rem; flex: 1; min-width: 0; }
   .stat b { font-size: 0.95rem; white-space: nowrap; }
   .stat .small { display: none; }         /* the income deltas live in the tooltips */
+  .stat.plaque { flex-direction: row; align-items: baseline; gap: 0.3rem; }
+  .plaque-row b { font-size: 0.98rem; }
+  .plaque-label { display: none; }        /* the glyph says it on a phone */
   .season-word { display: none; }         /* the hourglass says it; the number stays */
-  .end-turn { min-width: 0; flex: 0 0 auto; padding: 0.35rem 0.7rem; font-size: 0.85rem; }
+  .signature-btn { display: none; }       /* the signature lives in the drawers on phones */
 }
 @media (max-width: 380px) {
   .topbar-stats { gap: 0.4rem; }
   .stat b { font-size: 0.85rem; }
-  .end-turn { font-size: 0.78rem; padding: 0.3rem 0.5rem; }
 }
 
 
@@ -928,7 +1188,7 @@ body.reduced-motion .battle-round-live .battle-round-losses .neg { animation: no
 }
 .title-backdrop .art-img {
   position: absolute; inset: 0; width: 100%; height: 100%;
-  object-fit: cover; opacity: 0.45; filter: saturate(0.9);
+  object-fit: cover; opacity: 0.82; filter: saturate(0.92);
 }
 .event-art { display: block; }
 .event-art .art-img {
@@ -969,31 +1229,10 @@ body.reduced-motion .turn-clock.clock-low { animation: none; }
   font-size: 1.2rem; line-height: 1; justify-content: center;
   background: rgba(22, 16, 10, 0.85);
 }
+.zoom-fit-glyph { width: 13px; height: 13px; border: 2px solid currentColor; display: inline-block; }
 @media (max-width: 720px) {
   .map-zoom { display: none; } /* phones pinch */
 }
-.odds-support {
-  margin: 0.6rem 0; padding: 0.5rem 0.7rem;
-  border: 1px solid rgba(201, 162, 39, 0.3); border-radius: 5px;
-  background: rgba(201, 162, 39, 0.05);
-}
-.odds-support-row {
-  display: flex; align-items: center; gap: 0.5rem;
-  padding: 0.25rem 0; cursor: pointer; min-height: 32px;
-}
 
-/* -------------------------------------------------- the table's frame */
-
-.table-frame { position: absolute; inset: 0; pointer-events: none; z-index: 3; }
-.frame-corner {
-  position: absolute; width: 84px; height: 84px; opacity: 0.55;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 84 84'%3E%3Cpath d='M2 82 V26 Q2 2 26 2 H82' fill='none' stroke='%23c9a227' stroke-width='2.5'/%3E%3Cpath d='M8 82 V30 Q8 8 30 8 H82' fill='none' stroke='%238a7020' stroke-width='1.2'/%3E%3Ccircle cx='14' cy='14' r='3.5' fill='%23c9a227'/%3E%3Cpath d='M26 2 q-4 10 -14 10 M2 26 q10 -4 10 -14' fill='none' stroke='%23c9a227' stroke-width='1.4'/%3E%3C/svg%3E");
-  background-size: contain; background-repeat: no-repeat;
-}
-.frame-tl { top: 6px; left: 6px; }
-.frame-tr { top: 6px; right: 6px; transform: scaleX(-1); }
-.frame-bl { bottom: 6px; left: 6px; transform: scaleY(-1); }
-.frame-br { bottom: 6px; right: 6px; transform: scale(-1); }
-@media (max-width: 900px) {
-  .frame-corner { width: 48px; height: 48px; opacity: 0.4; }
-}
+/* The table's frame retired (2026-07-13): the map is a vellum sheet now
+   and draws its own double inset border, compass, and seed name. */

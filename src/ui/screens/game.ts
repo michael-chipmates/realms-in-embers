@@ -25,7 +25,7 @@ import { sigilShield } from '../heraldry';
 import { saveToSlot } from '../saves';
 import { breakdown, tip, hideTip } from '../tooltip';
 import { renderSelectionPanel } from '../panels/selection';
-import { renderChronicleFeed } from '../panels/chronicleFeed';
+import { renderChronicleFeed, setChronicleCollapsed } from '../panels/chronicleFeed';
 import { openCourtOverlay, openDiplomacyOverlay, openLedgerOverlay, openMagicOverlay, openQuestsOverlay, openMenuOverlay } from '../panels/overlays';
 import { openCodexOverlay } from '../panels/codex';
 import { openKeysOverlay, openNavigatorOverlay } from '../panels/navigator';
@@ -89,6 +89,13 @@ export class GameScreen {
     if (this.disposed) return;
     this.renderer.resize();
     this.redrawMap();
+  };
+
+  /** Crossing the phone breakpoint swaps the End-the-Season wax bar for
+   * the floating roundel (and back): the topbar must re-render. */
+  private breakpointMq: MediaQueryList | null = null;
+  private breakpointHandler = (): void => {
+    if (!this.disposed) this.refresh();
   };
 
   constructor(app: App, state: GameState, online: OnlineSession | null = null) {
@@ -274,7 +281,7 @@ export class GameScreen {
     const s = Math.max(0, Math.round(this.clockBanks[cur.id] ?? 0));
     const mm = Math.floor(s / 60);
     const ss = String(s % 60).padStart(2, '0');
-    this.clockEl.textContent = `⌛ ${mm}:${ss}`;
+    this.clockEl.textContent = `${mm}:${ss}`;
     this.clockEl.classList.toggle('clock-low', s < 30 && cur.id === this.online.mySeat);
   }
 
@@ -297,12 +304,6 @@ export class GameScreen {
       this.topbar,
       h('main', { class: 'war-table' },
         this.canvas,
-        h('div', { class: 'table-frame', 'aria-hidden': 'true' },
-          h('span', { class: 'frame-corner frame-tl' }),
-          h('span', { class: 'frame-corner frame-tr' }),
-          h('span', { class: 'frame-corner frame-bl' }),
-          h('span', { class: 'frame-corner frame-br' }),
-        ),
         this.sidePanel,
         this.chronicleEl,
         this.alertsEl,
@@ -310,7 +311,7 @@ export class GameScreen {
         h('div', { class: 'map-zoom', 'aria-label': 'Map zoom' },
           h('button', { class: 'btn btn-quiet map-zoom-btn', 'aria-label': 'Zoom in', onclick: () => this.zoomCenter(1.25) }, '+'),
           h('button', { class: 'btn btn-quiet map-zoom-btn', 'aria-label': 'Zoom out', onclick: () => this.zoomCenter(0.8) }, '−'),
-          h('button', { class: 'btn btn-quiet map-zoom-btn', 'aria-label': 'Fit the whole realm', onclick: () => { this.renderer.fit(); this.redrawMap(); } }, '⊡'),
+          h('button', { class: 'btn btn-quiet map-zoom-btn', 'aria-label': 'Fit the whole realm', onclick: () => { this.renderer.fit(this.bookInset()); this.redrawMap(); } }, h('span', { class: 'zoom-fit-glyph', 'aria-hidden': 'true' })),
         ),
       ),
     );
@@ -321,6 +322,8 @@ export class GameScreen {
     this.setupMapView();
     this.bindMapEvents();
     document.addEventListener('keydown', this.keyHandler);
+    this.breakpointMq = window.matchMedia('(max-width: 900px)');
+    this.breakpointMq.addEventListener('change', this.breakpointHandler);
     this.refresh();
 
     // if we loaded into an AI's turn (or a finished game), keep the wheel turning
@@ -345,6 +348,7 @@ export class GameScreen {
     this.guide = null;
     document.removeEventListener('keydown', this.keyHandler);
     window.removeEventListener('resize', this.resizeHandler);
+    this.breakpointMq?.removeEventListener('change', this.breakpointHandler);
     closeAllModals();
     hideTip();
     resetCeremonies();
@@ -388,13 +392,21 @@ export class GameScreen {
       provinces: this.state.provinces,
       playerColors: playerColors(this.state),
       playerPatterns: playerPatterns(this.state),
+      sheetLabel: `the Embermark · seed ${this.state.seed}`,
     });
     requestAnimationFrame(() => {
       this.renderer.resize();
-      this.renderer.fit();
+      this.renderer.fit(this.bookInset());
       this.redrawMap();
     });
     window.addEventListener('resize', this.resizeHandler);
+    // the map labels speak IM Fell English: repaint once the letterform
+    // arrives (first visit only; it precaches with the shell after that)
+    if (document.fonts?.load) {
+      void document.fonts.load('italic 16px "IM Fell English"').then(() => {
+        if (!this.disposed) this.redrawMap();
+      });
+    }
   }
 
   redrawMap(): void {
@@ -494,13 +506,14 @@ export class GameScreen {
   }
 
   private armyMarkers() {
-    const out: { province: number; owner: number; strength: number; hasHero: boolean; kind?: string }[] = [];
+    const out: { province: number; owner: number; strength: number; hasHero: boolean; kind?: string; mine?: boolean }[] = [];
     const byProvince = new Map<number, Army[]>();
     for (const army of Object.values(this.state.armies)) {
       const list = byProvince.get(army.province) ?? [];
       list.push(army);
       byProvince.set(army.province, list);
     }
+    const viewer = this.viewerId();
     for (const [province, armies] of byProvince) {
       for (const army of armies.slice(0, 3)) {
         out.push({
@@ -509,6 +522,7 @@ export class GameScreen {
           strength: army.units.length,
           hasHero: army.heroIds.length > 0,
           kind: army.kind,
+          mine: army.owner === viewer,
         });
       }
     }
@@ -664,6 +678,13 @@ export class GameScreen {
     return window.innerWidth < 900;
   }
 
+  /** Desktop: the chronicle book docks over the map's right edge, so a
+   * "fit" keeps the land clear of it. Phones dock the book at the bottom
+   * and keep the full width. */
+  private bookInset(): number {
+    return this.isMobile() ? 0 : Math.min(440, window.innerWidth * 0.92);
+  }
+
   /** Phones: the bottom sheet must never hide the province being acted on. */
   private ensureSelectionVisible(): void {
     if (!this.isMobile() || this.sel.provinceId === null) return;
@@ -728,16 +749,19 @@ export class GameScreen {
     let fervor = false;
     const canFervor = army.owner >= 0 && this.state.players[army.owner].emberlight >= FERVOR_COST;
 
-    const modBlock = (title: string, mods: { label: string; mult: number }[], strength: number) =>
+    // one ledger column per host: the augurs' note itemizes both sides.
+    // On the defenders' column a bonus is bad news for the reader, so the
+    // color follows the reader's fortunes, not the defender's.
+    const modBlock = (title: string, mods: { label: string; mult: number }[], strength: number, theirs: boolean) =>
       h('div', { class: 'odds-side' },
-        h('div', { class: 'odds-side-title' }, title),
+        h('div', { class: 'odds-side-title small-caps' }, title),
         h('div', { class: 'odds-strength' }, `${strength} effective strength`),
         h('div', { class: 'odds-mods' },
-          ...mods.map((m) => h('div', { class: 'odds-mod' },
+          ...mods.map((m) => h('div', { class: 'odds-mod ledger-line' },
             h('span', {}, m.label),
-            h('span', { class: m.mult >= 1 ? 'pos' : 'neg' }, `${m.mult >= 1 ? '+' : ''}${Math.round((m.mult - 1) * 100)}%`),
+            h('b', { class: (m.mult >= 1) !== theirs ? 'pos' : 'neg' }, `${m.mult >= 1 ? '+' : ''}${Math.round((m.mult - 1) * 100)}%`),
           )),
-          mods.length === 0 ? h('div', { class: 'odds-mod muted' }, 'No modifiers') : null,
+          mods.length === 0 ? h('div', { class: 'odds-mod muted small' }, 'No modifiers') : null,
         ),
       );
 
@@ -752,13 +776,24 @@ export class GameScreen {
       // "at least 99%", a washout "at most 1%": the honest sampled edges
       const pctLabel = pct >= 100 ? '≥99%' : pct <= 0 ? '≤1%' : `${pct}%`;
       mount(content,
+        h('p', { class: 'small italic odds-byline' },
+          `the augurs' note, run ${PREVIEW_RUNS} times on a forked fate: reading it cannot change it`),
         h('div', { class: 'odds-meter-row' },
-          h('div', { class: 'odds-label' }, `${pctLabel} to carry the field`),
-          h('div', { class: 'odds-meter', role: 'img', 'aria-label': `Victory chance ${pctLabel.replace('%', ' percent')}, from ${PREVIEW_RUNS} sampled battles` },
-            h('div', { class: 'odds-fill', style: { width: `${Math.max(1, Math.min(99, pct))}%` } }),
+          h('div', { class: 'odds-big fell' }, pctLabel, h('span', { class: 'odds-big-sub italic' }, ' to carry the field')),
+          h('div', { class: 'gauge', role: 'img', 'aria-label': `Victory chance ${pctLabel.replace('%', ' percent')}, from ${PREVIEW_RUNS} sampled battles` },
+            h('div', { class: 'gauge-fill', style: { width: `calc(${Math.max(1, Math.min(99, pct))}% - 4px)` } }),
+            h('span', { class: 'gauge-tick', style: { left: '25%' } }),
+            h('span', { class: 'gauge-tick gauge-tick-mid', style: { left: '50%' } }),
+            h('span', { class: 'gauge-tick', style: { left: '75%' } }),
           ),
-          h('div', { class: 'small muted' },
-            `Expected losses · yours: ${Math.round(preview.aExpectedLoss * 100)}%, theirs: ${Math.round(preview.dExpectedLoss * 100)}% · ${PREVIEW_RUNS} trials on forked fate`),
+          h('div', { class: 'odds-scale small' },
+            h('span', { class: 'italic muted' }, 'rout'),
+            h('span', {}, 'expected losses · yours ',
+              h('b', {}, `${Math.round(preview.aExpectedLoss * 100)}%`),
+              ' · theirs ',
+              h('b', {}, `${Math.round(preview.dExpectedLoss * 100)}%`)),
+            h('span', { class: 'italic muted' }, 'triumph'),
+          ),
         ),
         eligibleSupport.length > 0
           ? h('div', { class: 'odds-support' },
@@ -794,13 +829,14 @@ export class GameScreen {
             )
           : null,
         h('div', { class: 'odds-sides' },
-          modBlock(chosen.size > 0 ? `Your combined host (${chosen.size + 1} banners)` : 'Your host', preview.aMods, preview.aStrength),
-          modBlock(defOwner >= 0 ? `${lordDisplay(this.state, defOwner).name}'s defense` : 'The defenders', preview.dMods, preview.dStrength),
+          modBlock(chosen.size > 0 ? `Your combined host (${chosen.size + 1} banners)` : 'Your host', preview.aMods, preview.aStrength, false),
+          modBlock(defOwner >= 0 ? `${lordDisplay(this.state, defOwner).name}'s defense` : 'The defenders', preview.dMods, preview.dStrength, true),
         ),
         preview.notes.length > 0
-          ? h('div', { class: 'odds-notes' }, ...preview.notes.map((n) => h('div', { class: 'small' }, `※ ${n}`)))
+          ? h('div', { class: 'odds-notes' }, ...preview.notes.map((n) => h('div', { class: 'small italic' }, `※ ${n}`)))
           : null,
         h('div', { class: 'odds-actions' },
+          h('button', { class: 'btn-quiet odds-hold', onclick: () => modal.close() }, 'Hold the banners'),
           h('button', {
             class: 'btn btn-seal',
             onclick: () => {
@@ -824,13 +860,12 @@ export class GameScreen {
               audio.clash();
               this.select(target.to, null);
             },
-          }, h('span', { html: iconSvg('swords', 16) }), chosen.size > 0 ? 'Give battle, together' : 'Give battle'),
-          h('button', { class: 'btn', onclick: () => modal.close() }, 'Hold'),
+          }, chosen.size > 0 ? 'Give battle, together' : 'Give battle'),
         ),
       );
     };
     render();
-    const modal = openModal(`The battle for ${province.name}`, content, { wide: true });
+    const modal = openModal(`The battle for ${province.name}`, content, { wide: true, className: 'paper-sheet odds-note' });
   }
 
   // ----------------------------------------------------------- dispatch
@@ -1165,10 +1200,22 @@ export class GameScreen {
     const lord = LORD_BY_ID[viewer.lordId];
     const report = incomeReport(state, viewer.id);
 
-    const goldEl = h('div', { class: 'stat' }, h('span', { html: iconSvg('gold', 16) }), h('b', {}, fmt(viewer.gold)), h('span', { class: `small ${report.net >= 0 ? 'pos' : 'neg'}` }, `${signed(report.net)}`));
+    // resource plaques: the value large, the delta beside it, the name
+    // in small caps beneath (redesign 1b). The itemization tooltips stay.
+    const goldEl = h('div', { class: 'stat plaque' },
+      h('div', { class: 'plaque-row' },
+        h('span', { class: 'coin-glyph', 'aria-hidden': 'true' }),
+        h('b', {}, fmt(viewer.gold)),
+        h('span', { class: `small ${report.net >= 0 ? 'pos' : 'neg'}` }, `${signed(report.net)}`)),
+      h('div', { class: 'plaque-label' }, 'Gold'));
     tip(goldEl, () => breakdown('Gold, each season', report.lines, `Net ${signed(report.net)} per season`));
 
-    const emberEl = h('div', { class: 'stat' }, h('span', { html: iconSvg('ember', 16), style: { color: 'var(--ember-bright)' } }), h('b', {}, fmt(viewer.emberlight)), h('span', { class: 'small pos' }, `+${report.emberlight}`));
+    const emberEl = h('div', { class: 'stat plaque' },
+      h('div', { class: 'plaque-row' },
+        h('span', { class: 'ember-diamond', 'aria-hidden': 'true' }),
+        h('b', {}, fmt(viewer.emberlight)),
+        h('span', { class: 'small pos' }, `+${report.emberlight}`)),
+      h('div', { class: 'plaque-label' }, 'Emberlight'));
     tip(emberEl, () => {
       const inc = emberlightIncome(state, viewer.id);
       return breakdown('Emberlight, each season', inc.lines, `+${inc.total} per season`);
@@ -1179,19 +1226,33 @@ export class GameScreen {
     // its text must change in place (below, after mounting) or screen
     // readers would never announce the new season.
     if (!this.seasonEl) {
-      this.seasonEl = h('div', { class: 'stat', 'aria-live': 'polite', 'aria-atomic': 'true' },
-        h('span', { html: iconSvg('hourglass', 16), 'aria-hidden': 'true' }),
-        h('b', {}),
-        h('span', { class: 'small muted' }),
+      this.seasonEl = h('div', { class: 'stat plaque', 'aria-live': 'polite', 'aria-atomic': 'true' },
+        h('div', { class: 'plaque-row' },
+          h('span', { html: iconSvg('hourglass', 15), 'aria-hidden': 'true' }),
+          h('b', {}),
+          h('span', { class: 'small muted' }),
+        ),
+        h('div', { class: 'plaque-label' }, 'The Chronicle turns'),
       );
       tip(this.seasonEl, () => `The Chronicle closes after season ${this.state.victory.maxTurns}. The realm is then judged as it stands.`);
     }
     const seasonEl = this.seasonEl;
 
     const heroesReady = heroesOf(state, viewer.id).filter((hh) => hh.status === 'ready' && hh.levelChoices.length > 0).length;
+    const envoys = state.proposals.filter((pr) => pr.to === viewer.id).length;
+    const omissions = seasonOmissions(this).length;
+    const endDisabled = this.aiRunning || this.state.phase === 'ended' || this.current().kind !== 'human'
+      || (this.online !== null && this.state.current !== this.online.mySeat);
+    const endTip = (): HTMLElement | string => {
+      const left = seasonOmissions(this);
+      if (left.length === 0) return 'The desk is clear.';
+      return h('div', { class: 'tip-plain' },
+        h('b', {}, 'The season would leave behind:'),
+        ...left.map((o) => h('p', { class: 'small' }, `· ${o.text}`)),
+      );
+    };
 
     mount(this.topbar,
-      h('button', { class: 'btn btn-quiet', 'aria-label': 'Menu', html: iconSvg('gear', 18), onclick: () => openMenuOverlay(this) }),
       h('div', { class: 'topbar-lord', style: { borderColor: lord.color } },
         sigilShield(viewer.lordId, 28),
         h('div', {},
@@ -1199,39 +1260,35 @@ export class GameScreen {
           h('div', { class: 'small muted' }, lord.epithet),
         ),
       ),
+      (() => {
+        const cd = viewer.signatureCooldownLeft ?? 0;
+        const btn = h('button', {
+          class: `btn btn-quiet topbar-icon signature-btn ${cd === 0 ? 'signature-ready' : ''}`,
+          'aria-label': `${lord.signature.name}, your signature`,
+          onclick: () => this.openSignatureModal(),
+        }, sigilShield(viewer.lordId, 20));
+        if (cd > 0) btn.appendChild(h('span', { class: 'badge badge-quiet' }, String(cd)));
+        tip(btn, () => h('div', { class: 'tip-plain' },
+          h('b', {}, `${lord.signature.name} · your signature`),
+          h('p', { class: 'small' }, lord.signature.desc),
+          h('p', { class: 'small muted' }, cd === 0 ? 'Ready.' : `Returns in ${cd} ${cd === 1 ? 'season' : 'seasons'}.`),
+        ));
+        return btn;
+      })(),
       h('div', { class: 'topbar-stats' }, goldEl, emberEl, seasonEl),
-      h('div', { class: 'topbar-actions' },
-        this.iconAction('scale', 'The Council Brief: the season at a glance',
-          () => openBriefOverlay(this),
-          seasonOmissions(this).length > 0 ? String(seasonOmissions(this).length) : undefined),
-        this.iconAction('hero', 'Court & heroes', () => openCourtOverlay(this), heroesReady > 0 ? String(heroesReady) : undefined),
-        this.iconAction('ember', 'Magic & rites', () => openMagicOverlay(this)),
-        this.iconAction('quest', 'Quests & the Saga', () => openQuestsOverlay(this)),
-        this.iconAction('handshake', 'The other lords', () => openDiplomacyOverlay(this)),
-        this.iconAction('book', 'Ledger & victory', () => openLedgerOverlay(this)),
-        this.iconAction('eye', 'The Province Navigator: the map as rows', () => openNavigatorOverlay(this)),
-        this.iconAction('codex', 'The Codex: every rule of the realm', () => openCodexOverlay(this)),
-        (() => {
-          const cd = viewer.signatureCooldownLeft ?? 0;
-          const btn = h('button', {
-            class: `btn btn-quiet topbar-icon signature-btn ${cd === 0 ? 'signature-ready' : ''}`,
-            'aria-label': `${lord.signature.name}, your signature`,
-            onclick: () => this.openSignatureModal(),
-          }, sigilShield(viewer.lordId, 20));
-          if (cd > 0) btn.appendChild(h('span', { class: 'badge badge-quiet' }, String(cd)));
-          tip(btn, () => h('div', { class: 'tip-plain' },
-            h('b', {}, `${lord.signature.name} · your signature`),
-            h('p', { class: 'small' }, lord.signature.desc),
-            h('p', { class: 'small muted' }, cd === 0 ? 'Ready.' : `Returns in ${cd} ${cd === 1 ? 'season' : 'seasons'}.`),
-          ));
-          return btn;
-        })(),
+      // three labeled brass clusters instead of a row of anonymous icons
+      // (redesign 1b): Council, Realm, The Book. Each opens its own sheet;
+      // the hotkeys still open every surface directly.
+      h('div', { class: 'topbar-actions topbar-clusters' },
+        this.cluster('busts', 'Council', omissions + heroesReady + envoys, () => this.openCouncilSheet()),
+        this.cluster('keep', 'Realm', 0, () => this.openRealmSheet()),
+        this.cluster('book', 'The Book', 0, () => this.openBookSheet()),
       ),
       // phones only (CSS-gated): the icon row above hides and this one
       // button holds every drawer, labeled, at thumb size. One bar total:
       // the map keeps the room (Michel, 2026-07-12).
       (() => {
-        const alertCount = seasonOmissions(this).length + heroesReady;
+        const alertCount = omissions + heroesReady;
         const btn = h('button', {
           class: 'btn btn-quiet topbar-drawers',
           'aria-label': 'All the drawers: brief, court, magic, quests, lords, ledger, navigator, codex',
@@ -1244,30 +1301,27 @@ export class GameScreen {
       this.online && this.online.clock.perTurn > 0
         ? (this.clockEl = h('div', { class: 'stat turn-clock', 'aria-label': 'Season clock' }))
         : null,
-      (() => {
-        const btn = h('button', {
-          class: 'btn btn-seal end-turn',
-          disabled: this.aiRunning || this.state.phase === 'ended' || this.current().kind !== 'human'
-            || (this.online !== null && this.state.current !== this.online.mySeat),
-          onclick: () => void this.endTurn(),
-        }, this.aiRunning
-          ? 'The rivals move…'
-          : this.online && this.state.current !== this.online.mySeat && this.state.phase === 'playing'
-            ? `${LORD_BY_ID[this.current().lordId].name.split(' ')[0]} moves…`
-            : 'End the Season');
-        // the restrained checklist: only true omissions, only as a whisper:
-        // the button never blocks, the tooltip names what the season leaves
-        tip(btn, () => {
-          const left = seasonOmissions(this);
-          if (left.length === 0) return 'The desk is clear.';
-          return h('div', { class: 'tip-plain' },
-            h('b', {}, 'The season would leave behind:'),
-            ...left.map((o) => h('p', { class: 'small' }, `· ${o.text}`)),
-          );
-        });
-        return btn;
-      })(),
+      // desktop: the wax bar. Phones get the floating roundel instead
+      // (rendered below): exactly one End-the-Season element per view.
+      this.isMobile()
+        ? null
+        : (() => {
+            const btn = h('button', {
+              class: 'btn btn-seal end-turn',
+              disabled: endDisabled,
+              onclick: () => void this.endTurn(),
+            }, this.aiRunning
+              ? 'The rivals move…'
+              : this.online && this.state.current !== this.online.mySeat && this.state.phase === 'playing'
+                ? `${LORD_BY_ID[this.current().lordId].name.split(' ')[0]} moves…`
+                : 'End the Season');
+            // the restrained checklist: only true omissions, only a whisper:
+            // the button never blocks, the tooltip names what the season leaves
+            tip(btn, endTip);
+            return btn;
+          })(),
     );
+    this.renderEndRoundel(endDisabled, endTip);
     // Update the live region's text only now that it is back in the DOM, and
     // only when the season actually changed: mutations inside an attached
     // aria-live region are what make screen readers announce the transition.
@@ -1282,11 +1336,80 @@ export class GameScreen {
     this.renderClock();
   }
 
-  private iconAction(icon: string, label: string, onClick: () => void, badge?: string): HTMLElement {
-    const btn = h('button', { class: 'btn btn-quiet topbar-icon', 'aria-label': label, onclick: onClick, html: iconSvg(icon, 20) });
-    if (badge) btn.appendChild(h('span', { class: 'badge' }, badge));
-    tip(btn, label);
+  /** One engraved brass cluster: a 26px outline glyph over a small-caps
+   * label. Notifications land as a wax dot on the glyph's shoulder. */
+  private cluster(icon: string, label: string, badge: number, onClick: () => void): HTMLElement {
+    const btn = h('button', { class: 'cluster', 'aria-label': label, onclick: onClick },
+      h('span', { class: 'cluster-glyph', html: iconSvg(icon, 26) }),
+      h('span', { class: 'cluster-label' }, label));
+    if (badge > 0) btn.appendChild(h('span', { class: 'badge cluster-badge' }, String(badge)));
     return btn;
+  }
+
+  /** A cluster's sheet: its surfaces as labeled rows on dark wood. */
+  private clusterSheet(title: string, rows: [string, string, string | null, () => void][]): void {
+    const modal = openModal(title, h('div', { class: 'drawers-body' },
+      ...rows.map(([icon, label, note, open]) =>
+        h('button', { class: 'drawer-row', onclick: () => { modal.close(); open(); } },
+          h('span', { class: 'drawer-row-icon', html: iconSvg(icon, 18) }),
+          h('span', { class: 'drawer-row-label' }, label),
+          note ? h('span', { class: 'small drawer-row-note' }, note) : null,
+        )),
+    ));
+  }
+
+  openCouncilSheet(): void {
+    const viewer = this.state.players[this.viewerId()];
+    const omissions = seasonOmissions(this).length;
+    const counsel = heroesOf(this.state, viewer.id).filter((hh) => hh.status === 'ready' && hh.levelChoices.length > 0).length;
+    const envoys = this.state.proposals.filter((pr) => pr.to === viewer.id).length;
+    this.clusterSheet('The Council', [
+      ['scale', 'The Council Brief', omissions > 0 ? `${omissions} open` : null, () => openBriefOverlay(this)],
+      ['hero', 'Court & heroes', counsel > 0 ? `${counsel} await counsel` : null, () => openCourtOverlay(this)],
+      ['handshake', 'The other lords', envoys > 0 ? `${envoys} ${envoys === 1 ? 'envoy waits' : 'envoys wait'}` : null, () => openDiplomacyOverlay(this)],
+    ]);
+  }
+
+  openRealmSheet(): void {
+    this.clusterSheet('The Realm', [
+      ['book', 'Ledger & victory', null, () => openLedgerOverlay(this)],
+      ['ember', 'Magic & rites', null, () => openMagicOverlay(this)],
+      ['quest', 'Quests & the Saga', null, () => openQuestsOverlay(this)],
+      ['eye', 'The Province Navigator', null, () => openNavigatorOverlay(this)],
+    ]);
+  }
+
+  openBookSheet(): void {
+    this.clusterSheet('The Book', [
+      ['quill', 'The Chronicle', null, () => {
+        setChronicleCollapsed(false);
+        this.renderChronicle();
+      }],
+      ['codex', 'The Codex: every rule of the realm', null, () => openCodexOverlay(this)],
+      ['gear', 'The table: saves & settings', null, () => openMenuOverlay(this)],
+    ]);
+  }
+
+  /** Phones: ending the season is a wax seal under the thumb, floating
+   * above the book's peek (redesign 2b). Desktop keeps the topbar wax bar;
+   * exactly one of the two exists at a time. */
+  private endRoundel: HTMLElement | null = null;
+
+  private renderEndRoundel(disabled: boolean, endTip: () => HTMLElement | string): void {
+    this.endRoundel?.remove();
+    this.endRoundel = null;
+    if (!this.isMobile() || this.state.phase === 'ended') return;
+    const btn = h('button', {
+      class: 'wax-roundel end-roundel',
+      'aria-label': 'End the Season',
+      onclick: () => void this.endTurn(),
+    },
+      h('span', { 'aria-hidden': 'true', class: 'end-roundel-lines' }, 'End the', h('br'), 'Season'),
+    ) as HTMLButtonElement;
+    btn.disabled = disabled;
+    tip(btn, endTip);
+    this.el.querySelector('.war-table')?.appendChild(btn);
+    this.endRoundel = btn;
   }
 
   /** The drawers, for phones: every overlay as a labeled row at thumb size.
@@ -1319,6 +1442,10 @@ export class GameScreen {
 
   private renderPanels(): void {
     renderSelectionPanel(this, this.sidePanel);
+    // phones: the selection sheet takes the bottom of the table; the book
+    // steps behind it and returns the moment the selection clears
+    this.chronicleEl.classList.toggle('chronicle-behind',
+      this.isMobile() && (this.sel.provinceId !== null || this.sel.armyId !== null));
     this.guide?.onUpdate(this);
   }
 
@@ -1358,12 +1485,21 @@ export class GameScreen {
         onClick: () => this.selectArmy(idleArmies[0].id),
       });
     }
-    mount(this.alertsEl,
-      ...alerts.slice(0, 4).map((a) =>
-        h('button', { class: 'alert-chip', onclick: a.onClick },
-          h('span', { html: iconSvg(a.icon, 14) }), a.text),
-      ),
-    );
+    // one notice at a time (redesign 1b): a wood chip with a brass border
+    // and a "show me" affordance. The rest wait their turn; acting on the
+    // first re-renders and surfaces the next.
+    clear(this.alertsEl);
+    const first = alerts[0];
+    if (first) {
+      this.alertsEl.appendChild(
+        h('button', { class: 'status-ribbon', onclick: first.onClick },
+          h('span', { class: 'status-ribbon-icon', html: iconSvg(first.icon, 15) }),
+          h('span', { class: 'status-ribbon-text' }, first.text),
+          h('span', { class: 'small italic status-ribbon-more' },
+            alerts.length > 1 ? `show me → (+${alerts.length - 1})` : 'show me →'),
+        ),
+      );
+    }
   }
 
   private onKey(e: KeyboardEvent): void {

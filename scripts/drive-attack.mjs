@@ -21,15 +21,16 @@ if (await skipOnboarding.isVisible().catch(() => false)) {
   await page.waitForTimeout(400);
 }
 
-// select own army via the dev hook, then click a hostile target province
+// select own army via the dev hook, pan the hostile target to the table's
+// center (floating panels may cover the map's edges), then click it
 const info = await page.evaluate(() => {
   const g = window.__game;
   const state = g.state;
   const army = Object.values(state.armies).find((a) => a.owner === state.current);
   g.selectArmy(army.id);
-  const targets = g.targets;
-  const hostile = targets.find((t) => t.hostile);
+  const hostile = g.targets.find((t) => t.hostile);
   if (!hostile) return null;
+  g.panTo(hostile.to);
   const p = state.provinces[hostile.to];
   const [x, y] = g.renderer.worldToScreen(p.cx + 0.5, p.cy + 0.5);
   const rect = g.renderer.canvas.getBoundingClientRect();
