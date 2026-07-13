@@ -39,9 +39,10 @@ fixture is untouched.
   near-black liner and a brass nameplate, temperament as seven inked pips
   per line (Emberlight burns in ember).
 - **The title is three doors, not seven.** One wax plaque leads: the First
-  Ember for a stranger, New Chronicle once the ember has been played. A
-  running campaign waits as a brass door; everything else is demoted to
-  small-caps ink. The painting breathes under a candlelit falloff.
+  Ember for a stranger, A Quick Chronicle once the ember has been played.
+  New Chronicle and a running campaign wait as brass doors; everything else
+  is demoted to small-caps ink. The painting breathes under a candlelit
+  falloff.
 - **The top bar is brass and oak**: resource plaques (the value large, the
   name engraved beneath), and the ten anonymous icons regrouped into three
   labeled clusters: Council, Realm, and The Book. Every hotkey still opens

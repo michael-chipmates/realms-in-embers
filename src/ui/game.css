@@ -51,8 +51,8 @@
 .door-plaque-text { display: flex; flex-direction: column; gap: 0.15rem; min-width: 0; }
 .door-plaque-title { font-size: 1.35rem; letter-spacing: 0.07em; color: #ffe9d8; }
 .door-plaque-sub { font-size: 0.86rem; font-style: italic; color: #c7b998; }
-.title-brass-row { display: flex; gap: 0.7rem; }
-.title-brass-row .btn { flex: 1; min-height: 50px; }
+.title-brass-row { display: flex; gap: 0.7rem; flex-wrap: wrap; }
+.title-brass-row .btn { flex: 1 1 160px; min-height: 50px; }
 .title-links {
   display: flex; flex-wrap: wrap; justify-content: center; align-items: center;
   gap: 0 0.15rem; margin-top: 0.2rem;

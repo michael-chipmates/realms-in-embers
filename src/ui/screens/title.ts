@@ -144,9 +144,10 @@ export function renderTitle(app: App): void {
 
   // Three doors, not seven (redesign 1a/2a). The wax plaque leads with the
   // guided game for a stranger; once the First Ember has been played (or a
-  // chronicle sits on the shelf), New Chronicle takes the plaque and the
-  // ember shrinks to ink (Michel, 2026-07-13). A running campaign rides
-  // beside it as a brass door; every other way in is demoted to ink.
+  // chronicle sits on the shelf), A Quick Chronicle takes the plaque as the
+  // standard door and the ember shrinks to ink (Michel, 2026-07-13). New
+  // Chronicle and a running campaign ride beside it as brass doors; every
+  // other way in is demoted to ink.
   const waxPlaque = (title: string, sub: string, onclick: (e: Event) => void): HTMLElement =>
     h('button', { class: 'door-plaque', onclick },
       h('span', { class: 'door-wax', 'aria-hidden': 'true' },
@@ -159,7 +160,7 @@ export function renderTitle(app: App): void {
 
   const plaque = firstVisit
     ? waxPlaque('The First Ember', 'your first war, guided by the ghost · skippable', () => startFirstEmber(app))
-    : waxPlaque('New Chronicle', 'a realm of your choosing, set up your way', () => app.toSetup());
+    : waxPlaque('A Quick Chronicle', 'a fresh realm, three rivals, one evening', () => openQuickWar(app));
 
   const continueBtn = newest
     ? h('button', {
@@ -193,7 +194,7 @@ export function renderTitle(app: App): void {
     links.push(h('button', { class: 'btn-link', onclick }, label));
   };
   if (!firstVisit) addLink('The First Ember', () => startFirstEmber(app));
-  addLink('A Quick Chronicle', () => openQuickWar(app));
+  else addLink('A Quick Chronicle', () => openQuickWar(app));
   addLink('The Week’s Seed', weekSeed);
   addLink('Load a Chronicle', () => openLoadModal(app));
   addLink('Settings', () => openSettingsPanel(app));
@@ -203,7 +204,7 @@ export function renderTitle(app: App): void {
     { class: 'title-menu title-doors' },
     plaque,
     h('div', { class: 'title-brass-row' },
-      firstVisit ? h('button', { class: 'btn title-btn', onclick: () => app.toSetup() }, 'New Chronicle') : null,
+      h('button', { class: 'btn title-btn', onclick: () => app.toSetup() }, 'New Chronicle'),
       continueBtn,
       h('button', { class: 'btn title-btn', onclick: () => void openOnlineLobby(app) }, 'Play with Friends'),
     ),
