@@ -197,8 +197,29 @@ export interface SlotInfo {
   turn: number;
   seed: string;
   lords: string;
+  /** The viewer's lord id (for the Continue card portrait); '' when a save
+   * predates this field and its label has not been rewritten yet. */
+  lordId: string;
+  /** The viewer's lord full name (Continue card heading). */
+  lordName: string;
   savedAt: number;
   auto: boolean;
+}
+
+/** The lord shown as "yours" on the shelf and the Continue card: the first
+ * living human's banner, then any human's, then seat 0. Close to game.ts'
+ * viewerId() but deliberately seat-stable (never the current AI's turn):
+ * a Continue card should name the lord you actually play, not whoever the
+ * save happened to pause on. */
+function viewerLord(
+  players: readonly { lordId: string; kind?: string; alive?: boolean }[],
+): { lordId: string; lordName: string } {
+  const seat =
+    players.find((p) => p.kind === 'human' && p.alive) ??
+    players.find((p) => p.kind === 'human') ??
+    players[0];
+  const lordId = seat?.lordId ?? '';
+  return { lordId, lordName: LORD_BY_ID[lordId]?.name ?? lordId };
 }
 
 function slotMeta(state: GameState): Omit<SlotInfo, 'key' | 'auto' | 'savedAt' | 'label'> {
@@ -206,6 +227,7 @@ function slotMeta(state: GameState): Omit<SlotInfo, 'key' | 'auto' | 'savedAt' |
     turn: state.turn,
     seed: state.seed,
     lords: state.players.map((p) => LORD_BY_ID[p.lordId]?.name ?? p.lordId).join(', '),
+    ...viewerLord(state.players),
   };
 }
 
@@ -293,7 +315,7 @@ export function listSlots(): SlotInfo[] {
   const keys = ['emergency', 'auto1', 'auto2', 'auto3', 'slot1', 'slot2', 'slot3', 'slot4', 'slot5'];
   for (const key of keys) {
     const meta = safeGet(ls, `${PREFIX}${key}:meta`);
-    let parsed: { turn: number; seed: string; lords: string; savedAt: number } | null = null;
+    let parsed: { turn: number; seed: string; lords: string; savedAt: number; lordId?: string; lordName?: string } | null = null;
     if (meta) {
       try {
         parsed = JSON.parse(meta);
@@ -315,6 +337,7 @@ export function listSlots(): SlotInfo[] {
           seed: state.seed,
           lords: state.players.map((p: { lordId: string }) => LORD_BY_ID[p.lordId]?.name ?? p.lordId).join(', '),
           savedAt: Date.now(), // the true moment was lost with the label
+          ...viewerLord(state.players),
         };
         try {
           ls.setItem(`${PREFIX}${key}:meta`, JSON.stringify({ ...parsed, auto: key.startsWith('auto') }));
@@ -332,6 +355,10 @@ export function listSlots(): SlotInfo[] {
       turn: parsed.turn,
       seed: parsed.seed,
       lords: parsed.lords,
+      // old labels (written before these fields) fall back to the first name
+      // on the shelf and no portrait; the next autosave rewrites the label
+      lordId: parsed.lordId ?? '',
+      lordName: parsed.lordName ?? parsed.lords.split(',')[0]?.trim() ?? '',
       savedAt: parsed.savedAt,
     });
   }

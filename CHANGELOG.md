@@ -38,11 +38,17 @@ fixture is untouched.
 - **The gallery is a portrait hall**: the painting in a gilt frame with a
   near-black liner and a brass nameplate, temperament as seven inked pips
   per line (Emberlight burns in ember).
-- **The title is three doors, not seven.** One wax plaque leads: the First
-  Ember for a stranger, A Quick Chronicle once the ember has been played.
-  New Chronicle and a running campaign wait as brass doors; everything else
-  is demoted to small-caps ink. The painting breathes under a candlelit
-  falloff.
+- **The title is the Marginalia.** The hall painting is unveiled across the
+  left, no longer dimmed to black; the whole menu lives on a vellum ledger
+  pinned to the right. A running chronicle returns on a portrait card sealed
+  in wax (the lord you play, the season, when you last set it down); A Quick
+  Chronicle, New Chronicle, Play with Friends, and the First Ember are a
+  numbered table of contents, with the Week's Seed, Load, and Settings ruled
+  beneath and Osperan's line in the footer. With no save on the shelf the
+  card steps aside and the First Ember is marked to start there. On a phone
+  the painting takes the top and the ledger fills the rest. Overlays raised
+  over the ledger (the lord gallery, the modals) keep their overscroll to
+  themselves, so a bounce never flashes the vellum behind them.
 - **The top bar is brass and oak**: resource plaques (the value large, the
   name engraved beneath), and the ten anonymous icons regrouped into three
   labeled clusters: Council, Realm, and The Book. Every hotkey still opens

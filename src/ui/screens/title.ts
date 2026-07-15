@@ -1,16 +1,20 @@
-/** The title screen: a dark room, a warm table, and the ways in.
- * It should feel inhabited: the chronicler is still writing when you
- * walk in. Motion here is UI-only (never the game rng) and every effect
- * respects reduced-motion. */
+/** The title screen: "The Marginalia" (redesign 2a).
+ *
+ * The painting is unveiled, full-bleed, no scrim to black. The whole menu
+ * lives on a vellum ledger pinned to the right edge: Continue is a portrait
+ * card sealed in wax, everything else a numbered table of contents. The
+ * composition is deliberately asymmetric and save-aware. Motion here is
+ * UI-only (never the game rng) and stands down under reduced-motion. */
 import { h, mount } from '../dom';
 import { artSlot } from '../art';
 import { iconSvg } from '../icons';
+import { sigilShield } from '../heraldry';
 import { hasAnySave, listSlots, loadSlot, newestSave, deleteSlot, importSave } from '../saves';
 import { openOnlineLobby } from './lobby';
 import { openModal } from '../modal';
 import { openSettingsPanel } from '../panels/settingsPanel';
 import { openLordGallery } from './gallery';
-import { FIRST_EMBER_DONE_KEY, FIRST_EMBER_SEED, FirstEmberGuide } from '../guide';
+import { FIRST_EMBER_SEED, FirstEmberGuide } from '../guide';
 import { applyUpdate, onUpdateReady, updateWaiting } from '../swUpdate';
 import type { Difficulty } from '../../engine/types';
 import type { App } from '../app';
@@ -108,12 +112,12 @@ function iosInstallHint(): HTMLElement | null {
   const standalone = window.matchMedia('(display-mode: standalone)').matches
     || (navigator as unknown as { standalone?: boolean }).standalone === true;
   if (!isIos || standalone || localStorage.getItem(HINT_KEY) !== null) return null;
-  const line = h('p', { class: 'small muted title-ios-hint' },
+  const line = h('p', { class: 'small title-ios-hint' },
     'Keep the realm on your shelf: Share ',
     h('span', { 'aria-hidden': 'true' }, '⎋'),
     ' → “Add to Home Screen”. It works with no wire after that. ',
     h('button', {
-      class: 'btn btn-quiet compact',
+      class: 'tm-util',
       onclick: () => {
         localStorage.setItem(HINT_KEY, '1');
         line.remove();
@@ -135,45 +139,104 @@ const EPIGRAPHS = [
   'History is what survives its witnesses. Sit down; you are about to be survived.',
 ];
 
+/** When the chronicle was last set down, in Osperan's plain words. Same
+ * calendar day reads by its part; then yesterday, then a few days, then a
+ * short date. Never a clock: a shelf keeps seasons, not minutes. */
+function relativeSaved(ts: number): string {
+  const now = Date.now();
+  const diff = now - ts;
+  if (diff < 90_000) return 'just now';
+  const then = new Date(ts);
+  const today = new Date(now);
+  if (then.toDateString() === today.toDateString()) {
+    const hr = then.getHours();
+    if (hr < 12) return 'this morning';
+    if (hr < 18) return 'this afternoon';
+    return 'this evening';
+  }
+  const yst = new Date(now);
+  yst.setDate(yst.getDate() - 1);
+  if (then.toDateString() === yst.toDateString()) return 'yesterday';
+  const days = Math.round(diff / 86_400_000);
+  if (days <= 6) return `${days} days ago`;
+  return then.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+}
+
+/** The sidebar slides in once per session, not on every return to the room. */
+let ledgerHasEntered = false;
+
 export function renderTitle(app: App): void {
-  const canContinue = hasAnySave();
-  const newest = canContinue ? newestSave() : null;
-  const epigraph = EPIGRAPHS[Math.floor(Math.random() * EPIGRAPHS.length)];
-  // a stranger's first visit leads with the guided door; veterans keep theirs
-  const firstVisit = !canContinue && localStorage.getItem(FIRST_EMBER_DONE_KEY) === null;
+  const newest = hasAnySave() ? newestSave() : null;
+  const footerQuote = EPIGRAPHS[Math.floor(Math.random() * EPIGRAPHS.length)];
 
-  // Three doors, not seven (redesign 1a/2a). The wax plaque leads with the
-  // guided game for a stranger; once the First Ember has been played (or a
-  // chronicle sits on the shelf), A Quick Chronicle takes the plaque as the
-  // standard door and the ember shrinks to ink (Michel, 2026-07-13). New
-  // Chronicle and a running campaign ride beside it as brass doors; every
-  // other way in is demoted to ink.
-  const waxPlaque = (title: string, sub: string, onclick: (e: Event) => void): HTMLElement =>
-    h('button', { class: 'door-plaque', onclick },
-      h('span', { class: 'door-wax', 'aria-hidden': 'true' },
-        h('span', { class: 'door-wax-ring' }, h('span', { class: 'door-wax-diamond' }))),
-      h('span', { class: 'door-plaque-text' },
-        h('span', { class: 'door-plaque-title' }, title),
-        h('span', { class: 'door-plaque-sub' }, sub),
-      ),
-    );
+  // ------------------------------------------------------- the art zone
+  // The painting, unveiled. Scrims live in CSS (they must not dim to black);
+  // the title lockup sits over its bottom-left, anchored by the radial scrim.
+  const artZone = h('header', { class: 'tm-art' },
+    artSlot('title-hall', h('span', { class: 'tm-art-fallback', 'aria-hidden': 'true' }),
+      { className: 'tm-art-img', alt: '', eager: true }),
+    h('div', { class: 'tm-scrim', 'aria-hidden': 'true' }),
+    h('div', { class: 'tm-lockup' },
+      h('p', { class: 'tm-kicker' }, 'Forty years after the Sundering'),
+      h('h1', { class: 'tm-title title-display' }, 'Realms', h('br'), 'in Embers'),
+      h('div', { class: 'tm-rule', 'aria-hidden': 'true' }, h('span', { class: 'ember-diamond tm-rule-diamond' })),
+      h('p', { class: 'tm-epigraph fell' },
+        'The throne is cold. The chronicler is not quite dead. The war for the ashes begins with you.'),
+    ),
+  );
 
-  const plaque = firstVisit
-    ? waxPlaque('The First Ember', 'your first war, guided by the ghost · skippable', () => startFirstEmber(app))
-    : waxPlaque('A Quick Chronicle', 'a fresh realm, three rivals, one evening', () => openQuickWar(app));
+  // ------------------------------------------------- the Continue card
+  // Only when a chronicle sits on the shelf. Portrait of the lord you play,
+  // name in the chronicle's own hand, season and when it was set down. One
+  // link/button; an explicit label keeps its accessible name honest.
+  const portrait = (lordId: string): HTMLElement =>
+    lordId
+      ? artSlot(`lord-${lordId}`, sigilShield(lordId, 44), { className: 'tm-portrait-img', alt: newest?.lordName ?? '' })
+      : h('span', { class: 'tm-portrait-mark', 'aria-hidden': 'true' }, h('span', { class: 'ember-diamond' }));
 
-  const continueBtn = newest
+  const continueCard = newest
     ? h('button', {
-        class: 'btn title-btn',
+        class: 'tm-continue',
+        'aria-label': `Continue the chronicle of ${newest.lordName || 'your realm'}, season ${newest.turn}, saved ${relativeSaved(newest.savedAt)}`,
         onclick: (e: Event) => {
           const state = loadSlot(newest.key);
           if (state) { app.continueGame(state); return; }
           // a dead button teaches nothing: say what happened (round-2 audit)
           (e.currentTarget as HTMLButtonElement).textContent =
-            'That save could not be read. Try Load a Chronicle below.';
+            'That save could not be read. Try Load below.';
         },
-      }, `Continue · ${newest.lords.split(',')[0]?.trim() ?? 'the war'}, season ${newest.turn}`)
+      },
+        h('span', { class: 'tm-portrait' }, portrait(newest.lordId)),
+        h('span', { class: 'tm-continue-text' },
+          h('span', { class: 'tm-continue-kick' }, 'Continue'),
+          h('span', { class: 'tm-continue-name' }, newest.lordName || 'the war'),
+          h('span', { class: 'tm-continue-meta' },
+            `Season ${newest.turn} · `,
+            h('span', { class: 'tm-saved' }, 'saved '),
+            relativeSaved(newest.savedAt)),
+        ),
+        h('span', { class: 'tm-seal', 'aria-hidden': 'true' }, h('span', { class: 'tm-seal-diamond ember-diamond' })),
+      )
     : null;
+
+  // ------------------------------------------------- the table of contents
+  const toc: { num: string; label: string; note: string; promoteNote?: string; onClick: () => void }[] = [
+    { num: 'I.', label: 'A Quick Chronicle', note: 'one evening', onClick: () => openQuickWar(app) },
+    { num: 'II.', label: 'New Chronicle', note: 'choose your lord', onClick: () => app.toSetup() },
+    { num: 'III.', label: 'Play with Friends', note: 'six seats, one link', onClick: () => void openOnlineLobby(app) },
+    { num: 'IV.', label: 'The First Ember', note: 'your first war, guided', promoteNote: 'start here', onClick: () => startFirstEmber(app) },
+  ];
+  const tocRow = (r: (typeof toc)[number]): HTMLElement => {
+    // no save on the shelf: the guided door is promoted (its note becomes
+    // "start here" and its ember marker stands lit, not just on hover).
+    const promoted = !newest && !!r.promoteNote;
+    return h('button', { class: `tm-toc-row${promoted ? ' tm-toc-promoted' : ''}`, onclick: r.onClick },
+      h('span', { class: 'tm-toc-mark ember-diamond', 'aria-hidden': 'true' }),
+      h('span', { class: 'tm-toc-num', 'aria-hidden': 'true' }, r.num),
+      h('span', { class: 'tm-toc-label' }, r.label),
+      h('span', { class: 'tm-toc-note' }, promoted ? r.promoteNote! : r.note),
+    );
+  };
 
   const weekSeed = (): void => {
     // The Week's Seed: one realm the whole table shares for seven days.
@@ -187,102 +250,55 @@ export function renderTitle(app: App): void {
     app.toSetup(`embermark-${utc.getUTCFullYear()}-w${String(week).padStart(2, '0')}`);
   };
 
-  const dot = (): HTMLElement => h('span', { class: 'title-link-dot', 'aria-hidden': 'true' }, '·');
-  const links: HTMLElement[] = [];
-  const addLink = (label: string, onclick: () => void): void => {
-    if (links.length > 0) links.push(dot());
-    links.push(h('button', { class: 'btn-link', onclick }, label));
-  };
-  if (!firstVisit) addLink('The First Ember', () => startFirstEmber(app));
-  else addLink('A Quick Chronicle', () => openQuickWar(app));
-  addLink('The Week’s Seed', weekSeed);
-  addLink('Load a Chronicle', () => openLoadModal(app));
-  addLink('Settings', () => openSettingsPanel(app));
-
-  const menu = h(
-    'div',
-    { class: 'title-menu title-doors' },
-    plaque,
-    h('div', { class: 'title-brass-row' },
-      h('button', { class: 'btn title-btn', onclick: () => app.toSetup() }, 'New Chronicle'),
-      continueBtn,
-      h('button', { class: 'btn title-btn', onclick: () => void openOnlineLobby(app) }, 'Play with Friends'),
-    ),
-    h('div', { class: 'title-links' }, ...links),
+  const utilDot = (): HTMLElement => h('span', { class: 'tm-util-dot', 'aria-hidden': 'true' });
+  const utility = h('div', { class: 'tm-utility' },
+    h('button', { class: 'tm-util', onclick: weekSeed }, 'The Week’s Seed'),
+    utilDot(),
+    h('button', { class: 'tm-util', onclick: () => openLoadModal(app) }, 'Load'),
+    utilDot(),
+    h('button', { class: 'tm-util', onclick: () => openSettingsPanel(app) }, 'Settings'),
   );
 
-  const screen = h(
-    'div',
-    { class: 'room title-screen' },
-    artSlot('title-hall', h('span'), { className: 'title-backdrop', alt: '', eager: true }),
-    h('main', { class: 'title-center' },
-      h('p', { class: 'title-over muted italic' }, 'Forty years after the Sundering'),
-      h('h1', { class: 'title-display title-main' }, 'Realms in Embers'),
-      h('div', { class: 'rule-flourish', style: { width: 'min(420px, 70vw)', margin: '0.6rem auto 0.2rem' } }, '❧'),
-      h('p', { class: 'muted italic title-sub' },
-        'The throne is cold. The chronicler is not quite dead. The war for the ashes begins with you.'),
-      menu,
-      h('p', { class: 'small muted italic title-epigraph' }, `“${epigraph}” (O.)`),
-      h('p', { class: 'small muted title-foot' },
+  // ------------------------------------------------------------ the ledger
+  const nav = h('nav', { 'aria-label': 'Main menu', class: 'tm-nav' },
+    h('div', { class: 'tm-header' },
+      h('img', { class: 'tm-mark', src: 'favicon.svg', alt: '', 'aria-hidden': 'true', width: '20', height: '20' }),
+      h('span', { class: 'tm-header-label' }, 'The Chronicle'),
+      h('span', { class: 'tm-header-hair', 'aria-hidden': 'true' }),
+    ),
+    continueCard,
+    h('div', { class: 'tm-toc' }, ...toc.map(tocRow)),
+    utility,
+    // iOS keeps its install button three taps deep; one quiet line, once
+    iosInstallHint(),
+  );
+
+  const ledgerFirstLoad = !ledgerHasEntered && !app.settings.reducedMotion;
+  // the ledger is the screen's primary content (the ways in): a <main>
+  // landmark, with the menu as its <nav>. The art is the <header> banner.
+  const ledger = h('main', { class: `tm-ledger${ledgerFirstLoad ? ' tm-first-load' : ''}` },
+    nav,
+    h('footer', { class: 'tm-foot' },
+      h('p', { class: 'tm-foot-quote fell' }, `“${footerQuote}” (O.)`),
+      h('p', { class: 'tm-foot-sub' },
         'A turn-based strategy chronicle · an original homage to the spirit of 1993'),
-      // iOS keeps its install button three taps deep; one quiet line, once
-      iosInstallHint(),
     ),
   );
+  ledgerHasEntered = true;
+
+  const screen = h('div', { class: 'title-screen title-marginalia' }, artZone, ledger);
   mount(app.root, screen);
+
   // staged update: a waiting edition is offered here, in the quiet room:
   // it never seizes a live campaign (BOOT_OK handshake in swUpdate.ts)
   const offerUpdate = (): void => {
-    if (!screen.isConnected || screen.querySelector('.title-update')) return;
-    screen.querySelector('.title-menu')?.appendChild(
-      h('button', { class: 'btn btn-quiet title-btn title-update', onclick: () => applyUpdate() },
+    if (!screen.isConnected || screen.querySelector('.tm-update')) return;
+    nav.appendChild(
+      h('button', { class: 'tm-update', onclick: () => applyUpdate() },
         'A fresh edition is ready. Take the table now'));
   };
   if (updateWaiting()) offerUpdate();
   else onUpdateReady(offerUpdate);
-  if (!app.settings.reducedMotion) startEmberDrift(screen);
-}
-
-/** A quiet column of embers rising through the dark. UI-only randomness;
- * stops itself the moment the title screen leaves the DOM. */
-function startEmberDrift(screen: HTMLElement): void {
-  const canvas = h('canvas', { class: 'title-embers', 'aria-hidden': 'true' }) as HTMLCanvasElement;
-  screen.insertBefore(canvas, screen.children[1] ?? null);
-  const ctx = canvas.getContext('2d');
-  if (!ctx) return;
-  interface Ember { x: number; y: number; r: number; vy: number; vx: number; warm: number; phase: number }
-  const embers: Ember[] = [];
-  const spawn = (y?: number): Ember => ({
-    x: Math.random(),
-    y: y ?? 1 + Math.random() * 0.1,
-    r: 0.8 + Math.random() * 1.8,
-    vy: 0.0006 + Math.random() * 0.0012,
-    vx: (Math.random() - 0.5) * 0.0003,
-    warm: 0.55 + Math.random() * 0.45,
-    phase: Math.random() * Math.PI * 2,
-  });
-  for (let i = 0; i < 26; i++) embers.push(spawn(Math.random()));
-  let t = 0;
-  const frame = (): void => {
-    if (!canvas.isConnected) return; // title gone; stop drawing
-    const w = canvas.clientWidth, hgt = canvas.clientHeight;
-    if (canvas.width !== w || canvas.height !== hgt) { canvas.width = w; canvas.height = hgt; }
-    ctx.clearRect(0, 0, w, hgt);
-    t += 1;
-    for (let i = 0; i < embers.length; i++) {
-      const e = embers[i];
-      e.y -= e.vy;
-      e.x += e.vx + Math.sin(t / 90 + e.phase) * 0.00012;
-      if (e.y < -0.05) embers[i] = spawn();
-      const flicker = 0.75 + 0.25 * Math.sin(t / 14 + e.phase);
-      ctx.beginPath();
-      ctx.arc(e.x * w, e.y * hgt, e.r, 0, Math.PI * 2);
-      ctx.fillStyle = `rgba(${232 - e.warm * 40}, ${130 + e.warm * 30}, 44, ${0.10 + 0.25 * e.warm * flicker})`;
-      ctx.fill();
-    }
-    requestAnimationFrame(frame);
-  };
-  requestAnimationFrame(frame);
 }
 
 export function openLoadModal(app: App): void {

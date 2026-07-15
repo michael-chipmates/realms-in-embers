@@ -2,12 +2,12 @@
  *  Screens & components: everything past the base theme.
  * ================================================================== */
 
-/* --------------------------------------------------------------- title */
-
-.title-screen {
-  display: flex;
-  overflow-y: auto;
-}
+/* --------------------------------------------------------------- title
+   "The Marginalia" (redesign 2a): the painting unveiled, the whole menu on a
+   vellum ledger pinned to one edge. Desktop = art + ledger side by side;
+   phones stack the art over the sheet. Asymmetric, save-aware, no scrim to
+   black. Motion is UI-only and stands down under reduced motion.
+   NB .title-center / .title-over are shared by lobby, gallery, onboarding. */
 
 .title-center {
   margin: auto; /* centered when it fits, scrollable from the top when it doesn't */
@@ -16,84 +16,251 @@
   z-index: 1;
   padding: 1rem;
 }
-
 .title-over { letter-spacing: 0.32em; text-transform: uppercase; font-size: 0.75rem; }
-.title-main { font-size: clamp(2.1rem, 6.2vw, 5.6rem); letter-spacing: 0.16em; margin: 0.5rem 0; line-height: 1.1; }
-.title-sub { max-width: 42ch; margin: 0.5rem auto 0; font-size: 1.05rem; }
-/* three doors, not seven: one wax plaque, two brass buttons, the rest ink */
-.title-menu { display: flex; flex-direction: column; gap: 0.8rem; margin: 1.8rem auto 0; width: min(560px, 92vw); align-items: stretch; }
-.title-btn { font-size: 1.02rem; letter-spacing: 0.08em; }
-.door-plaque {
-  display: flex; align-items: center; gap: 1.1rem; text-align: left;
-  background: rgba(10, 6, 2, 0.6); border: 1px solid rgba(201, 162, 39, 0.45);
-  border-radius: 4px; padding: 0.9rem 1.4rem 0.9rem 1rem; cursor: pointer;
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 230, 170, 0.08);
-  color: var(--parchment-text);
-  transition: border-color 120ms ease-out, box-shadow 120ms ease-out, transform 60ms;
-}
-.door-plaque:hover { border-color: var(--gold-bright); box-shadow: 0 0 30px rgba(224, 120, 48, 0.35); }
-.door-plaque:active { transform: scale(0.98); }
-.door-wax {
-  width: 68px; height: 68px; flex: none; border-radius: 50%;
-  background: radial-gradient(circle at 34% 28%, #b8483a, #8a2f26 58%, #571b15);
-  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.6), inset 0 2px 6px rgba(255, 180, 140, 0.25);
-  display: flex; align-items: center; justify-content: center;
-}
-.door-wax-ring {
-  width: 42px; height: 42px; border-radius: 50%;
-  border: 1.5px solid rgba(255, 220, 190, 0.35);
-  display: flex; align-items: center; justify-content: center;
-}
-.door-wax-diamond {
-  width: 12px; height: 12px;
-  background: linear-gradient(135deg, #ffcf8a, #e07830); transform: rotate(45deg);
-}
-.door-plaque-text { display: flex; flex-direction: column; gap: 0.15rem; min-width: 0; }
-.door-plaque-title { font-size: 1.35rem; letter-spacing: 0.07em; color: #ffe9d8; }
-.door-plaque-sub { font-size: 0.86rem; font-style: italic; color: #c7b998; }
-.title-brass-row { display: flex; gap: 0.7rem; flex-wrap: wrap; }
-.title-brass-row .btn { flex: 1 1 160px; min-height: 50px; }
-.title-links {
-  display: flex; flex-wrap: wrap; justify-content: center; align-items: center;
-  gap: 0 0.15rem; margin-top: 0.2rem;
-}
-.title-link-dot { color: #5c4c34; }
-@media (max-width: 540px) {
-  .title-brass-row { flex-direction: column; }
-  .door-wax { width: 56px; height: 56px; }
-  .door-wax-ring { width: 34px; height: 34px; }
-  .door-plaque-title { font-size: 1.15rem; }
-}
-.title-epigraph { margin-top: 1.4rem; opacity: 0.8; min-height: 1.4em; }
-.title-foot { margin-top: 0.8rem; opacity: 0.65; }
-/* the painting breathes: full presence under a candlelit falloff */
-.title-backdrop::after {
-  content: ''; position: absolute; inset: 0;
-  background: radial-gradient(ellipse 62% 78% at 50% 44%, rgba(8, 5, 2, 0.3) 0%, rgba(8, 5, 2, 0.58) 55%, rgba(6, 3, 1, 0.88) 100%);
+
+.title-marginalia {
+  /* the ledger keeps its own palette: the room's globals differ in value */
+  --tm-void: #0f0b07;
+  --tm-gold: #e6c14a;
+  --tm-gold-dim: #c9a227;
+  --tm-bone: #ede2c8;
+  --tm-ink: #2e2412;
+  --tm-ink-soft: #7d6b4e;
+  --tm-ink-faint: #a08c60;
+  --tm-rubric: #8a2f26;
+  --tm-rule: #b3a077;
+
+  position: relative;
+  height: 100%;
+  display: flex;
+  flex-direction: row;
+  background: var(--tm-void);
+  overflow: hidden; /* the ledger scrolls internally; the page never does */
 }
 
-/* the hall breathes: a slow drift on the backdrop, a candle-flicker on the
-   wordmark. Both stand down under reduced motion. */
-.title-embers { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0; }
-.title-backdrop { position: absolute; inset: 0; overflow: hidden; }
-body:not(.reduced-motion) .title-backdrop .art-img {
-  animation: title-drift 52s ease-in-out infinite alternate;
+/* ---- the art zone: fills the width left of the ledger, painting unveiled */
+.tm-art {
+  position: relative;
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  background: var(--tm-void);
 }
-@keyframes title-drift {
-  from { transform: scale(1.04) translate(-0.6%, 0.4%); }
-  to { transform: scale(1.1) translate(0.8%, -0.6%); }
+.tm-art .art-slot { position: absolute; inset: 0; display: block; }
+.tm-art .art-img {
+  width: 100%; height: 100%; display: block;
+  object-fit: cover; object-position: 38% 42%; /* keep hearth + table in view */
 }
-body:not(.reduced-motion) .title-main {
-  animation: candle-glow 6.5s ease-in-out infinite;
+.tm-scrim {
+  position: absolute; inset: 0; pointer-events: none;
+  background:
+    linear-gradient(200deg, rgba(15, 11, 7, 0.35) 0%, transparent 30%),
+    radial-gradient(ellipse 90% 80% at 30% 96%, rgba(10, 7, 4, 0.88) 0%, rgba(10, 7, 4, 0.45) 45%, transparent 72%);
 }
-@keyframes candle-glow {
-  0%, 100% { text-shadow: 0 0 18px rgba(232, 132, 44, 0.35), 0 2px 4px rgba(0,0,0,0.6); }
-  38% { text-shadow: 0 0 26px rgba(232, 132, 44, 0.5), 0 2px 4px rgba(0,0,0,0.6); }
-  55% { text-shadow: 0 0 15px rgba(232, 132, 44, 0.3), 0 2px 4px rgba(0,0,0,0.6); }
-  76% { text-shadow: 0 0 23px rgba(246, 196, 83, 0.42), 0 2px 4px rgba(0,0,0,0.6); }
+
+.tm-lockup { position: absolute; left: 64px; bottom: 64px; max-width: 700px; z-index: 1; }
+.tm-kicker {
+  font-size: 12.5px; letter-spacing: 0.34em; text-transform: uppercase;
+  color: var(--tm-gold-dim); text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8); margin: 0 0 0.7rem;
 }
+.tm-title.title-display {
+  font-family: var(--fell);
+  font-size: 84px; line-height: 0.98; letter-spacing: 0.07em; text-transform: uppercase;
+  color: var(--tm-gold); margin: 0;
+  text-shadow: 0 0 30px rgba(230, 193, 74, 0.22), 0 2px 0 rgba(0, 0, 0, 0.75);
+}
+.tm-rule { display: flex; align-items: center; gap: 0.75rem; width: 300px; max-width: 60vw; margin: 1.1rem 0 1rem; }
+.tm-rule::before, .tm-rule::after {
+  content: ''; flex: 1; height: 1px; background: linear-gradient(90deg, transparent, rgba(224, 120, 48, 0.55));
+}
+.tm-rule::after { background: linear-gradient(90deg, rgba(224, 120, 48, 0.55), transparent); }
+.tm-rule-diamond { width: 8px; height: 8px; box-shadow: 0 0 12px rgba(224, 120, 48, 0.7); }
+.tm-epigraph {
+  font-style: italic; font-size: 19px; line-height: 1.55; color: var(--tm-bone);
+  max-width: 42ch; margin: 0; text-shadow: 0 1px 4px rgba(0, 0, 0, 0.7);
+}
+
+/* ---- the vellum ledger: the whole menu, pinned to the right ---- */
+.tm-ledger {
+  flex: 0 0 430px;
+  position: relative;
+  display: flex; flex-direction: column;
+  padding: 42px 40px 34px 46px;
+  overflow-y: auto; /* short desktop / small phones scroll the ledger, not the page */
+  color: var(--tm-ink);
+  background: radial-gradient(ellipse 130% 100% at 62% 18%, #efe3c2 0%, #e3d3aa 62%, #cdb988 100%);
+  box-shadow: -18px 0 50px rgba(0, 0, 0, 0.55), inset 0 0 60px rgba(115, 85, 38, 0.28);
+}
+.tm-ledger::before { /* torn left edge */
+  content: ''; position: absolute; top: 0; bottom: 0; left: 0; width: 7px; pointer-events: none;
+  background: linear-gradient(90deg, rgba(60, 40, 15, 0.5), rgba(60, 40, 15, 0.08) 60%, transparent);
+}
+.tm-nav { display: flex; flex-direction: column; }
+
+/* focus ring: rubric on the vellum (the global gold would vanish on tan) */
+.title-marginalia .tm-continue:focus-visible,
+.title-marginalia .tm-toc-row:focus-visible,
+.title-marginalia .tm-util:focus-visible,
+.title-marginalia .tm-update:focus-visible {
+  outline: 2px solid var(--tm-rubric);
+  outline-offset: 2px;
+}
+/* the ledger's ember diamonds take the spec's paler ember start (--ember-a) */
+.title-marginalia .ember-diamond { background: linear-gradient(135deg, #ffcf8a, #e07830); }
+
+.tm-header { display: flex; align-items: center; gap: 0.55rem; margin-bottom: 1.15rem; }
+.tm-mark { width: 20px; height: 20px; flex: none; display: block; border-radius: 4px; }
+.tm-header-label { font-size: 11.5px; letter-spacing: 0.28em; text-transform: uppercase; color: var(--tm-rubric); font-weight: 600; }
+.tm-header-hair { flex: 1; height: 1px; background: linear-gradient(90deg, rgba(138, 47, 38, 0.5), transparent); }
+
+/* continue card: portrait, name in the chronicle's hand, sealed in wax */
+.tm-continue {
+  display: flex; align-items: center; gap: 14px; width: 100%; text-align: left;
+  padding: 14px; margin-bottom: 1.15rem; cursor: pointer;
+  background: linear-gradient(160deg, #f6edd3, #eee1bd);
+  border: 1px solid var(--tm-rule); border-radius: 3px;
+  box-shadow: 0 6px 18px rgba(90, 60, 25, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.5);
+  transition: transform 120ms ease-out, box-shadow 120ms ease-out;
+}
+.tm-portrait {
+  flex: none; width: 58px; height: 72px; border: 3px solid #241d10; background: #241d10;
+  overflow: hidden; display: block; position: relative;
+}
+.tm-portrait .art-slot { display: block; width: 100%; height: 100%; }
+.tm-portrait .art-img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.tm-portrait .sigil-wrap,
+.tm-portrait-mark { display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; }
+.tm-continue-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
+.tm-continue-kick { font-size: 10.5px; letter-spacing: 0.24em; text-transform: uppercase; color: var(--tm-rubric); }
+.tm-continue-name {
+  font-family: var(--fell); font-size: 21px; color: var(--tm-ink); line-height: 1.1;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%;
+}
+.tm-continue-meta { font-size: 12.5px; color: var(--tm-ink-soft); }
+.tm-seal {
+  flex: none; width: 44px; height: 44px; border-radius: 50%; transform: rotate(-8deg);
+  background: radial-gradient(circle at 35% 30%, #a84234, #8a2f26 60%, #5f1e18);
+  box-shadow: 0 4px 10px rgba(60, 20, 10, 0.45), inset 0 2px 5px rgba(255, 180, 140, 0.3);
+  display: flex; align-items: center; justify-content: center;
+}
+.tm-seal-diamond { width: 10px; height: 10px; }
+.tm-continue:hover, .tm-continue:focus-visible { transform: translateY(-1px); }
+.tm-continue:hover .tm-seal, .tm-continue:focus-visible .tm-seal {
+  animation: none; box-shadow: 0 0 18px rgba(224, 120, 48, 0.55), inset 0 2px 5px rgba(255, 180, 140, 0.3);
+}
+
+/* the numbered table of contents */
+.tm-toc { display: flex; flex-direction: column; }
+.tm-toc-row {
+  position: relative; display: flex; align-items: baseline; gap: 10px; width: 100%; text-align: left;
+  padding: 15px 2px; border-bottom: 1px dotted var(--tm-rule); cursor: pointer;
+  transition: background-color 120ms ease-out;
+}
+.tm-toc-row:last-child { border-bottom: none; }
+.tm-toc-num { font-family: var(--fell); font-size: 17px; color: var(--tm-rubric); width: 24px; flex: none; }
+.tm-toc-label {
+  font-size: 15px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--tm-ink);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.tm-toc-note {
+  margin-left: auto; padding-left: 10px; flex: 0 1 auto;
+  font-family: var(--fell); font-style: italic; font-size: 13px; color: var(--tm-ink-soft);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.tm-toc-mark { /* fades in left of the label; absolute, so no layout shift */
+  position: absolute; left: 30px; top: 50%; width: 6px; height: 6px;
+  transform: translateY(-50%) rotate(45deg); opacity: 0; transition: opacity 120ms ease-out;
+}
+.tm-toc-row:hover, .tm-toc-row:focus-visible { background: rgba(138, 47, 38, 0.05); }
+.tm-toc-row:hover .tm-toc-num, .tm-toc-row:focus-visible .tm-toc-num { color: #a84234; }
+.tm-toc-row:hover .tm-toc-note, .tm-toc-row:focus-visible .tm-toc-note { color: var(--tm-ink); }
+.tm-toc-row:hover .tm-toc-mark, .tm-toc-row:focus-visible .tm-toc-mark { opacity: 1; }
+.tm-toc-promoted .tm-toc-mark { opacity: 1; }
+.tm-toc-promoted .tm-toc-note { color: var(--tm-rubric); }
+
+/* utility row + footer */
+.tm-utility {
+  display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 10px;
+  margin-top: 18px; padding-top: 14px; border-top: 3px double var(--tm-rule);
+}
+.tm-util {
+  font-size: 10.5px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--tm-ink-soft);
+  white-space: nowrap; padding: 2px 0; cursor: pointer; transition: color 120ms ease-out;
+}
+.tm-util:hover, .tm-util:focus-visible { color: #6d5a38; }
+.tm-util-dot { width: 4px; height: 4px; flex: none; transform: rotate(45deg); background: var(--tm-rubric); }
+
+.tm-ledger .title-ios-hint { margin-top: 14px; text-align: center; color: var(--tm-ink-soft); }
+.tm-update {
+  margin-top: 14px; width: 100%; padding: 10px; cursor: pointer; border-radius: 2px;
+  border: 1.5px solid var(--tm-ink); color: var(--tm-ink); background: transparent;
+  font-size: 13px; letter-spacing: 0.04em;
+}
+.tm-update:hover { background: rgba(69, 53, 32, 0.08); }
+
+.tm-foot { margin-top: auto; padding-top: 22px; text-align: center; }
+.tm-foot-quote { font-family: var(--fell); font-style: italic; font-size: 14px; color: var(--tm-ink-soft); margin: 0 0 8px; line-height: 1.5; }
+.tm-foot-sub { font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--tm-ink-faint); margin: 0; line-height: 1.5; }
+
+/* ---- ambient motion: two effects, both stand down under reduced motion */
+body:not(.reduced-motion) .tm-title.title-display { animation: tm-title-breathe 6s ease-in-out infinite; }
+@keyframes tm-title-breathe {
+  0%, 100% { text-shadow: 0 0 30px rgba(230, 193, 74, 0.22), 0 2px 0 rgba(0, 0, 0, 0.75); }
+  50% { text-shadow: 0 0 42px rgba(232, 132, 44, 0.42), 0 2px 0 rgba(0, 0, 0, 0.75); }
+}
+body:not(.reduced-motion) .tm-seal { animation: tm-seal-pulse 4s ease-in-out infinite; }
+@keyframes tm-seal-pulse {
+  0%, 100% { box-shadow: 0 4px 10px rgba(60, 20, 10, 0.45), inset 0 2px 5px rgba(255, 180, 140, 0.3); }
+  50% { box-shadow: 0 4px 10px rgba(60, 20, 10, 0.45), 0 0 16px rgba(224, 120, 48, 0.42), inset 0 2px 5px rgba(255, 180, 140, 0.3); }
+}
+@media (min-width: 801px) {
+  /* the sidebar slides in from the right, once per session (JS gates it) */
+  body:not(.reduced-motion) .tm-ledger.tm-first-load { animation: tm-ledger-in 400ms ease-out; }
+}
+@keyframes tm-ledger-in { from { transform: translateX(24px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
 @media (prefers-reduced-motion: reduce) {
-  .title-backdrop .art-img, .title-main { animation: none !important; }
+  .tm-title.title-display, .tm-seal, .tm-ledger.tm-first-load { animation: none !important; }
+}
+
+/* between 800 and 1100px: keep the desktop composition, tighter */
+@media (min-width: 801px) and (max-width: 1100px) {
+  .tm-ledger { flex-basis: 380px; }
+  .tm-title.title-display { font-size: 64px; }
+  .tm-lockup { left: 48px; bottom: 48px; }
+}
+
+/* ---- phones: art over sheet ---- */
+@media (max-width: 800px) {
+  .title-marginalia { flex-direction: column; }
+  .tm-art { flex: none; height: min(308px, 40dvh); }
+  .tm-art .art-img { object-position: 46% 38%; }
+  .tm-scrim {
+    background: linear-gradient(180deg, rgba(15, 11, 7, 0.3) 0%, transparent 30%, rgba(15, 11, 7, 0.25) 62%, rgba(15, 11, 7, 0.85) 100%);
+  }
+  .tm-lockup { left: 22px; right: 22px; bottom: 22px; max-width: none; }
+  .tm-kicker { font-size: 9.5px; letter-spacing: 0.3em; margin-bottom: 0.4rem; }
+  .tm-title.title-display { font-size: 40px; }
+  .tm-rule, .tm-epigraph { display: none; } /* mobile art shows kicker + title only */
+
+  .tm-ledger {
+    flex: 1 1 auto; width: 100%; padding: 24px 22px 18px;
+    box-shadow: 0 -14px 36px rgba(0, 0, 0, 0.5);
+  }
+  .tm-ledger::before { /* the torn edge moves to the top */
+    top: 0; left: 0; right: 0; bottom: auto; width: auto; height: 6px;
+    background: linear-gradient(180deg, rgba(60, 40, 15, 0.5), transparent);
+  }
+  .tm-portrait { width: 46px; height: 58px; }
+  .tm-continue-name { font-size: 17.5px; }
+  .tm-seal { width: 38px; height: 38px; }
+  .tm-saved { display: none; } /* "Season 1 · this morning" */
+  .tm-toc-row { padding: 14px 2px; } /* ≈47px tall, ≥44px touch target */
+  .tm-toc-num { font-size: 15px; width: 22px; }
+  .tm-toc-label { font-size: 14px; letter-spacing: 0.08em; }
+  .tm-toc-note { font-size: 11.5px; }
+  .tm-toc-mark { left: 26px; }
+  .tm-util { padding: 6px 0; } /* ≥32px hit area with the row gap */
+  .tm-foot-quote { font-size: 12px; }
 }
 
 /* --------------------------------------------------------------- setup */
@@ -511,6 +678,7 @@ details.side-section:not([open]) > summary { border-bottom: none; }
 .modal-panel {
   max-width: min(560px, 94vw); max-height: 88vh; overflow-y: auto;
   padding: 0.6rem 0.6rem 0.8rem; scrollbar-width: thin;
+  overscroll-behavior: contain; /* a tall modal must not bounce the title behind it */
 }
 .modal-wide { max-width: min(860px, 94vw); }
 .modal-head {
@@ -556,6 +724,10 @@ details.side-section:not([open]) > summary { border-bottom: none; }
   position: fixed; inset: 0; z-index: 60;
   background: rgba(10, 7, 3, 0.94);
   display: flex; overflow-y: auto; padding: 0.8rem;
+  /* keep the bounce to itself: without this the overscroll chains to the
+     root and the fixed overlay lifts at the edge, flashing the screen behind
+     (the title's vellum ledger). Same guard the setup screen already uses. */
+  overscroll-behavior: contain;
 }
 .gallery-card {
   margin: auto; width: min(560px, 96vw);
@@ -1185,10 +1357,6 @@ body.reduced-motion .battle-round-live .battle-round-losses .neg { animation: no
   width: 38px; height: 38px; border-radius: 50%;
   border: 1px solid rgba(58, 46, 28, 0.5); color: #5c4c34;
   background: rgba(58, 46, 28, 0.08);
-}
-.title-backdrop .art-img {
-  position: absolute; inset: 0; width: 100%; height: 100%;
-  object-fit: cover; opacity: 0.82; filter: saturate(0.92);
 }
 .event-art { display: block; }
 .event-art .art-img {
