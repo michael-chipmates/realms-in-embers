@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://rie.gg/sitemap.xml
+Sitemap: https://realmsinembers.com/sitemap.xml

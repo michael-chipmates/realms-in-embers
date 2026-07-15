@@ -76,7 +76,7 @@ function chapterPage({ id, title, html, description, prev, next }) {
     <title>${esc(title)} — Realms in Embers Codex</title>
     <meta name="description" content="${esc(description)}" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <link rel="canonical" href="https://rie.gg/codex/${id}.html" />
+    <link rel="canonical" href="https://realmsinembers.com/codex/${id}.html" />
     <style>${SHARED_CSS}
     </style>
   </head>
@@ -114,7 +114,7 @@ function indexPage(chapters) {
     <title>The Codex — Realms in Embers</title>
     <meta name="description" content="The complete rules handbook of Realms in Embers: battle, companies, coin and order, Emberlight, heroes, quests, the twelve lords, and the five endings." />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <link rel="canonical" href="https://rie.gg/codex/" />
+    <link rel="canonical" href="https://realmsinembers.com/codex/" />
     <style>${SHARED_CSS}
       ul { padding-left: 1.2rem; }
       li { margin: 0 0 0.6rem; }

@@ -123,10 +123,10 @@ export async function downloadShareCard(state: GameState, colorblind: boolean): 
   ctx.fillText(`seed “${state.seed}” · the same realm awaits anyone`, 64, 474);
   ctx.fillStyle = '#c9a227';
   ctx.font = `bold 26px ${serif}`;
-  ctx.fillText('rie.gg', 64, 540);
+  ctx.fillText('realmsinembers.com', 64, 540);
   ctx.fillStyle = 'rgba(232, 220, 192, 0.5)';
   ctx.font = `18px ${serif}`;
-  ctx.fillText('free · no accounts · no tracking', 150, 540);
+  ctx.fillText('free · no accounts · no tracking', 64, 570);
 
   const blob = await new Promise<Blob | null>((resolve) => card.toBlob(resolve, 'image/png'));
   if (!blob) return false;

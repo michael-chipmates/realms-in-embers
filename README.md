@@ -19,11 +19,11 @@
 
 ![One tour of Realms in Embers: the hall, the painted lords, the war table, an honest battle](docs/media/playthrough.gif)
 
-<p align="center"><i>(A crisper <a href="docs/media/playthrough.mp4">mp4 of the tour</a> lives in the <a href="https://rie.gg/press.html">press kit</a>.)</i></p>
+<p align="center"><i>(A crisper <a href="docs/media/playthrough.mp4">mp4 of the tour</a> lives in the <a href="https://realmsinembers.com/press.html">press kit</a>.)</i></p>
 
 ## Play
 
-**[rie.gg](https://rie.gg)**: free, no account, nothing to install. ([realmsinembers.com](https://realmsinembers.com) gets you there too.) Works on phones, installs from the browser as an app, and the whole game keeps working offline after the first load. A full campaign fills an evening; a short chronicle fits a lunch break. New to the table? **The First Ember** on the title page walks your first war: a real game, guided, skippable.
+**[realmsinembers.com](https://realmsinembers.com)**: free, no account, nothing to install. Works on phones, installs from the browser as an app, and the whole game keeps working offline after the first load. A full campaign fills an evening; a short chronicle fits a lunch break. New to the table? **The First Ember** on the title page walks your first war: a real game, guided, skippable.
 
 ## The game in one paragraph
 

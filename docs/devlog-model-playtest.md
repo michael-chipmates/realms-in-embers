@@ -1,6 +1,6 @@
 # An AI played my strategy game a few hundred seasons and filed better bug reports than I do
 
-*A devlog draft for Realms in Embers ([rie.gg](https://rie.gg)) — free in the
+*A devlog draft for Realms in Embers ([realmsinembers.com](https://realmsinembers.com)) — free in the
 browser, no accounts, no tracking. Publish target: itch.io devlog, once the
 listing exists.*
 

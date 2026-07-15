@@ -1,5 +1,5 @@
 // The link-preview card (og:image): the one image Reddit, Discord, and
-// friends show for rie.gg. Composed live from the game itself: the vellum
+// friends show for realmsinembers.com. Composed live from the game itself: the vellum
 // war table angled on the candlelit hall, wordmark and tagline beside it.
 //   node scripts/capture-og.mjs [url]
 // Output: public/og-card.jpg (1200x630, rendered at 2x). Requires sharp.
